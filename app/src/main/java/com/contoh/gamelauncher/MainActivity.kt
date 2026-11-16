@@ -230,6 +230,7 @@ private fun InfoBlock(current: AppItem, onPlay: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun GameCarousel(
     games: List<AppItem>,
@@ -255,7 +256,9 @@ fun GameCarousel(
     val counter = "GAME LIBRARY  ·  ${pagerState.currentPage + 1}/${games.size}"
 
     BoxWithConstraints(Modifier.fillMaxSize().background(Color(0xFF0B0F1A))) {
-        val landscape = maxWidth > maxHeight
+        val screenW = maxWidth
+        val screenH = maxHeight
+        val landscape = screenW > screenH
 
         Image(
             bitmap = current.icon,
@@ -265,8 +268,92 @@ fun GameCarousel(
         )
 
         if (landscape) {
-            val paneWidth = maxWidth * 0.6f
-            val cardSize = minOf(320.dp, maxOf(120.dp, maxHeight - 110.dp))
+            val paneWidth = screenW * 0.6f
+            val cardSize = minOf(320.dp, maxOf(120.dp, screenH - 110.dp))
+            Row(Modifier.fillMaxSize().safeDrawingPadding()) {
+                Column(
+                    Modifier.width(paneWidth).fillMaxHeight(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        counter,
+                        color = Color.White.copy(alpha = 0.7f),
+                        fontSize = 13.sp,
+                        letterSpacing = 2.sp,
+                        modifier = Modifier.padding(top = 12.dp)
+                    )
+                    Spacer(Modifier.weight(1f))
+                    CardPager(games, pagerState, cardSize, paneWidth, onCardClick, onCardLongClick)
+                    Spacer(Modifier.weight(1f))
+                }
+                Column(
+                    Modifier.weight(1f).fillMaxHeight().padding(end = 24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    InfoBlock(current) { launchApp(current) }
+                    Spacer(Modifier.height(8.dp))
+                    TextButton(onClick = onAddClick) { Text("+ Tambah app") }
+                }
+            }
+        } else {
+            val cardSize = minOf(screenW - 180.dp, screenH * 0.45f)
+            Column(
+                Modifier.fillMaxSize().safeDrawingPadding(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    counter,
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp,
+                    letterSpacing = 2.sp,
+                    modifier = Modifier.padding(top = 24.dp)
+                )
+                Spacer(Modifier.weight(1f))
+                CardPager(games, pagerState, cardSize, screenW, onCardClick, onCardLongClick)
+                Spacer(Modifier.height(28.dp))
+                InfoBlock(current) { launchApp(current) }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onAddClick) { Text("+ Tambah app") }
+            }
+        }
+    }
+
+    pendingRemove?.let { g ->
+        AlertDialog(
+            onDismissRequest = { pendingRemove = null },
+            title = { Text("Hapus ${g.name} dari launcher?") },
+            text = { Text("Aplikasi tidak di-uninstall. Kamu bisa menambahkannya lagi lewat tombol + Tambah app.") },
+            confirmButton = {
+                TextButton(onClick = { onRemove(g); pendingRemove = null }) { Text("Hapus") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRemove = null }) { Text("Batal") }
+            }
+        )
+    }
+}
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        enableEdgeToEdge()
+        super.onCreate(savedInstanceState)
+        setContent {
+            MaterialTheme(colorScheme = darkColorScheme()) {
+                val ctx = LocalContext.current
+                val apps by produceState<List<AppItem>?>(initialValue = null) {
+                    value = withContext(Dispatchers.Default) { loadAllApps(ctx) }
+                }
+                val list = apps
+                if (list == null) {
+                    Box(Modifier.fillMaxSize().background(Color(0xFF0B0F1A)))
+                } else {
+                    Launcher(list)
+                }
+            }
+        }
+    }
+}dp, maxOf(120.dp, maxHeight - 110.dp))
             Row(Modifier.fillMaxSize().safeDrawingPadding()) {
                 Column(
                     Modifier.width(paneWidth).fillMaxHeight(),
