@@ -90,12 +90,12 @@ class Store(ctx: Context) {
         sp.edit().putInt("card_corner_dp", cardCornerDp).apply()
     }
 
-    fun setWallpaperOpacity(value: Float) {
+    fun updateWallpaperOpacity(value: Float) {
         wallpaperOpacity = value.coerceIn(0.08f, 0.65f)
         sp.edit().putFloat("wallpaper_opacity", wallpaperOpacity).apply()
     }
 
-    fun setWallpaperOverlay(value: Float) {
+    fun updateWallpaperOverlay(value: Float) {
         wallpaperOverlay = value.coerceIn(0.20f, 0.85f)
         sp.edit().putFloat("wallpaper_overlay", wallpaperOverlay).apply()
     }
@@ -105,8 +105,8 @@ class Store(ctx: Context) {
         setCardSize(112)
         setGridSpacing(14)
         setCardCorner(10)
-        setWallpaperOpacity(0.28f)
-        setWallpaperOverlay(0.48f)
+        updateWallpaperOpacity(0.28f)
+        updateWallpaperOverlay(0.48f)
     }
 
     fun setWallpaper(uri: Uri?) {
