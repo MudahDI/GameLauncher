@@ -40,7 +40,7 @@ fun loadAllApps(ctx: Context): List<AppItem> {
         .mapNotNull { info ->
             // Satu app bermasalah (ikon rusak, dsb.) tidak boleh menggagalkan seluruh daftar.
             runCatching {
-                val drawable = info.loadIcon(pm)
+                val drawable = pm.getApplicationIcon(info.packageName)
                 val monochrome = if (Build.VERSION.SDK_INT >= 33) {
                     (drawable as? AdaptiveIconDrawable)?.monochrome
                 } else null
