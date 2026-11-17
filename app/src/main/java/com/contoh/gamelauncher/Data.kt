@@ -72,8 +72,8 @@ class Store(ctx: Context) {
     var cardSizeDp by mutableStateOf(sp.getInt("card_size_dp", 112).coerceIn(88, 148))
     var gridSpacingDp by mutableStateOf(sp.getInt("grid_spacing_dp", 14).coerceIn(6, 24))
     var cardCornerDp by mutableStateOf(sp.getInt("card_corner_dp", 10).coerceIn(4, 20))
-    var wallpaperOpacity by mutableStateOf(sp.getFloat("wallpaper_opacity", 0.28f).coerceIn(0.08f, 0.65f))
-    var wallpaperOverlay by mutableStateOf(sp.getFloat("wallpaper_overlay", 0.48f).coerceIn(0.20f, 0.85f))
+    var wallpaperOpacity by mutableStateOf(sp.getFloat("wallpaper_opacity", 0.65f).coerceIn(0.05f, 1.00f))
+    var wallpaperOverlay by mutableStateOf(sp.getFloat("wallpaper_overlay", 0.62f).coerceIn(0.15f, 0.95f))
 
     fun setCardSize(value: Int) {
         cardSizeDp = value.coerceIn(88, 148)
@@ -91,12 +91,12 @@ class Store(ctx: Context) {
     }
 
     fun updateWallpaperOpacity(value: Float) {
-        wallpaperOpacity = value.coerceIn(0.08f, 0.65f)
+        wallpaperOpacity = value.coerceIn(0.05f, 1.00f)
         sp.edit().putFloat("wallpaper_opacity", wallpaperOpacity).apply()
     }
 
     fun updateWallpaperOverlay(value: Float) {
-        wallpaperOverlay = value.coerceIn(0.20f, 0.85f)
+        wallpaperOverlay = value.coerceIn(0.15f, 0.95f)
         sp.edit().putFloat("wallpaper_overlay", wallpaperOverlay).apply()
     }
 
@@ -105,8 +105,8 @@ class Store(ctx: Context) {
         setCardSize(112)
         setGridSpacing(14)
         setCardCorner(10)
-        updateWallpaperOpacity(0.28f)
-        updateWallpaperOverlay(0.48f)
+        updateWallpaperOpacity(0.65f)
+        updateWallpaperOverlay(0.62f)
     }
 
     fun setWallpaper(uri: Uri?) {
