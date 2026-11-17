@@ -290,35 +290,14 @@ fun GameGrid(
 
 @Composable
 fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
-    val items = listOf("🏠" to "Beranda", "🔍" to "Cari", "📚" to "Koleksi", "⚙️" to "Atur")
-    Row(
-        Modifier.fillMaxWidth().background(Color(0xFF14181F)).height(60.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
+    val items = listOf("⌂" to "Beranda", "⌕" to "Cari", "▦" to "Koleksi", "⚙" to "Atur")
+    Row(Modifier.fillMaxWidth().background(Color(0xFF0D1420)).height(68.dp).padding(horizontal = 16.dp, vertical = 6.dp), verticalAlignment = Alignment.CenterVertically) {
         items.forEachIndexed { i, (icon, label) ->
-            val on = i == selected
-            Column(
-                Modifier.weight(1f).fillMaxHeight().clickable { onSelect(i) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    icon,
-                    fontSize = 20.sp,
-                    modifier = Modifier.alpha(if (on) 1f else 0.6f)
-                )
-                Text(
-                    label,
-                    fontSize = 11.sp,
-                    color = if (on) Color.White else Color.White.copy(alpha = 0.5f)
-                )
-                Spacer(Modifier.height(2.dp))
-                Box(
-                    Modifier
-                        .width(28.dp)
-                        .height(2.dp)
-                        .background(if (on) Color.White else Color.Transparent)
-                )
+            val active = i == selected
+            Column(Modifier.weight(1f).fillMaxHeight().clip(RoundedCornerShape(12.dp)).background(if (active) Color(0xFF1C2A40) else Color.Transparent).clickable { onSelect(i) }.padding(vertical = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                Text(icon, color = if (active) Color(0xFF9FC2FF) else Color(0xFF78869B), fontSize = 22.sp)
+                Text(label, color = if (active) Color.White else Color(0xFF8995A7), fontSize = 10.sp, fontWeight = if (active) FontWeight.SemiBold else FontWeight.Normal)
             }
         }
     }
@@ -335,70 +314,80 @@ fun HomeScreen(
 ) {
     val recent = store.recent.mapNotNull { p -> visible.find { it.pkg == p } }
     val favs = visible.filter { it.pkg in store.favorites }
-
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val h = maxHeight
-        val compact = h < 420.dp
-        val k = if (compact) 0.8f else 1f
-
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)
-        ) {
-            SectionTitle("Terakhir Dimainkan", compact)
-            if (recent.isEmpty()) {
-                HintText("Belum ada. Mainkan game dari baris \"Semua Game\" di bawah.")
-            } else {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    itemsIndexed(recent, key = { _, a -> a.pkg }) { i, app ->
-                        if (i == 0) {
-                            BannerTile(
-                                app, 260.dp * k, 150.dp * k,
-                                { onPlay(app) }, { onOptions(app) }
-                            )
-                        } else {
-                            GameTile(
-                                app, 110.dp * k, app.pkg in store.favorites,
-                                { onPlay(app) }, { onOptions(app) }
-                            )
+    val featured = recent.firstOrNull() ?: visible.firstOrNull()
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 22.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 18.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("GAME LIBRARY", color = Color(0xFF91A4C2), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text("Beranda", color = Color.White, fontSize = 27.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Text(visible.size.toString() + " GAME", color = Color(0xFFB8C5D8), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp,
+                modifier = Modifier.clip(RoundedCornerShape(50)).background(Color.White.copy(alpha = 0.08f)).padding(horizontal = 14.dp, vertical = 9.dp))
+        }
+        if (featured != null) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp).height(218.dp).clip(RoundedCornerShape(22.dp))) {
+                Image(featured.icon, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize().blur(30.dp))
+                Box(Modifier.fillMaxSize().background(Color(0xD9091424)))
+                Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xF20A1424), Color(0xA60A1424), Color(0x330A1424)))))
+                Image(featured.icon, featured.name, contentScale = ContentScale.Crop,
+                    modifier = Modifier.align(Alignment.CenterEnd).padding(end = 34.dp).size(146.dp).clip(RoundedCornerShape(22.dp)))
+                Column(Modifier.align(Alignment.CenterStart).fillMaxWidth(0.64f).padding(start = 26.dp, end = 8.dp)) {
+                    Text(if (recent.isNotEmpty()) "LANJUTKAN PERMAINAN" else "PILIHAN GAME", color = Color(0xFF9CB8E8), fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                    Spacer(Modifier.height(8.dp))
+                    Text(featured.name, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Spacer(Modifier.height(15.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(9.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(Modifier.clip(RoundedCornerShape(9.dp)).background(Color(0xFF9FC2FF)).clickable { onPlay(featured) }.padding(horizontal = 17.dp, vertical = 10.dp)) {
+                            Text("▶  Mainkan", color = Color(0xFF091321), fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        Box(Modifier.clip(RoundedCornerShape(9.dp)).background(Color.White.copy(alpha = 0.13f)).clickable { onOptions(featured) }.padding(horizontal = 13.dp, vertical = 10.dp)) {
+                            Text("•••", color = Color.White, fontSize = 13.sp)
                         }
                     }
                 }
             }
-
-            SectionTitle("Favorit", compact)
-            if (favs.isEmpty()) {
-                HintText("Tahan lama sebuah game, lalu pilih \"Tambah ke favorit\".")
-            } else {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(favs, key = { it.pkg }) { app ->
-                        GameTile(
-                            app, 100.dp * k, true,
-                            { onPlay(app) }, { onOptions(app) }
-                        )
-                    }
-                }
-            }
-
-            SectionTitle("Semua Game", compact)
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                items(visible, key = { it.pkg }) { app ->
-                    GameTile(
-                        app, 100.dp * k, app.pkg in store.favorites,
-                        { onPlay(app) }, { onOptions(app) }
-                    )
-                }
+        } else {
+            Box(Modifier.fillMaxWidth().padding(horizontal = 28.dp).height(150.dp).clip(RoundedCornerShape(22.dp)).background(Color(0xFF17243A)), contentAlignment = Alignment.Center) {
+                Text("Belum ada game yang terdeteksi", color = Color(0xFFB8C5D8), fontSize = 14.sp)
             }
         }
+        if (recent.isNotEmpty()) HomeGameSection("Terakhir dimainkan", recent, store, onPlay, onOptions)
+        if (favs.isNotEmpty()) HomeGameSection("Favorit", favs, store, onPlay, onOptions)
+        Row(Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 26.dp, bottom = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Semua Game", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+                Text("Pilih game untuk mulai bermain", color = Color(0xFF8492A8), fontSize = 11.sp)
+            }
+            Text(visible.size.toString() + " TERPASANG", color = Color(0xFF8492A8), fontSize = 9.sp, letterSpacing = 1.sp)
+        }
+        if (visible.isEmpty()) HintText("Tambahkan game melalui menu Koleksi atau Pengaturan.")
+        else LazyRow(contentPadding = PaddingValues(horizontal = 28.dp), horizontalArrangement = Arrangement.spacedBy(15.dp)) {
+            items(visible, key = { it.pkg }) { app -> ConsoleGameCard(app, app.pkg in store.favorites, { onPlay(app) }, { onOptions(app) }) }
+        }
+    }
+}
+
+@Composable
+private fun HomeGameSection(title: String, games: List<AppItem>, store: Store, onPlay: (AppItem) -> Unit, onOptions: (AppItem) -> Unit) {
+    Row(Modifier.fillMaxWidth().padding(start = 28.dp, end = 28.dp, top = 22.dp, bottom = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+        Text(title, color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+        Text(games.size.toString(), color = Color(0xFF8492A8), fontSize = 11.sp)
+    }
+    LazyRow(contentPadding = PaddingValues(horizontal = 28.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+        items(games, key = { it.pkg }) { app -> ConsoleGameCard(app, app.pkg in store.favorites, { onPlay(app) }, { onOptions(app) }) }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ConsoleGameCard(app: AppItem, favorite: Boolean, onClick: () -> Unit, onLongClick: () -> Unit) {
+    Column(Modifier.width(122.dp).combinedClickable(onClick = onClick, onLongClick = onLongClick)) {
+        Box(Modifier.fillMaxWidth().height(122.dp).clip(RoundedCornerShape(17.dp)).background(Color(0xFF202B3D))) {
+            Image(app.icon, app.name, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
+            if (favorite) Text("★", color = Color(0xFFFFD36E), fontSize = 16.sp, modifier = Modifier.align(Alignment.TopEnd).padding(7.dp))
+        }
+        Spacer(Modifier.height(7.dp))
+        Text(app.name, color = Color(0xFFE7ECF4), fontSize = 11.sp, fontWeight = FontWeight.Medium, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
 
@@ -546,13 +535,13 @@ fun LauncherApp(allApps: List<AppItem>) {
     }
     val options: (AppItem) -> Unit = { a -> selected = a }
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF0B0F1A))) {
+    Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF17243A), Color(0xFF0B111C), Color(0xFF080D15))))) {
         if (backdrop != null) {
             Image(
                 bitmap = backdrop.icon,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.3f)
+                modifier = Modifier.fillMaxSize().blur(90.dp).alpha(0.12f)
             )
         }
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
