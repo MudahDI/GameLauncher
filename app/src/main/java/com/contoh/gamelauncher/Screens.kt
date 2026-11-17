@@ -440,7 +440,7 @@ fun HeroPanel(
                     Text(
                         focused.name,
                         color = Color.White,
-                        fontSize = if (compact) 24.sp else 34.sp,
+                        fontSize = if (compact) 20.sp else 26.sp,
                         fontWeight = FontWeight.Light,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
