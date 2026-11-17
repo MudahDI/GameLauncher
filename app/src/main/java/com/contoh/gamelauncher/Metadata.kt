@@ -244,7 +244,7 @@ object MetadataRepository {
                         return Html.fromHtml(raw, Html.FROM_HTML_MODE_LEGACY).toString().trim().takeIf { it.isNotBlank() }
                     }
                     val title = meta("og:title")?.substringBefore(" - Apps on Google Play")
-                        ?: return@runCatching null
+                        ?: return@runCatchingPreservingCancellation null
                     val description = meta("og:description") ?: meta("description").orEmpty()
                     val image = meta("og:image")?.takeIf { it.startsWith("https://") }
                     GameMetadataResult(title, description, image, url, "Google Play", coverUrl = image)
