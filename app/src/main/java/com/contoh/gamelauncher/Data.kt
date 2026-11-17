@@ -50,7 +50,8 @@ fun loadAllApps(ctx: Context): List<AppItem> {
         .sortedBy { it.name.lowercase() }
 }
 
-class Store(ctx: Context) {\n    private val appContext = ctx.applicationContext
+class Store(ctx: Context) {
+    private val appContext = ctx.applicationContext
     private val sp = ctx.applicationContext
         .getSharedPreferences("launcher", Context.MODE_PRIVATE)
 
