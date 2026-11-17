@@ -196,11 +196,12 @@ fun GameGrid(
     onOptions: (AppItem) -> Unit,
     tile: Dp = 110.dp,
     focusedPkg: String? = null,
-    onFocus: (AppItem) -> Unit = {}
+    onFocus: (AppItem) -> Unit = {},
+    emptyLabel: String = "Tidak ada item."
 ) {
     if (list.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Tidak ada game.", color = Deck.TextDim)
+            Text(emptyLabel, color = Deck.TextDim)
         }
     } else {
         LazyVerticalGrid(
@@ -339,42 +340,54 @@ fun SearchScreen(
             value = q,
             onValueChange = { q = it },
             singleLine = true,
-            label = { Text("Cari game") },
+            label = { Text("Cari game atau aplikasi") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
         )
-        GameGrid(results, store, onPlay, onOptions, focusedPkg = focusedPkg) { focusedPkg = it.pkg }
+        GameGrid(results, store, onPlay, onOptions, focusedPkg = focusedPkg, onFocus = { focusedPkg = it.pkg }, emptyLabel = "Tidak ada hasil.")
     }
 }
 
 @Composable
 fun LibraryScreen(
-    visible: List<AppItem>,
+    games: List<AppItem>,
+    apps: List<AppItem>,
     store: Store,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
     onAdd: () -> Unit
 ) {
+    var showGames by rememberSaveable { mutableStateOf(true) }
     var onlyFav by rememberSaveable { mutableStateOf(false) }
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    val list = if (onlyFav) visible.filter { it.pkg in store.favorites } else visible
+    val source = if (showGames) games else apps
+    val list = if (onlyFav) source.filter { it.pkg in store.favorites } else source
     val on = Color.White
     val off = Deck.TextDim
+
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 32.dp, end = 12.dp, top = 12.dp),
+            Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("KOLEKSI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
             Spacer(Modifier.weight(1f))
-            TextButton(onClick = { onlyFav = false }) {
-                Text("Semua", color = if (!onlyFav) on else off)
+            TextButton(onClick = { showGames = true; onlyFav = false }) {
+                Text("GAME  \${games.size}", color = if (showGames) on else off)
             }
-            TextButton(onClick = { onlyFav = true }) {
-                Text("★ Fav", color = if (onlyFav) on else off)
+            TextButton(onClick = { showGames = false; onlyFav = false }) {
+                Text("APLIKASI  \${apps.size}", color = if (!showGames) on else off)
             }
-            TextButton(onClick = onAdd) { Text("+ Tambah", color = Deck.Accent) }
+            TextButton(onClick = { onlyFav = !onlyFav }) {
+                Text(if (onlyFav) "★ Fav" else "☆ Fav", color = if (onlyFav) Deck.Accent else off)
+            }
+            TextButton(onClick = onAdd) { Text("+ Pulihkan", color = Deck.Accent) }
         }
-        GameGrid(list, store, onPlay, onOptions, focusedPkg = focusedPkg) { focusedPkg = it.pkg }
+        GameGrid(
+            list, store, onPlay, onOptions,
+            focusedPkg = focusedPkg,
+            onFocus = { focusedPkg = it.pkg },
+            emptyLabel = if (showGames) "Belum ada game." else "Belum ada aplikasi."
+        )
     }
 }
 
@@ -402,14 +415,14 @@ fun SettingsScreen(onAdd: () -> Unit, onReset: () -> Unit) {
         Text("PENGATURAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         SettingRow(
-            "+ Tambah app ke launcher",
-            "Pilih dari semua aplikasi terpasang",
+            "Pulihkan aplikasi tersembunyi",
+            "Tampilkan kembali aplikasi yang sebelumnya disembunyikan",
             onAdd
         )
         Spacer(Modifier.height(10.dp))
         SettingRow(
-            "Kembalikan daftar otomatis",
-            "Batalkan semua tambahan dan penghapusan manual (favorit tetap)",
+            "Reset kategori dan daftar",
+            "Kembalikan kategori otomatis dan tampilkan aplikasi tersembunyi (favorit tetap)",
             onReset
         )
     }
