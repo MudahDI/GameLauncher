@@ -8,6 +8,12 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -267,7 +273,15 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
         Column(Modifier.fillMaxSize()) {
             HeaderBar(onSettings = { tab = 3 })
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                when (tab) {
+                AnimatedContent(
+                    targetState = tab,
+                    transitionSpec = {
+                        (fadeIn(tween(150)) + slideInHorizontally(tween(180)) { it / 24 }) togetherWith
+                            fadeOut(tween(90))
+                    },
+                    label = "mdiTabTransition"
+                ) { targetTab ->
+                when (targetTab) {
                     0 -> HomeScreen(
                         games, store, focused,
                         { focusedPkg = it.pkg }, play, options
@@ -284,6 +298,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         hasWallpaper = store.wallpaperUri != null,
                         store = store
                     )
+                }
                 }
             }
             BottomNavigation(tab) { tab = it }
@@ -524,7 +539,7 @@ class MainActivity : ComponentActivity() {
             }
 
             val now = android.os.SystemClock.uptimeMillis()
-            if (direction != lastStickDirection || now - lastStickMoveAt >= 170L) {
+            if (direction != lastStickDirection || now - lastStickMoveAt >= 105L) {
                 lastStickDirection = direction
                 lastStickMoveAt = now
                 // Pasangan down/up mengikuti alur input navigasi Android normal.
@@ -543,6 +558,10 @@ class MainActivity : ComponentActivity() {
             window.attributes = window.attributes.apply {
                 layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
+        }
+        // Minta refresh rate tinggi yang tersedia; Android tetap boleh memilih mode adaptif.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            window.attributes = window.attributes.apply { preferredRefreshRate = 120f }
         }
         // Warna bar mengikuti tema charcoal saat portrait.
         window.statusBarColor = android.graphics.Color.rgb(14, 20, 27)
