@@ -366,7 +366,7 @@ fun LibraryScreen(
 
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 10.dp),
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text("KOLEKSI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
@@ -377,8 +377,14 @@ fun LibraryScreen(
             TextButton(onClick = { showGames = false; onlyFav = false }) {
                 Text("APLIKASI  ${apps.size}", color = if (!showGames) on else off)
             }
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             TextButton(onClick = { onlyFav = !onlyFav }) {
-                Text(if (onlyFav) "★ Fav" else "☆ Fav", color = if (onlyFav) Deck.Accent else off)
+                Text(if (onlyFav) "★ Favorit aktif" else "☆ Favorit", color = if (onlyFav) Deck.Accent else off)
             }
             TextButton(onClick = onAdd) { Text("+ Pulihkan", color = Deck.Accent) }
         }
@@ -437,10 +443,10 @@ fun AddAppDialog(
     val listMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Tambah app") },
+        title = { Text("Pulihkan aplikasi") },
         text = {
             if (candidates.isEmpty()) {
-                Text("Tidak ada app lain untuk ditambahkan.")
+                Text("Tidak ada aplikasi tersembunyi.")
             } else {
                 LazyColumn(Modifier.heightIn(max = listMaxHeight)) {
                     items(candidates, key = { it.pkg }) { app ->
