@@ -2,6 +2,7 @@ package com.mdh.gamelauncher
 
 import android.os.Bundle
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.hardware.input.InputManager
 import android.view.InputDevice
@@ -156,6 +157,16 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
+    var rotationMode by rememberSaveable { mutableIntStateOf(0) }
+    val applyRotation: (Int) -> Unit = { mode ->
+        rotationMode = mode
+        val requested = when (mode) {
+            1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            2 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        }
+        (ctx as? ComponentActivity)?.requestedOrientation = requested
+    }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
@@ -273,7 +284,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     ) {
         WallpaperBackground(store)
         Column(Modifier.fillMaxSize()) {
-            HeaderBar(onHistory = { tab = 4 }, onSettings = { tab = 3 })
+            HeaderBar(onHistory = { tab = 4 }, onRotate = { applyRotation((rotationMode + 1) % 3) }, rotationMode = rotationMode, onSettings = { tab = 3 })
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 AnimatedContent(
                     targetState = tab,
@@ -561,6 +572,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         // Edge-to-edge: portrait memberi padding aman di Compose, landscape memakai seluruh area.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {

@@ -69,7 +69,7 @@ fun rememberBatteryPercent(): State<Int> {
 }
 
 @Composable
-fun HeaderBar(onHistory: () -> Unit, onSettings: () -> Unit) {
+fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, onSettings: () -> Unit) {
     val clock by rememberClock()
     val battery by rememberBatteryPercent()
     Row(
@@ -103,6 +103,21 @@ fun HeaderBar(onHistory: () -> Unit, onSettings: () -> Unit) {
         Spacer(Modifier.width(9.dp))
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onHistory), contentAlignment = Alignment.Center) {
             Text("◷", color = Deck.Text, fontSize = 21.sp)
+        }
+        Spacer(Modifier.width(8.dp))
+        Box(
+            Modifier.size(36.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(Deck.Panel)
+                .clickable(onClick = onRotate),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                when (rotationMode) { 1 -> "▯"; 2 -> "▰"; else -> "↻" },
+                color = Deck.Accent,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.SemiBold
+            )
         }
         Spacer(Modifier.width(8.dp))
         Box(
