@@ -363,24 +363,37 @@ class MainActivity : ComponentActivity() {
      */
     override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
         if (event.action == MotionEvent.ACTION_MOVE && event.isFromSource(InputDevice.SOURCE_JOYSTICK)) {
+            val device = event.device
+            val xRange = device?.getMotionRange(MotionEvent.AXIS_X, InputDevice.SOURCE_JOYSTICK)
+            val yRange = device?.getMotionRange(MotionEvent.AXIS_Y, InputDevice.SOURCE_JOYSTICK)
+            if (xRange == null || yRange == null) {
+                return super.dispatchGenericMotionEvent(event)
+            }
+
             val x = event.getAxisValue(MotionEvent.AXIS_X)
             val y = event.getAxisValue(MotionEvent.AXIS_Y)
+            // Hormati dead-zone bawaan perangkat agar stick tidak bergerak sendiri.
+            val xThreshold = maxOf(0.55f, xRange.flat * 2f)
+            val yThreshold = maxOf(0.55f, yRange.flat * 2f)
             val direction = when {
-                kotlin.math.abs(x) > kotlin.math.abs(y) && x < -0.55f -> AndroidKeyEvent.KEYCODE_DPAD_LEFT
-                kotlin.math.abs(x) > kotlin.math.abs(y) && x > 0.55f -> AndroidKeyEvent.KEYCODE_DPAD_RIGHT
-                y < -0.55f -> AndroidKeyEvent.KEYCODE_DPAD_UP
-                y > 0.55f -> AndroidKeyEvent.KEYCODE_DPAD_DOWN
+                kotlin.math.abs(x) > kotlin.math.abs(y) && x < -xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_LEFT
+                kotlin.math.abs(x) > kotlin.math.abs(y) && x > xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_RIGHT
+                y < -yThreshold -> AndroidKeyEvent.KEYCODE_DPAD_UP
+                y > yThreshold -> AndroidKeyEvent.KEYCODE_DPAD_DOWN
                 else -> 0
             }
+
             if (direction == 0) {
                 lastStickDirection = 0
-            } else {
-                val now = android.os.SystemClock.uptimeMillis()
-                if (direction != lastStickDirection || now - lastStickMoveAt >= 260L) {
-                    lastStickDirection = direction
-                    lastStickMoveAt = now
-                    dispatchKeyEvent(AndroidKeyEvent(AndroidKeyEvent.ACTION_UP, direction))
-                }
+                // Jangan telan gerakan netral atau input joystick lain yang bukan navigasi.
+                return super.dispatchGenericMotionEvent(event)
+            }
+
+            val now = android.os.SystemClock.uptimeMillis()
+            if (direction != lastStickDirection || now - lastStickMoveAt >= 260L) {
+                lastStickDirection = direction
+                lastStickMoveAt = now
+                dispatchKeyEvent(AndroidKeyEvent(AndroidKeyEvent.ACTION_UP, direction))
             }
             return true
         }
@@ -414,7 +427,7 @@ class MainActivity : ComponentActivity() {
                 val ctx = LocalContext.current
                 val tick = refreshTick
                 val apps by produceState<List<AppItem>?>(initialValue = null, tick) {
-                    value = withContext(Dispatchers.Default) { loadAllApps(ctx) }
+                    value = withContext(Dispatchers.IO) { loadAllApps(ctx) }
                 }
                 val list = apps
                 if (list == null) {
