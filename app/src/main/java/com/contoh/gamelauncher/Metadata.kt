@@ -2,6 +2,7 @@ package com.mdh.gamelauncher
 
 import android.content.Context
 import android.graphics.BitmapFactory
+import android.text.Html
 import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -60,6 +61,7 @@ data class MetadataSourceConfig(
 
 private val defaultMetadataSources = listOf(
     MetadataSourceConfig("wikipedia", "Wikipedia", enabled = true),
+    MetadataSourceConfig("google_play", "Google Play", enabled = true),
     MetadataSourceConfig("rawg", "RAWG"),
     MetadataSourceConfig("igdb", "IGDB"),
     MetadataSourceConfig("steamgriddb", "SteamGridDB")
@@ -101,7 +103,7 @@ private fun persistMetadataSources(context: Context, sources: List<MetadataSourc
 object MetadataRepository {
     fun sources(context: Context): List<MetadataSourceConfig> = loadMetadataSources(context)
 
-    suspend fun search(context: Context, query: String): List<GameMetadataResult> = withContext(Dispatchers.IO) {
+    suspend fun search(context: Context, query: String, packageName: String? = null): List<GameMetadataResult> = withContext(Dispatchers.IO) {
         val enabled = loadMetadataSources(context).filter { it.enabled }
         require(enabled.isNotEmpty()) { "Aktifkan setidaknya satu sumber database game." }
         val results = mutableListOf<GameMetadataResult>()
@@ -110,6 +112,7 @@ object MetadataRepository {
             try {
                 val found = when (source.id) {
                     "wikipedia" -> searchWikipedia(query)
+                    "google_play" -> searchGooglePlay(query, packageName)
                     "rawg" -> searchRawg(query, source.apiKey)
                     "igdb" -> searchIgdb(query, source.apiKey)
                     "steamgriddb" -> searchSteamGridDb(query, source.apiKey)
@@ -159,6 +162,52 @@ object MetadataRepository {
             }
             return results.sortedBy { it.first }.map { it.second }
         } finally { conn.disconnect() }
+    }
+
+    /**
+     * Reads publicly visible Play Store listing metadata. This is intentionally a best-effort
+     * HTML adapter (Google does not provide a public catalog-search API for third-party launchers).
+     * If Google changes/blocks the page markup, other enabled providers remain available.
+     */
+    private fun searchGooglePlay(query: String, packageName: String?): List<GameMetadataResult> {
+        val packages = linkedSetOf<String>()
+        packageName?.trim()?.takeIf { it.matches(Regex("[A-Za-z0-9_]+(\\.[A-Za-z0-9_]+)+")) }?.let { packages += it }
+
+        if (packages.isEmpty() || query.isNotBlank()) {
+            val encoded = URLEncoder.encode(query.trim(), "UTF-8")
+            val searchUrl = "https://play.google.com/store/search?q=$encoded&c=apps&hl=en&gl=US"
+            val conn = connection(searchUrl, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
+            try {
+                val html = conn.inputStream.bufferedReader().use { it.readText() }
+                val pattern = Regex("""(?:/store/apps/details\\?id=|https://play\\.google\\.com/store/apps/details\\?id=)([A-Za-z0-9._]+)""")
+                pattern.findAll(html).take(8).forEach { match ->
+                    val id = match.groupValues[1].trimEnd('.', ',')
+                    if (id.contains('.')) packages += id
+                }
+            } finally { conn.disconnect() }
+        }
+
+        return packages.take(8).mapNotNull { id ->
+            runCatching {
+                val url = "https://play.google.com/store/apps/details?id=${URLEncoder.encode(id, "UTF-8")}&hl=en&gl=US"
+                val conn = connection(url, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
+                try {
+                    val html = conn.inputStream.bufferedReader().use { it.readText() }
+                    fun meta(key: String): String? {
+                        val tag = Regex("""<meta\\b[^>]*(?:property|name)=["']${Regex.escape(key)}["'][^>]*>""", RegexOption.IGNORE_CASE)
+                            .findAll(html).firstOrNull()?.value ?: return null
+                        val raw = Regex("""content=["']([^"']*)["']""", RegexOption.IGNORE_CASE)
+                            .find(tag)?.groupValues?.getOrNull(1) ?: return null
+                        return Html.fromHtml(raw, Html.FROM_HTML_MODE_LEGACY).toString().trim().takeIf { it.isNotBlank() }
+                    }
+                    val title = meta("og:title")?.substringBefore(" - Apps on Google Play")
+                        ?: return@runCatching null
+                    val description = meta("og:description") ?: meta("description").orEmpty()
+                    val image = meta("og:image")?.takeIf { it.startsWith("https://") }
+                    GameMetadataResult(title, description, image, url, "Google Play")
+                } finally { conn.disconnect() }
+            }.getOrNull()
+        }
     }
 
     private fun searchRawg(query: String, apiKey: String): List<GameMetadataResult> {
@@ -291,7 +340,7 @@ fun GameMetadataDialog(app: AppItem, onDismiss: () -> Unit, onApply: (GameMetada
                             loading = true; error = null; selected = null
                             try {
                                 activeNames = MetadataRepository.sources(context).filter { it.enabled }.joinToString { it.name }
-                                results = MetadataRepository.search(context, query)
+                                results = MetadataRepository.search(context, query, app.pkg)
                                 if (results.isEmpty()) error = "Tidak ada hasil dari sumber yang aktif."
                             } catch (e: Exception) {
                                 error = e.message?.take(220) ?: "Pencarian gagal. Periksa koneksi dan konfigurasi API."
@@ -357,6 +406,7 @@ fun MetadataSourcesDialog(onDismiss: () -> Unit) {
                                     Text(source.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                     Text(when (source.id) {
                                         "wikipedia" -> "Adapter aktif · tanpa API key"
+                                        "google_play" -> "Adapter publik · package name otomatis + pencarian judul · tanpa API key"
                                         "rawg" -> "Adapter aktif · membutuhkan API key"
                                         "igdb" -> "Adapter aktif · Client ID:Access Token"
                                         "steamgriddb" -> "Adapter aktif · membutuhkan API key"
