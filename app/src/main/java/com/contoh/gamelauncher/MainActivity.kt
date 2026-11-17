@@ -88,9 +88,9 @@ private fun WallpaperBackground(store: Store) {
             bitmap = bitmap!!,
             contentDescription = null,
             contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().alpha(0.28f)
+            modifier = Modifier.fillMaxSize().alpha(store.wallpaperOpacity)
         )
-        Box(Modifier.fillMaxSize().background(Deck.Bg.copy(alpha = 0.48f)))
+        Box(Modifier.fillMaxSize().background(Deck.Bg.copy(alpha = store.wallpaperOverlay)))
     }
 }
 
@@ -250,7 +250,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         onClearWallpaper = { store.setWallpaper(null) },
                         onAccent = { store.setAccent(it) },
                         currentAccent = store.accentHex,
-                        hasWallpaper = store.wallpaperUri != null
+                        hasWallpaper = store.wallpaperUri != null,
+                        store = store
                     )
                 }
             }
