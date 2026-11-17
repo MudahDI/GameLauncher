@@ -179,7 +179,7 @@ object MetadataRepository {
             val conn = connection(searchUrl, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
             try {
                 val html = conn.inputStream.bufferedReader().use { it.readText() }
-                val pattern = Regex("""(?:/store/apps/details\\?id=|https://play\\.google\\.com/store/apps/details\\?id=)([A-Za-z0-9._]+)""")
+                val pattern = Regex("""(?:/store/apps/details\?id=|https://play\.google\.com/store/apps/details\?id=)([A-Za-z0-9._]+)""")
                 pattern.findAll(html).take(8).forEach { match ->
                     val id = match.groupValues[1].trimEnd('.', ',')
                     if (id.contains('.')) packages += id
@@ -194,7 +194,7 @@ object MetadataRepository {
                 try {
                     val html = conn.inputStream.bufferedReader().use { it.readText() }
                     fun meta(key: String): String? {
-                        val tag = Regex("""<meta\\b[^>]*(?:property|name)=["']${Regex.escape(key)}["'][^>]*>""", RegexOption.IGNORE_CASE)
+                        val tag = Regex("""<meta\b[^>]*(?:property|name)=["']\${Regex.escape(key)}["'][^>]*>""", RegexOption.IGNORE_CASE)
                             .findAll(html).firstOrNull()?.value ?: return null
                         val raw = Regex("""content=["']([^"']*)["']""", RegexOption.IGNORE_CASE)
                             .find(tag)?.groupValues?.getOrNull(1) ?: return null
