@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -106,14 +107,25 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
 
     // Semua aplikasi launcher tampil otomatis; klasifikasi mengikuti deteksi Android
     // kecuali pengguna pernah mengubah kategori secara manual.
-    val visible = allApps.filter { it.pkg !in store.removed }
-    val games = visible.filter { store.isGame(it) }
-    val apps = visible.filterNot { store.isGame(it) }
-    val candidates = allApps.filter { it.pkg in store.removed }
-    // Game yang sedang dipilih; kalau belum ada, pakai yang terakhir dimainkan lalu game pertama.
-    val focused = games.find { it.pkg == focusedPkg }
-        ?: store.recent.firstNotNullOfOrNull { p -> games.find { it.pkg == p } }
-        ?: games.firstOrNull()
+    val visible = remember(allApps, store.removed) {
+        allApps.filter { it.pkg !in store.removed }
+    }
+    val games = remember(visible, store.forcedGames, store.forcedApps) {
+        visible.filter { store.isGame(it) }
+    }
+    val apps = remember(visible, store.forcedGames, store.forcedApps) {
+        visible.filterNot { store.isGame(it) }
+    }
+    val candidates = remember(allApps, store.removed) {
+        allApps.filter { it.pkg in store.removed }
+    }
+    // Package lookup avoids scanning the game list repeatedly for recent items.
+    val gamesByPackage = remember(games) { games.associateBy { it.pkg } }
+    val focused = remember(gamesByPackage, focusedPkg, store.recent, games) {
+        gamesByPackage[focusedPkg]
+            ?: store.recent.firstNotNullOfOrNull(gamesByPackage::get)
+            ?: games.firstOrNull()
+    }
     val selected = selectedPkg?.let { p -> allApps.find { it.pkg == p } }
 
     val play: (AppItem) -> Unit = { a ->
