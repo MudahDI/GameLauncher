@@ -1,84 +1,233 @@
-package com.contoh.gamelauncher
+package com.mdh.gamelauncher
 
 import android.os.Bundle
-import android.view.InputDevice
-import android.view.KeyEvent
-import android.view.MotionEvent
+import android.content.Context
+import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+@Composable
+private fun OptionAction(
+    title: String,
+    subtitle: String,
+    symbol: String,
+    danger: Boolean = false,
+    onClick: () -> Unit
+) {
+    val tint = if (danger) Color(0xFFFF7777) else Deck.Text
+    Row(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Deck.Panel)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+                .background(if (danger) Color(0xFF4A252B) else Deck.PanelLight),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = Deck.TextDim, fontSize = 11.sp, lineHeight = 14.sp)
+        }
+        Text("›", color = Deck.TextDim, fontSize = 22.sp)
+    }
+}
+
+
+@Composable
+private fun WallpaperBackground(store: Store) {
+    val context = LocalContext.current
+    val uri = store.wallpaperUri
+    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = uri?.let { ArtworkBitmapCache.get("${it}|1440")?.asImageBitmap() },
+        key1 = uri
+    ) {
+        value = if (uri == null) null else withContext(Dispatchers.IO) {
+            ArtworkBitmapCache.load(context, uri, 1440)
+        }
+    }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap!!,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().alpha(store.wallpaperOpacity)
+        )
+        Box(Modifier.fillMaxSize().background(Deck.Bg.copy(alpha = store.wallpaperOverlay)))
+    }
+}
 
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>, pad: GamepadInput) {
+fun LauncherApp(allApps: List<AppItem>) {
     val ctx = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val store = remember { Store(ctx) }
-    // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur
+    SideEffect {
+        runCatching {
+            Deck.Accent = Color(android.graphics.Color.parseColor(store.accentHex))
+        }
+    }
+    // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
+    var rotationMode by rememberSaveable { mutableIntStateOf(0) }
+    val applyRotation: (Int) -> Unit = { mode ->
+        rotationMode = mode
+        val requested = when (mode) {
+            1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            2 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        }
+        (ctx as? ComponentActivity)?.requestedOrientation = requested
+    }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var showMetadataSources by rememberSaveable { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    var descriptionDraft by rememberSaveable { mutableStateOf("") }
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
+    var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
+    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching {
+                ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            store.setWallpaper(uri)
+        }
+    }
+    val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val pkg = pendingArtworkPkg
+        val kind = pendingArtworkKind
+        if (uri != null && pkg != null && kind != null) {
+            runCatching {
+                ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            store.setArtwork(pkg, kind, uri)
+        }
+        pendingArtworkPkg = null
+        pendingArtworkKind = null
+    }
 
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
 
-    // Gamepad: L1/R1 pindah tab, X membuka Cari, B kembali ke Beranda.
-    // Navigasi dan aksi di dalam tiap layar ditangani layar itu sendiri.
-    LaunchedEffect(pad) {
-        pad.events.collect { key ->
-            when (key) {
-                Pad.PrevTab -> { tab = (tab - 1).coerceAtLeast(0) }
-                Pad.NextTab -> { tab = (tab + 1).coerceAtMost(3) }
-                Pad.Search -> { tab = 2 }
-                Pad.Back -> { if (tab != 0) tab = 0 }
-                else -> {}
-            }
-        }
-    }
+    LaunchedEffect(allApps) { store.reloadPlayStats() }
 
-    val visible = allApps.filter { (it.isGame || it.pkg in store.added) && it.pkg !in store.removed }
-    val visiblePkgs = visible.map { it.pkg }.toSet()
-    val candidates = allApps.filter { it.pkg !in visiblePkgs }
-    // Game yang sedang dipilih; kalau belum ada, pakai yang terakhir dimainkan lalu game pertama.
-    val focused = visible.find { it.pkg == focusedPkg }
-        ?: store.recent.firstNotNullOfOrNull { p -> visible.find { it.pkg == p } }
-        ?: visible.firstOrNull()
-    val selected = selectedPkg?.let { p -> allApps.find { it.pkg == p } }
+    // Semua aplikasi launcher tampil otomatis; klasifikasi mengikuti deteksi Android
+    // kecuali pengguna pernah mengubah kategori secara manual.
+    val visible = remember(allApps, store.removed) {
+        allApps.filter { it.pkg !in store.removed }
+    }
+    val games = remember(visible, store.forcedGames, store.forcedApps, store.metadataTitles) {
+        visible.filter { store.isGame(it) }.map { app -> app.copy(name = store.displayName(app.pkg, app.name)) }
+    }
+    val apps = remember(visible, store.forcedGames, store.forcedApps) {
+        visible.filterNot { store.isGame(it) }
+    }
+    val candidates = remember(allApps, store.removed) {
+        allApps.filter { it.pkg in store.removed }
+    }
+    // Package lookup avoids scanning the game list repeatedly for recent items.
+    val gamesByPackage = remember(games) { games.associateBy { it.pkg } }
+    val focused = remember(gamesByPackage, focusedPkg, store.recent, games) {
+        gamesByPackage[focusedPkg]
+            ?: store.recent.firstNotNullOfOrNull(gamesByPackage::get)
+            ?: games.firstOrNull()
+    }
+    val selected = selectedPkg?.let { p -> (games + apps).find { it.pkg == p } }
+
+    val gamepadFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { gamepadFocusRequester.requestFocus() }
+    val metadataTarget = metadataPkg?.let { p -> (games + apps).find { it.pkg == p } }
 
     val play: (AppItem) -> Unit = { a ->
         ctx.packageManager.getLaunchIntentForPackage(a.pkg)?.let { launch ->
@@ -92,37 +241,84 @@ fun LauncherApp(allApps: List<AppItem>, pad: GamepadInput) {
     Box(
         Modifier
             .fillMaxSize()
-            .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
-    ) {
-        if (focused != null) {
-            Image(
-                bitmap = focused.icon,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.35f)
-            )
-        }
-        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            TopBar(tab) { tab = it }
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                when (tab) {
-                    0 -> HomeScreen(
-                        visible, store, focused,
-                        { focusedPkg = it.pkg }, play, options, pad
-                    )
-                    1 -> LibraryScreen(
-                        visible, store, play, options,
-                        onAdd = { showPicker = true }, pad = pad
-                    )
-                    2 -> SearchScreen(visible, store, play, options, pad)
-                    else -> SettingsScreen(
-                        onAdd = { showPicker = true },
-                        onReset = { confirmReset = true },
-                        pad = pad
-                    )
+            .focusRequester(gamepadFocusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) false
+                else {
+                    val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
+                    when (event.key) {
+                        Key.DirectionRight, Key.DirectionDown -> {
+                            if (tab == 0 && games.isNotEmpty()) {
+                                focusedPkg = games[(currentIndex + 1) % games.size].pkg
+                                true
+                            } else false
+                        }
+                        Key.DirectionLeft, Key.DirectionUp -> {
+                            if (tab == 0 && games.isNotEmpty()) {
+                                focusedPkg = games[(currentIndex - 1 + games.size) % games.size].pkg
+                                true
+                            } else false
+                        }
+                        Key.ButtonA -> {
+                            if (tab == 0 && focused != null) {
+                                play(focused)
+                                true
+                            } else false
+                        }
+                        Key.ButtonB -> {
+                            tab = 0
+                            true
+                        }
+                        else -> false
+                    }
                 }
             }
+            .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
+            // Portrait tetap menghormati status/navigation bar; landscape memakai seluruh area layar.
+            .then(if (isLandscape) Modifier else Modifier.windowInsetsPadding(WindowInsets.safeDrawing))
+    ) {
+        WallpaperBackground(store)
+        Column(Modifier.fillMaxSize()) {
+            HeaderBar(onHistory = { tab = 4 }, onRotate = { applyRotation((rotationMode + 1) % 3) }, rotationMode = rotationMode, onSettings = { tab = 3 })
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                AnimatedContent(
+                    targetState = tab,
+                    transitionSpec = {
+                        (fadeIn(tween(150)) + slideInHorizontally(tween(180)) { it / 24 }) togetherWith
+                            fadeOut(tween(90))
+                    },
+                    label = "mdiTabTransition"
+                ) { targetTab ->
+                when (targetTab) {
+                    0 -> HomeScreen(
+                        games, store, focused,
+                        { focusedPkg = it.pkg }, play, options
+                    )
+                    1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
+                    2 -> SearchScreen(visible, store, play, options)
+                    3 -> SettingsScreen(
+                        onAdd = { showPicker = true },
+                        onReset = { confirmReset = true },
+                        onWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
+                        onClearWallpaper = { store.setWallpaper(null) },
+                        onAccent = { store.setAccent(it) },
+                        currentAccent = store.accentHex,
+                        hasWallpaper = store.wallpaperUri != null,
+                        store = store,
+                        onManageMetadataSources = { showMetadataSources = true }
+                    )
+                    else -> HistoryScreen(visible, store, play, options)
+                }
+                }
+            }
+            BottomNavigation(tab) { tab = it }
         }
+
+    }
+
+    if (showMetadataSources) {
+        MetadataSourcesDialog(onDismiss = { showMetadataSources = false })
     }
 
     if (showPicker) {
@@ -133,14 +329,58 @@ fun LauncherApp(allApps: List<AppItem>, pad: GamepadInput) {
         val fav = a.pkg in store.favorites
         AlertDialog(
             onDismissRequest = { selectedPkg = null },
-            title = { Text(a.name) },
-            text = {
+            title = {
                 Column {
-                    TextButton(onClick = { store.toggleFav(a.pkg); selectedPkg = null }) {
-                        Text(if (fav) "★ Hapus dari favorit" else "☆ Tambah ke favorit")
+                    Text(a.name, color = Color.White)
+                    Text("OPSI GAME", color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                }
+            },
+            text = {
+                Column(
+                    Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    OptionAction(if (fav) "Hapus dari favorit" else "Tambahkan ke favorit", "Atur game ini sebagai favorit", if (fav) "★" else "☆") {
+                        store.toggleFav(a.pkg); selectedPkg = null
                     }
-                    TextButton(onClick = { store.removeApp(a.pkg); selectedPkg = null }) {
-                        Text("Hapus dari launcher")
+                    OptionAction(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game", "Ubah kategori di koleksi launcher", "⇄") {
+                        if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
+                        selectedPkg = null
+                    }
+                    if (store.isGame(a)) OptionAction("Cari metadata & artwork", "Cari judul, deskripsi, dan gambar dari Wikipedia", "⌕") {
+                        metadataPkg = a.pkg
+                        selectedPkg = null
+                    }
+                    OptionAction("Edit deskripsi", "Ubah informasi yang tampil di halaman utama", "✎") {
+                        descriptionDraft = store.description(a.pkg)
+                        editingDescriptionPkg = a.pkg
+                        selectedPkg = null
+                    }
+                    OptionAction(if (store.artworkUri(a.pkg, "cover") == null) "Pilih cover portrait" else "Ganti cover portrait", "Artwork untuk kartu koleksi", "▣") {
+                        pendingArtworkPkg = a.pkg
+                        pendingArtworkKind = "cover"
+                        selectedPkg = null
+                        artworkPicker.launch(arrayOf("image/*"))
+                    }
+                    if (store.artworkUri(a.pkg, "cover") != null) {
+                        OptionAction("Hapus cover portrait", "Kembali menggunakan ikon aplikasi", "⌫", danger = true) {
+                            store.clearArtwork(a.pkg, "cover")
+                        }
+                    }
+                    OptionAction(if (store.artworkUri(a.pkg, "banner") == null) "Pilih banner landscape" else "Ganti banner landscape", "Artwork untuk panel utama mode landscape", "▤") {
+                        pendingArtworkPkg = a.pkg
+                        pendingArtworkKind = "banner"
+                        selectedPkg = null
+                        artworkPicker.launch(arrayOf("image/*"))
+                    }
+                    if (store.artworkUri(a.pkg, "banner") != null) {
+                        OptionAction("Hapus banner landscape", "Kembali menggunakan artwork bawaan", "⌫", danger = true) {
+                            store.clearArtwork(a.pkg, "banner")
+                        }
+                    }
+                    OptionAction("Sembunyikan dari launcher", "Hapus game ini dari daftar tanpa menghapus aplikasinya", "−", danger = true) {
+                        store.removeApp(a.pkg)
+                        selectedPkg = null
                     }
                 }
             },
@@ -148,11 +388,67 @@ fun LauncherApp(allApps: List<AppItem>, pad: GamepadInput) {
         )
     }
 
+    metadataTarget?.let { app ->
+        GameMetadataDialog(
+            app = app,
+            onDismiss = { metadataPkg = null },
+            onApply = { result ->
+                coroutineScope.launch {
+                    store.setMetadata(app.pkg, result.title, result.extract)
+                    val coverSource = result.coverUrl ?: result.thumbnailUrl?.takeIf {
+                        result.bannerUrl == null || it != result.bannerUrl
+                    }
+                    val coverUri = coverSource?.let { url ->
+                        withContext(Dispatchers.IO) {
+                            MetadataRepository.downloadArtwork(ctx, app.pkg, "cover", url)
+                        }
+                    }
+                    val bannerUri = result.bannerUrl?.let { url ->
+                        withContext(Dispatchers.IO) {
+                            MetadataRepository.downloadArtwork(ctx, app.pkg, "banner", url)
+                        }
+                    }
+                    coverUri?.let { store.setArtwork(app.pkg, "cover", it) }
+                    bannerUri?.let { store.setArtwork(app.pkg, "banner", it) }
+                    metadataPkg = null
+                }
+            }
+        )
+    }
+
+    editingDescriptionPkg?.let { pkg ->
+        val appName = allApps.firstOrNull { it.pkg == pkg }?.name ?: pkg
+        AlertDialog(
+            onDismissRequest = { editingDescriptionPkg = null },
+            title = { Text("Deskripsi game") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = descriptionDraft,
+                    onValueChange = { descriptionDraft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Tulis deskripsi untuk $appName...") },
+                    minLines = 4,
+                    maxLines = 7
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    store.setDescription(pkg, descriptionDraft)
+                    editingDescriptionPkg = null
+                }) { Text("Simpan") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingDescriptionPkg = null }) { Text("Batal") }
+            }
+        )
+    }
+
+
     if (confirmReset) {
         AlertDialog(
             onDismissRequest = { confirmReset = false },
             title = { Text("Kembalikan daftar otomatis?") },
-            text = { Text("Semua app yang kamu tambah atau hapus manual akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.") },
+            text = { Text("Kategori manual dan aplikasi tersembunyi akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.") },
             confirmButton = {
                 TextButton(onClick = { store.resetList(); confirmReset = false }) { Text("Kembalikan") }
             },
@@ -162,16 +458,29 @@ fun LauncherApp(allApps: List<AppItem>, pad: GamepadInput) {
 }
 
 class MainActivity : ComponentActivity() {
-    /** Naik setiap kali launcher kembali tampil, memicu pemuatan ulang daftar app. */
     private var refreshTick by mutableIntStateOf(0)
 
-    private val pad = GamepadInput()
-    private var stickX = 0
-    private var stickY = 0
+    override fun onResume() {
+        super.onResume()
+        Store.finishPendingSession(this)
+        refreshTick++
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            window.attributes = window.attributes.apply { preferredRefreshRate = 120f }
+        }
+        window.statusBarColor = android.graphics.Color.rgb(14, 20, 27)
+        window.navigationBarColor = android.graphics.Color.rgb(14, 20, 27)
+        applySystemBarsForOrientation()
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
@@ -184,92 +493,32 @@ class MainActivity : ComponentActivity() {
                 val ctx = LocalContext.current
                 val tick = refreshTick
                 val apps by produceState<List<AppItem>?>(initialValue = null, tick) {
-                    value = withContext(Dispatchers.Default) { loadAllApps(ctx) }
+                    value = withContext(Dispatchers.IO) { loadAllApps(ctx) }
                 }
                 val list = apps
-                if (list == null) {
-                    Box(Modifier.fillMaxSize().background(Deck.Bg))
-                } else {
-                    LauncherApp(list, pad)
-                }
+                if (list == null) Box(Modifier.fillMaxSize().background(Deck.Bg))
+                else LauncherApp(list)
             }
         }
     }
 
-    override fun onRestart() {
-        super.onRestart()
-        // Setelah bermain atau memasang game baru, muat ulang daftar.
-        refreshTick++
-    }
-
-    // ---------- Gamepad ----------
-
-    private fun KeyEvent.isFromPad(): Boolean =
-        (source and InputDevice.SOURCE_GAMEPAD) == InputDevice.SOURCE_GAMEPAD ||
-            (source and InputDevice.SOURCE_DPAD) == InputDevice.SOURCE_DPAD
-
-    private fun padKeyFor(code: Int): Pad? = when (code) {
-        KeyEvent.KEYCODE_DPAD_LEFT -> Pad.Left
-        KeyEvent.KEYCODE_DPAD_RIGHT -> Pad.Right
-        KeyEvent.KEYCODE_DPAD_UP -> Pad.Up
-        KeyEvent.KEYCODE_DPAD_DOWN -> Pad.Down
-        KeyEvent.KEYCODE_DPAD_CENTER, KeyEvent.KEYCODE_BUTTON_A -> Pad.Confirm
-        KeyEvent.KEYCODE_BUTTON_B -> Pad.Back
-        KeyEvent.KEYCODE_BUTTON_X -> Pad.Search
-        KeyEvent.KEYCODE_BUTTON_Y -> Pad.Favorite
-        KeyEvent.KEYCODE_BUTTON_L1 -> Pad.PrevTab
-        KeyEvent.KEYCODE_BUTTON_R1 -> Pad.NextTab
-        else -> null
-    }
-
-    override fun dispatchKeyEvent(event: KeyEvent): Boolean {
-        if (event.isFromPad()) {
-            val key = padKeyFor(event.keyCode)
-            if (key != null) {
-                if (event.action == KeyEvent.ACTION_DOWN) {
-                    val directional =
-                        key == Pad.Left || key == Pad.Right || key == Pad.Up || key == Pad.Down
-                    // Arah boleh berulang saat ditahan; tombol aksi hanya sekali per tekan.
-                    if (directional || event.repeatCount == 0) pad.send(key)
-                }
-                return true
-            }
+    private fun applySystemBarsForOrientation() {
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
         }
-        return super.dispatchKeyEvent(event)
     }
 
-    /** Sebagian gamepad melaporkan D-pad (hat) dan stik kiri sebagai sumbu, bukan tombol. */
-    override fun dispatchGenericMotionEvent(ev: MotionEvent): Boolean {
-        val isStick = (ev.source and InputDevice.SOURCE_JOYSTICK) == InputDevice.SOURCE_JOYSTICK
-        if (isStick && ev.action == MotionEvent.ACTION_MOVE) {
-            val hx = ev.getAxisValue(MotionEvent.AXIS_HAT_X)
-            val hy = ev.getAxisValue(MotionEvent.AXIS_HAT_Y)
-            val x = axisDir(if (abs(hx) > 0.5f) hx else ev.getAxisValue(MotionEvent.AXIS_X), stickX)
-            val y = axisDir(if (abs(hy) > 0.5f) hy else ev.getAxisValue(MotionEvent.AXIS_Y), stickY)
-            if (x != stickX) {
-                stickX = x
-                if (x < 0) pad.send(Pad.Left) else if (x > 0) pad.send(Pad.Right)
-            }
-            if (y != stickY) {
-                stickY = y
-                if (y < 0) pad.send(Pad.Up) else if (y > 0) pad.send(Pad.Down)
-            }
-            return true
-        }
-        return super.dispatchGenericMotionEvent(ev)
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applySystemBarsForOrientation()
     }
 
-    /** Dorong lewat 0,6 untuk memicu, lepas di bawah 0,3 untuk mengatur ulang (hindari getar di batas). */
-    private fun axisDir(v: Float, last: Int): Int = when {
-        v < -0.6f -> -1
-        v > 0.6f -> 1
-        abs(v) < 0.3f -> 0
-        else -> last
-    }
-
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        // Begitu layar disentuh, sorotan gamepad di Koleksi/Cari/Atur disembunyikan lagi.
-        if (ev.action == MotionEvent.ACTION_DOWN) pad.touched()
-        return super.dispatchTouchEvent(ev)
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applySystemBarsForOrientation()
     }
 }
