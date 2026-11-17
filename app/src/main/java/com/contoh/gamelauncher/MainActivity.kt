@@ -125,14 +125,30 @@ private enum class Page(val label: String, val glyph: String) {
 }
 
 @Composable private fun TopBar(landscape: Boolean, page: Page, select: (Page) -> Unit) {
-    Row(Modifier.fillMaxWidth().padding(horizontal = 22.dp, vertical = 13.dp),
-        verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        Modifier.fillMaxWidth().background(Color(0xFF111820)).padding(horizontal = 24.dp, vertical = 15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         Brand()
+        Spacer(Modifier.width(34.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(5.dp), verticalAlignment = Alignment.CenterVertically) {
+            Page.values().forEach { item ->
+                Column(
+                    Modifier.clip(RoundedCornerShape(10.dp))
+                        .background(if (item == page) Color(0xFF29343F) else Color.Transparent)
+                        .clickable { select(item) }.padding(horizontal = 15.dp, vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(item.label.uppercase(), color = if (item == page) Foreground else Muted,
+                        fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    if (item == page) Spacer(Modifier.padding(top = 5.dp).width(22.dp).height(2.dp).background(Accent))
+                }
+            }
+        }
         Spacer(Modifier.weight(1f))
-        if (landscape) Row(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
-            Page.values().forEach { NavItem(it, it == page, true) { select(it) } }
-        } else Text("2.0  •  BETA", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold,
-            modifier = Modifier.clip(CircleShape).background(Panel).padding(horizontal = 12.dp, vertical = 8.dp))
+        Text("●  GAMING MODE", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+            letterSpacing = 1.sp, modifier = Modifier.clip(CircleShape).background(Color(0xFF1D2922))
+                .padding(horizontal = 12.dp, vertical = 8.dp))
     }
 }
 
@@ -255,36 +271,90 @@ private enum class Page(val label: String, val glyph: String) {
     play: (AppItem) -> Unit, details: (AppItem) -> Unit, library: () -> Unit) {
     val recent = store.recent.mapNotNull { pkg -> apps.firstOrNull { it.pkg == pkg } }
     val favorites = apps.filter { it.pkg in store.favorites }
-    val featured = recent.firstOrNull() ?: favorites.firstOrNull() ?: apps.firstOrNull()
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-        .padding(horizontal = if (compact) 18.dp else 30.dp, vertical = 18.dp)) {
-        Eyebrow("GOOD TO SEE YOU")
-        Heading("Beranda", "Ruang bermainmu, tersusun rapi.")
-        FeaturedCard(featured, compact, play, details)
-        Spacer(Modifier.height(25.dp))
-        if (recent.isNotEmpty()) {
-            SectionTitle("Lanjutkan bermain")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(13.dp)) {
-                items(recent, key = { it.pkg }) { a -> AppCard(a, a.pkg in store.favorites, compact,
-                    { play(a) }, { store.favorite(a.pkg) }, { details(a) }) }
+    val games = apps.filter { it.isGame }
+    val featured = recent.firstOrNull() ?: favorites.firstOrNull() ?: games.firstOrNull() ?: apps.firstOrNull()
+    Column(Modifier.fillMaxSize().background(Background).verticalScroll(rememberScrollState())) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 28.dp, vertical = 20.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("GOOD AFTERNOON", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+                Text("Beranda", color = Foreground, fontSize = 27.sp, fontWeight = FontWeight.Bold)
             }
-            Spacer(Modifier.height(24.dp))
+            Text("${games.size} GAMES  •  ${apps.size} APPS", color = Muted, fontSize = 9.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
         }
-        if (favorites.isNotEmpty()) {
-            SectionTitle("Favoritmu")
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(13.dp)) {
-                items(favorites, key = { it.pkg }) { a -> AppCard(a, true, compact,
-                    { play(a) }, { store.favorite(a.pkg) }, { details(a) }) }
+        if (featured != null) {
+            Box(Modifier.fillMaxWidth().padding(horizontal = if (compact) 16.dp else 28.dp)
+                .height(if (compact) 270.dp else 310.dp).clip(RoundedCornerShape(24.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF354A43), Color(0xFF202D38), Color(0xFF121A23))))) {
+                Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+                    listOf(Color(0xAA0D1117), Color(0x2210141B), Color(0xAA0D1117)))))
+                Row(Modifier.fillMaxSize().padding(if (compact) 20.dp else 32.dp),
+                    verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Text(if (recent.isNotEmpty()) "PICK UP WHERE YOU LEFT OFF" else "FEATURED IN YOUR LIBRARY",
+                            color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                        Text(featured.name, color = Foreground, fontSize = if (compact) 27.sp else 38.sp,
+                            fontWeight = FontWeight.Black, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                        Text(if (featured.isGame) "Game • Android" else "Application • Android",
+                            color = Color(0xFFB6C0C9), fontSize = 11.sp)
+                        Spacer(Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                            PlayButton("PLAY NOW") { play(featured) }
+                            Text("DETAILS", color = Foreground, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Color(0x553A4652))
+                                    .clickable { details(featured) }.padding(horizontal = 17.dp, vertical = 13.dp))
+                        }
+                    }
+                    Spacer(Modifier.width(18.dp))
+                    AppIcon(featured, Modifier.width(if (compact) 112.dp else 180.dp))
+                }
             }
-            Spacer(Modifier.height(24.dp))
+        } else EmptyState("Your library is empty", "Add games and apps to get started.")
+        Spacer(Modifier.height(30.dp))
+        Column(Modifier.padding(horizontal = if (compact) 18.dp else 30.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("RECENTLY PLAYED", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                    Text("Continue playing", color = Foreground, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                }
+                Text("VIEW LIBRARY  ›", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(onClick = library).padding(8.dp))
+            }
+            Spacer(Modifier.height(15.dp))
+            val continueItems = if (recent.isNotEmpty()) recent else games
+            if (continueItems.isEmpty()) EmptyState("No games yet", "Your recently played games will appear here.")
+            else LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                items(continueItems.take(12), key = { it.pkg }) { app ->
+                    Column(Modifier.width(if (compact) 116.dp else 150.dp).clickable { play(app) }) {
+                        Box(Modifier.fillMaxWidth().aspectRatio(1.18f).clip(RoundedCornerShape(13.dp))
+                            .background(Raised).padding(13.dp), contentAlignment = Alignment.Center) {
+                            AppIcon(app, Modifier.fillMaxHeight())
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Text(app.name, color = Foreground, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                            maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text("PLAY", color = Muted, fontSize = 8.sp, letterSpacing = 1.2.sp)
+                    }
+                }
+            }
+            if (favorites.isNotEmpty()) {
+                Spacer(Modifier.height(28.dp))
+                Text("YOUR FAVORITES", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                Text("Favorite games", color = Foreground, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(14.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                    items(favorites, key = { it.pkg }) { app ->
+                        Column(Modifier.width(112.dp).clickable { play(app) }) {
+                            AppIcon(app, Modifier.fillMaxWidth())
+                            Spacer(Modifier.height(7.dp))
+                            Text(app.name, color = Foreground, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(30.dp))
         }
-        SectionTitle("Semua koleksi", "BUKA KOLEKSI  ↗", library)
-        if (apps.isEmpty()) EmptyState("Belum ada game", "Tambahkan game atau aplikasi untuk memulai.")
-        else LazyRow(horizontalArrangement = Arrangement.spacedBy(13.dp)) {
-            items(apps.take(12), key = { it.pkg }) { a -> AppCard(a, a.pkg in store.favorites, compact,
-                { play(a) }, { store.favorite(a.pkg) }, { details(a) }) }
-        }
-        Spacer(Modifier.height(12.dp))
     }
 }
 
@@ -314,35 +384,45 @@ private enum class Page(val label: String, val glyph: String) {
         "Favorit" -> it.pkg in store.favorites
         else -> true
     } }.let { if (descending) it.sortedByDescending { a -> a.name.lowercase() } else it.sortedBy { a -> a.name.lowercase() } }
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(if (compact) 100.dp else 126.dp),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp,
-            end = if (compact) 18.dp else 30.dp, top = 18.dp, bottom = 28.dp),
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Column {
-                Eyebrow("YOUR COLLECTION")
-                Heading("Koleksi", "${filtered.size} item tersedia") {
-                    Text("+ TAMBAH", color = Background, fontSize = 9.sp, fontWeight = FontWeight.Black,
-                        modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Accent)
-                            .clickable(onClick = add).padding(horizontal = 13.dp, vertical = 10.dp))
+    Column(Modifier.fillMaxSize().background(Background)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = if (compact) 18.dp else 30.dp, vertical = 20.dp)) {
+            Text("YOUR COLLECTION", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Library", color = Foreground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                    Text("${filtered.size} titles in your library", color = Muted, fontSize = 11.sp)
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-                    listOf("Semua", "Game", "Aplikasi", "Favorit").forEach { FilterChip(it, filter == it) { filter = it } }
-                    Spacer(Modifier.weight(1f))
-                    Text(if (descending) "Z–A" else "A–Z", color = Muted, fontSize = 9.sp,
-                        modifier = Modifier.clickable { descending = !descending }.padding(7.dp))
-                }
+                Text("+ ADD GAME", color = Background, fontSize = 9.sp, fontWeight = FontWeight.Black,
+                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Accent)
+                        .clickable(onClick = add).padding(horizontal = 15.dp, vertical = 11.dp))
+            }
+            Spacer(Modifier.height(17.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                listOf("Semua", "Game", "Aplikasi", "Favorit").forEach { FilterChip(it, filter == it) { filter = it } }
+                Spacer(Modifier.weight(1f))
+                Text(if (descending) "Z–A" else "A–Z", color = Muted, fontSize = 9.sp,
+                    modifier = Modifier.clickable { descending = !descending }.padding(8.dp))
             }
         }
-        if (filtered.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-            EmptyState("Belum ada item", "Coba filter lain atau tambahkan aplikasi.", "Tambah aplikasi", add)
-        } else items(filtered, key = { it.pkg }) { app ->
-            AppCard(app, app.pkg in store.favorites, compact,
-                { play(app) }, { store.favorite(app.pkg) }, { details(app) })
+        if (filtered.isEmpty()) EmptyState("Library is empty", "Try another filter or add a game.", "Add game", add)
+        else LazyVerticalGrid(columns = GridCells.Adaptive(if (compact) 112.dp else 154.dp),
+            contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp, end = if (compact) 18.dp else 30.dp, bottom = 30.dp),
+            horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+            items(filtered, key = { it.pkg }) { app ->
+                Column(Modifier.clickable { details(app) }) {
+                    Box(Modifier.fillMaxWidth().aspectRatio(1.22f).clip(RoundedCornerShape(14.dp))
+                        .background(Brush.linearGradient(listOf(Raised, Panel))).padding(13.dp),
+                        contentAlignment = Alignment.Center) {
+                        AppIcon(app, Modifier.fillMaxHeight())
+                        if (app.pkg in store.favorites) Text("★", color = Accent, fontSize = 14.sp,
+                            modifier = Modifier.align(Alignment.TopEnd))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(app.name, color = Foreground, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(if (app.isGame) "GAME" else "APPLICATION", color = Muted, fontSize = 8.sp, letterSpacing = 1.sp)
+                }
+            }
         }
     }
 }
@@ -351,29 +431,30 @@ private enum class Page(val label: String, val glyph: String) {
     play: (AppItem) -> Unit, details: (AppItem) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     val results = apps.filter { it.name.contains(query, true) || it.pkg.contains(query, true) }
-    LazyVerticalGrid(
-        columns = GridCells.Adaptive(if (compact) 100.dp else 126.dp),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp,
-            end = if (compact) 18.dp else 30.dp, top = 18.dp, bottom = 28.dp),
-        horizontalArrangement = Arrangement.spacedBy(13.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
-    ) {
-        item(span = { GridItemSpan(maxLineSpan) }) {
-            Column {
-                Eyebrow("FIND YOUR NEXT PLAY")
-                Heading("Pencarian", "Cari game dan aplikasi dengan cepat.")
-                OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
-                    placeholder = { Text("Ketik nama aplikasi…", color = Muted) },
-                    shape = RoundedCornerShape(16.dp))
+    Column(Modifier.fillMaxSize().background(Background).padding(horizontal = if (compact) 18.dp else 30.dp)) {
+        Spacer(Modifier.height(20.dp))
+        Text("DISCOVER YOUR LIBRARY", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+        Text("Search", color = Foreground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp),
+            singleLine = true, placeholder = { Text("Search games and apps…", color = Muted) },
+            shape = RoundedCornerShape(14.dp))
+        Text("${results.size} RESULTS", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+        Spacer(Modifier.height(12.dp))
+        if (results.isEmpty()) EmptyState("No results", "Try another title or package name.")
+        else LazyVerticalGrid(columns = GridCells.Adaptive(if (compact) 112.dp else 154.dp),
+            contentPadding = PaddingValues(bottom = 24.dp), horizontalArrangement = Arrangement.spacedBy(14.dp),
+            verticalArrangement = Arrangement.spacedBy(18.dp)) {
+            items(results, key = { it.pkg }) { app ->
+                Column(Modifier.clickable { details(app) }) {
+                    Box(Modifier.fillMaxWidth().aspectRatio(1.22f).clip(RoundedCornerShape(14.dp))
+                        .background(Raised).padding(12.dp), contentAlignment = Alignment.Center) {
+                        AppIcon(app, Modifier.fillMaxHeight())
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    Text(app.name, color = Foreground, fontSize = 11.sp, fontWeight = FontWeight.SemiBold,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
             }
-        }
-        if (results.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-            EmptyState(if (query.isBlank()) "Mulai pencarian" else "Tidak ditemukan",
-                "Hasil yang cocok akan muncul di sini.")
-        } else items(results, key = { it.pkg }) { app ->
-            AppCard(app, app.pkg in store.favorites, compact,
-                { play(app) }, { store.favorite(app.pkg) }, { details(app) })
         }
     }
 }
