@@ -106,9 +106,9 @@ fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
     val tabs = listOf("BERANDA", "KOLEKSI", "CARI", "ATUR")
     Row(
         Modifier.fillMaxWidth()
-            .height(58.dp)
+            .height(48.dp)
             .background(Color(0xF20B1017))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
+            .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         tabs.forEachIndexed { index, label ->
@@ -118,18 +118,18 @@ fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
                     .clip(RoundedCornerShape(10.dp))
                     .background(if (active) Deck.Panel else Color.Transparent)
                     .clickable { onSelect(index) }
-                    .padding(vertical = 5.dp),
+                    .padding(vertical = 3.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 Text(
                     label,
                     color = if (active) Color.White else Deck.TextDim,
-                    fontSize = 11.sp,
+                    fontSize = 10.sp,
                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                    letterSpacing = 0.8.sp
+                    letterSpacing = 0.5.sp
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(2.dp))
                 Box(
                     Modifier.width(if (active) 20.dp else 0.dp)
                         .height(2.dp)
@@ -175,36 +175,36 @@ private fun BatteryGlyph(percent: Int) {
 }
 
 @Composable
-fun PlayButton(text: String, onClick: () -> Unit) {
+fun PlayButton(text: String, compact: Boolean = false, onClick: () -> Unit) {
     Box(
         Modifier
-            .height(44.dp)
+            .height(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Brush.horizontalGradient(listOf(Deck.PlayLight, Deck.PlayDark)))
             .clickable(onClick = onClick)
-            .padding(horizontal = 28.dp),
+            .padding(horizontal = if (compact) 14.dp else 28.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
             text,
             color = Color.White,
-            fontSize = 15.sp,
+            fontSize = if (compact) 12.sp else 15.sp,
             fontWeight = FontWeight.SemiBold,
-            letterSpacing = 1.sp
+            letterSpacing = if (compact) 0.5.sp else 1.sp
         )
     }
 }
 
 @Composable
-fun DeckButton(label: String, onClick: () -> Unit) {
+fun DeckButton(label: String, compact: Boolean = false, onClick: () -> Unit) {
     Box(
         Modifier
-            .size(44.dp)
+            .size(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Deck.PanelLight)
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontSize = 18.sp)
+        Text(label, color = Color.White, fontSize = if (compact) 16.sp else 18.sp)
     }
 }
