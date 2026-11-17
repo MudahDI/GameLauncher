@@ -3,9 +3,11 @@ package com.contoh.gamelauncher
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -15,6 +17,10 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -67,7 +73,7 @@ fun TopBar(selected: Int, onSelect: (Int) -> Unit) {
     val battery by rememberBatteryPercent()
     val tabs = listOf("BERANDA", "KOLEKSI", "CARI", "ATUR")
 
-    BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f))) {
+    BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f)).statusBarsPadding()) {
         val wide = maxWidth >= 700.dp
         Row(
             Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 12.dp),
@@ -107,7 +113,13 @@ fun TopBar(selected: Int, onSelect: (Int) -> Unit) {
             }
             Spacer(Modifier.weight(1f))
             if (wide && battery >= 0) {
-                Text("🔋 $battery%", color = Deck.Text, fontSize = 13.sp)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    BatteryGlyph(battery)
+                    Text("$battery%", color = Deck.Text, fontSize = 13.sp)
+                }
                 Spacer(Modifier.width(16.dp))
             }
             Text(clock, color = Deck.Text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
