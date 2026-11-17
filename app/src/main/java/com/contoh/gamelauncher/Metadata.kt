@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.weight
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
@@ -92,7 +93,7 @@ object MetadataRepository {
         val connection = (url.openConnection() as HttpURLConnection).apply {
             connectTimeout = 10000
             readTimeout = 15000
-            requestProperty("User-Agent", "MDILauncher/2.0")
+            setRequestProperty("User-Agent", "MDILauncher/2.0")
         }
         try {
             val directory = File(context.filesDir, "metadata_artwork").apply { mkdirs() }
