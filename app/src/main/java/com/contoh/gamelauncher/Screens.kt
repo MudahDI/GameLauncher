@@ -12,9 +12,6 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.foundation.focusGroup
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -161,11 +158,7 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
             .background(Deck.Panel)
-            // Jadikan setiap kartu target fokus Compose agar D-pad/analog bisa mencapainya.
-            .focusable()
-            // combinedClickable menyediakan aksi sentuh dan aktivasi tombol utama gamepad.
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
-            .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
         if (coverUri != null) {
             ArtworkImage(app, store, "cover", Modifier.fillMaxSize())
@@ -277,7 +270,6 @@ fun CardRow(
 ) {
     SectionTitle(title, compact)
     LazyRow(
-        modifier = Modifier.focusGroup(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(store.gridSpacingDp.dp)
     ) {
@@ -320,7 +312,7 @@ fun GameGrid(
             contentPadding = PaddingValues(horizontal = spacing + 8.dp, vertical = spacing + 8.dp),
             horizontalArrangement = Arrangement.spacedBy(spacing),
             verticalArrangement = Arrangement.spacedBy(spacing),
-            modifier = Modifier.fillMaxSize().focusGroup()
+            modifier = Modifier.fillMaxSize()
         ) {
             items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
                 GameCard(
