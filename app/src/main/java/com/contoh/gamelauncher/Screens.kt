@@ -70,8 +70,28 @@ fun ArtworkImage(
     ) {
         value = if (uri == null) null else withContext(Dispatchers.IO) {
             runCatching {
+                // Baca dimensi terlebih dahulu agar artwork resolusi tinggi tidak
+                // didekode penuh ke memori hanya untuk ditampilkan sebagai cover.
+                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 context.contentResolver.openInputStream(uri)?.use { stream ->
-                    val options = BitmapFactory.Options().apply { inSampleSize = 2 }
+                    BitmapFactory.decodeStream(stream, null, bounds)
+                }
+
+                val sampleSize = if (bounds.outWidth > 0 && bounds.outHeight > 0) {
+                    var sample = 1
+                    while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 1600) {
+                        sample *= 2
+                    }
+                    sample
+                } else {
+                    2
+                }
+
+                val options = BitmapFactory.Options().apply {
+                    inSampleSize = sampleSize
+                    inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+                }
+                context.contentResolver.openInputStream(uri)?.use { stream ->
                     BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
                 }
             }.getOrNull()
