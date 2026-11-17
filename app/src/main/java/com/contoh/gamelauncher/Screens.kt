@@ -164,6 +164,8 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
             .background(Deck.Panel)
+            // Jadikan setiap kartu target fokus Compose agar D-pad/analog bisa mencapainya.
+            .focusable()
             // combinedClickable menyediakan aksi sentuh dan aktivasi tombol utama gamepad.
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false

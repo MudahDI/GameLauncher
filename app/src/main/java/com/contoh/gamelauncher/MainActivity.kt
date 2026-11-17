@@ -710,20 +710,14 @@ class MainActivity : ComponentActivity() {
             val device = event.device
             val xRange = device?.getMotionRange(MotionEvent.AXIS_X)
             val yRange = device?.getMotionRange(MotionEvent.AXIS_Y)
-            val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
-            val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
-            val x = if (kotlin.math.abs(hatX) > 0.5f) hatX else event.getAxisValue(MotionEvent.AXIS_X)
-            val y = if (kotlin.math.abs(hatY) > 0.5f) hatY else event.getAxisValue(MotionEvent.AXIS_Y)
-            // D-pad/HAT diprioritaskan; jika hanya HAT tersedia, analog range tidak diwajibkan.
-            val xThreshold = if (kotlin.math.abs(hatX) > 0.5f) 0.5f else maxOf(0.55f, (xRange?.flat ?: 0.25f) * 2f)
-            val yThreshold = if (kotlin.math.abs(hatY) > 0.5f) 0.5f else maxOf(0.55f, (yRange?.flat ?: 0.25f) * 2f)
-            val direction = when {
-                kotlin.math.abs(x) > kotlin.math.abs(y) && x < -xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_LEFT
-                kotlin.math.abs(x) > kotlin.math.abs(y) && x > xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_RIGHT
-                y < -yThreshold -> AndroidKeyEvent.KEYCODE_DPAD_UP
-                y > yThreshold -> AndroidKeyEvent.KEYCODE_DPAD_DOWN
-                else -> 0
-            }
+            val direction = NativeGamepad.resolveDirection(
+                event.getAxisValue(MotionEvent.AXIS_X),
+                event.getAxisValue(MotionEvent.AXIS_Y),
+                event.getAxisValue(MotionEvent.AXIS_HAT_X),
+                event.getAxisValue(MotionEvent.AXIS_HAT_Y),
+                xRange?.flat ?: 0.25f,
+                yRange?.flat ?: 0.25f
+            )
 
             if (direction == 0) {
                 lastStickDirection = 0
