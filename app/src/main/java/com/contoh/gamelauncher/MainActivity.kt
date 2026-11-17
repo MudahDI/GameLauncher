@@ -466,11 +466,6 @@ class MainActivity : ComponentActivity() {
         refreshTick++
     }
 
-    override fun onRestart() {
-        super.onRestart()
-        refreshTick++
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
