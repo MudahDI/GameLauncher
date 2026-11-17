@@ -315,56 +315,64 @@ fun HeroPanel(
         HintText("Belum ada game terdeteksi. Tambahkan app lewat tab ATUR.")
         return
     }
-    val iconSize = if (landscape) 68.dp else if (compact) 84.dp else 112.dp
     val isFav = focused.pkg in store.favorites
     val heroShape = RoundedCornerShape(18.dp)
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(if (landscape) 124.dp else if (compact) 148.dp else 196.dp)
-            .clip(heroShape)
-            .background(Deck.Panel)
-    ) {
-        // Clip gambar dan seluruh overlay ke bentuk yang sama: keempat sudut konsisten.
-        ArtworkImage(
-            focused, store, "banner",
-            Modifier.fillMaxSize().clip(heroShape),
-            contentScale = ContentScale.Crop
-        )
-        // Scrim meredupkan artwork tanpa membuat sisi kanan memudar ke luar kartu.
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.30f)))
-        Box(
-            Modifier.fillMaxSize().background(
-                Brush.verticalGradient(
-                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.52f))
-                )
-            )
-        )
+
+    if (landscape) {
+        // Layout landscape memakai artwork 16:9 yang terpisah dari panel informasi.
+        // Ruang horizontal dipakai untuk judul, status, dan aksi agar banner tidak
+        // berubah menjadi strip panoramik.
         Row(
-            Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.Bottom
+            Modifier
+                .fillMaxWidth()
+                .height(148.dp)
+                .clip(heroShape)
+                .background(Deck.Panel)
+                .padding(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(
-                focused.icon,
-                focused.name,
-                Modifier.size(iconSize).clip(RoundedCornerShape(16.dp))
-            )
-            Spacer(Modifier.width(18.dp))
-            Column(Modifier.weight(1f)) {
+            Box(
+                Modifier
+                    .width(228.dp)
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(12.dp))
+            ) {
+                ArtworkImage(
+                    focused,
+                    store,
+                    "banner",
+                    Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.16f)))
+            }
+            Column(
+                Modifier.weight(1f).fillMaxHeight(),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Text(
+                    "SEDANG DIPILIH",
+                    color = Deck.Accent,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.4.sp
+                )
+                Spacer(Modifier.height(4.dp))
                 Text(
                     focused.name,
                     color = Color.White,
-                    fontSize = if (landscape) 22.sp else if (compact) 24.sp else 34.sp,
-                    fontWeight = FontWeight.Light,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.SemiBold,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
                     if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
-                    color = Color.White.copy(alpha = 0.75f),
-                    fontSize = 13.sp
+                    color = Deck.TextDim,
+                    fontSize = 12.sp
                 )
-                Spacer(Modifier.height(8.dp))
+                Spacer(Modifier.height(10.dp))
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -372,6 +380,75 @@ fun HeroPanel(
                     PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
                     DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
                     DeckButton("⋯", compact = true) { onOptions(focused) }
+                }
+            }
+            Column(
+                Modifier.width(142.dp).fillMaxHeight(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("NAVIGASI", color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.2.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("A  Pilih", color = Color.White, fontSize = 12.sp)
+                Text("X  Opsi", color = Color.White, fontSize = 12.sp)
+                Text("B  Kembali", color = Color.White, fontSize = 12.sp)
+            }
+        }
+    } else {
+        val iconSize = if (compact) 84.dp else 112.dp
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(if (compact) 148.dp else 196.dp)
+                .clip(heroShape)
+                .background(Deck.Panel)
+        ) {
+            ArtworkImage(
+                focused, store, "banner",
+                Modifier.fillMaxSize().clip(heroShape),
+                contentScale = ContentScale.Crop
+            )
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.30f)))
+            Box(
+                Modifier.fillMaxSize().background(
+                    Brush.verticalGradient(
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.52f))
+                    )
+                )
+            )
+            Row(
+                Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Image(
+                    focused.icon,
+                    focused.name,
+                    Modifier.size(iconSize).clip(RoundedCornerShape(16.dp))
+                )
+                Spacer(Modifier.width(18.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        focused.name,
+                        color = Color.White,
+                        fontSize = if (compact) 24.sp else 34.sp,
+                        fontWeight = FontWeight.Light,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
+                        color = Color.White.copy(alpha = 0.75f),
+                        fontSize = 13.sp
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
+                        DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
+                        DeckButton("⋯", compact = true) { onOptions(focused) }
+                    }
                 }
             }
         }
