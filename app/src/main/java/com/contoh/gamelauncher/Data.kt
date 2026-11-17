@@ -66,6 +66,7 @@ class Store(ctx: Context) {
     var forcedApps by mutableStateOf(readSet("forced_apps"))
     var recent by mutableStateOf(readList("recent"))
     var artworks by mutableStateOf(readArtworkMap())
+    var descriptions by mutableStateOf(readDescriptionMap())
     var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
     var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
 
@@ -78,6 +79,22 @@ class Store(ctx: Context) {
         accentHex = hex
         sp.edit().putString("accent_hex", hex).apply()
         runCatching { Deck.Accent = Color(android.graphics.Color.parseColor(hex)) }
+    }
+
+    private fun readDescriptionMap(): Map<String, String> =
+        sp.all.entries.mapNotNull { (key, value) ->
+            if (key.startsWith("description:") && value is String) key.removePrefix("description:") to value else null
+        }.toMap()
+
+    fun description(pkg: String): String = descriptions[pkg].orEmpty()
+
+    fun setDescription(pkg: String, value: String) {
+        val key = "description:$pkg"
+        val clean = value.trim()
+        descriptions = if (clean.isEmpty()) descriptions - pkg else descriptions + (pkg to clean)
+        sp.edit().apply {
+            if (clean.isEmpty()) remove(key) else putString(key, clean)
+        }.apply()
     }
 
     private fun readArtworkMap(): Map<String, String> =
