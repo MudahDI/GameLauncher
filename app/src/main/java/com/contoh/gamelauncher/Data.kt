@@ -86,7 +86,7 @@ class Store(ctx: Context) {
     var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
     var monoIconsEnabled by mutableStateOf(sp.getBoolean("mono_icons_enabled", true))
 
-    fun setMonoIconsEnabled(enabled: Boolean) {
+    fun updateMonoIconsEnabled(enabled: Boolean) {
         monoIconsEnabled = enabled
         sp.edit().putBoolean("mono_icons_enabled", enabled).apply()
     }

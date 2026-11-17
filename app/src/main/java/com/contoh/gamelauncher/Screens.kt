@@ -820,7 +820,7 @@ fun SettingsScreen(
         SettingRow(
             if (store.monoIconsEnabled) "Ikon monokrom: aktif" else "Ikon monokrom: nonaktif",
             "Gunakan lapisan ikon monokrom bawaan aplikasi (Android 13+). Ikon tanpa lapisan monokrom tetap tampil normal.",
-            { store.setMonoIconsEnabled(!store.monoIconsEnabled) }
+            { store.updateMonoIconsEnabled(!store.monoIconsEnabled) }
         )
         Spacer(Modifier.height(10.dp))
         SettingRow(
