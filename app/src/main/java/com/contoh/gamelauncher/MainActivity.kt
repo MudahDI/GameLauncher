@@ -178,7 +178,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             )
         }
         Column(Modifier.fillMaxSize()) {
-            TopBar(tab) { tab = it }
+            HeaderBar()
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
                     0 -> HomeScreen(
@@ -193,6 +193,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     )
                 }
             }
+            BottomNavigation(tab) { tab = it }
         }
         LaunchedEffect(controllerNotice) {
             if (controllerNotice != null) {
