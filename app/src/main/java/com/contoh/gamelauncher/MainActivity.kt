@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.hardware.input.InputManager
 import android.view.InputDevice
+import android.view.MotionEvent
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -307,6 +308,8 @@ class MainActivity : ComponentActivity() {
     private var controllerNotice by mutableStateOf<String?>(null)
     private lateinit var inputManager: InputManager
     private val connectedControllers = mutableMapOf<Int, String>()
+    private var lastStickMoveAt = 0L
+    private var lastStickDirection = 0
 
     private fun isGameController(device: InputDevice?): Boolean {
         if (device == null || device.isVirtual) return false
@@ -353,6 +356,35 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Terjemahkan gerakan analog kiri menjadi navigasi D-pad.
+     * Ambang dan interval pengulangan mencegah fokus melompat terlalu cepat.
+     */
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_MOVE && event.isFromSource(InputDevice.SOURCE_JOYSTICK)) {
+            val x = event.getAxisValue(MotionEvent.AXIS_X)
+            val y = event.getAxisValue(MotionEvent.AXIS_Y)
+            val direction = when {
+                kotlin.math.abs(x) > kotlin.math.abs(y) && x < -0.55f -> AndroidKeyEvent.KEYCODE_DPAD_LEFT
+                kotlin.math.abs(x) > kotlin.math.abs(y) && x > 0.55f -> AndroidKeyEvent.KEYCODE_DPAD_RIGHT
+                y < -0.55f -> AndroidKeyEvent.KEYCODE_DPAD_UP
+                y > 0.55f -> AndroidKeyEvent.KEYCODE_DPAD_DOWN
+                else -> 0
+            }
+            if (direction == 0) {
+                lastStickDirection = 0
+            } else {
+                val now = android.os.SystemClock.uptimeMillis()
+                if (direction != lastStickDirection || now - lastStickMoveAt >= 260L) {
+                    lastStickDirection = direction
+                    lastStickMoveAt = now
+                    dispatchKeyEvent(AndroidKeyEvent(AndroidKeyEvent.ACTION_UP, direction))
+                }
+            }
+            return true
+        }
+        return super.dispatchGenericMotionEvent(event)
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Edge-to-edge: portrait memberi padding aman di Compose, landscape memakai seluruh area.
