@@ -37,7 +37,8 @@ fun loadAllApps(ctx: Context): List<AppItem> {
         .mapNotNull { info ->
             // Satu app bermasalah (ikon rusak, dsb.) tidak boleh menggagalkan seluruh daftar.
             runCatching {
-                val drawable = pm.getApplicationIcon(info.packageName)
+                // Gunakan ApplicationInfo yang sudah diperoleh; hindari lookup paket kedua.
+                val drawable = info.loadIcon(pm)
                 AppItem(
                     info.loadLabel(pm).toString(),
                     info.packageName,
