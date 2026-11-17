@@ -6,6 +6,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -52,7 +53,8 @@ fun GameCard(
     isFav: Boolean,
     focused: Boolean,
     onClick: () -> Unit,
-    onLongClick: () -> Unit
+    onLongClick: () -> Unit,
+    onFocus: () -> Unit = {}
 ) {
     val scale by animateFloatAsState(if (focused) 1.08f else 1f, label = "cardScale")
     val shape = RoundedCornerShape(10.dp)
@@ -63,6 +65,8 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
             .background(Deck.Panel)
+            // clickable/combinedClickable menyediakan target fokus untuk D-pad dan tombol A.
+            .onFocusChanged { if (it.isFocused) onFocus() }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         Image(
@@ -142,7 +146,8 @@ fun CardRow(
     cardWidth: Dp,
     compact: Boolean,
     onTap: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit
+    onOptions: (AppItem) -> Unit,
+    onFocus: (AppItem) -> Unit
 ) {
     SectionTitle(title, compact)
     LazyRow(
@@ -156,7 +161,8 @@ fun CardRow(
                 app.pkg in store.favorites,
                 app.pkg == focusedPkg,
                 { onTap(app) },
-                { onOptions(app) }
+                { onOptions(app) },
+                { onFocus(app) }
             )
         }
     }
@@ -168,7 +174,9 @@ fun GameGrid(
     store: Store,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    tile: Dp = 110.dp
+    tile: Dp = 110.dp,
+    focusedPkg: String? = null,
+    onFocus: (AppItem) -> Unit = {}
 ) {
     if (list.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -187,9 +195,10 @@ fun GameGrid(
                     app,
                     tile,
                     app.pkg in store.favorites,
-                    false,
+                    app.pkg == focusedPkg,
                     { onPlay(app) },
-                    { onOptions(app) }
+                    { onOptions(app) },
+                    { onFocus(app) }
                 )
             }
         }
@@ -274,7 +283,7 @@ fun HomeScreen(
             if (recent.isNotEmpty()) {
                 CardRow(
                     "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions
+                    cardWidth, compact, tap, onOptions, onFocus
                 )
             }
             if (favs.isNotEmpty()) {
@@ -302,6 +311,7 @@ fun SearchScreen(
     onOptions: (AppItem) -> Unit
 ) {
     var q by rememberSaveable { mutableStateOf("") }
+    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     val results =
         if (q.isBlank()) visible else visible.filter { it.name.contains(q, ignoreCase = true) }
     Column(Modifier.fillMaxSize()) {
@@ -312,7 +322,7 @@ fun SearchScreen(
             label = { Text("Cari game") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
         )
-        GameGrid(results, store, onPlay, onOptions)
+        GameGrid(results, store, onPlay, onOptions, focusedPkg = focusedPkg) { focusedPkg = it.pkg }
     }
 }
 
@@ -325,6 +335,7 @@ fun LibraryScreen(
     onAdd: () -> Unit
 ) {
     var onlyFav by rememberSaveable { mutableStateOf(false) }
+    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     val list = if (onlyFav) visible.filter { it.pkg in store.favorites } else visible
     val on = Color.White
     val off = Deck.TextDim
@@ -343,7 +354,7 @@ fun LibraryScreen(
             }
             TextButton(onClick = onAdd) { Text("+ Tambah", color = Deck.Accent) }
         }
-        GameGrid(list, store, onPlay, onOptions)
+        GameGrid(list, store, onPlay, onOptions, focusedPkg = focusedPkg) { focusedPkg = it.pkg }
     }
 }
 
