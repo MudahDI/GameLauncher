@@ -1,4 +1,4 @@
-package com.contoh.gamelauncher
+package com.mdh.gamelauncher
 
 import android.os.Bundle
 import android.content.Intent
