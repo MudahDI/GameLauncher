@@ -57,8 +57,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.nativeKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
@@ -242,32 +242,29 @@ fun LauncherApp(allApps: List<AppItem>) {
             .focusRequester(gamepadFocusRequester)
             .focusable()
             .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyDown) {
-                    false
-                } else {
+                if (event.type != KeyEventType.KeyDown) false
+                else {
                     val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
-                    when (event.nativeKeyEvent.keyCode) {
-                        android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
-                        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                    when (event.key) {
+                        Key.DirectionRight, Key.DirectionDown -> {
                             if (tab == 0 && games.isNotEmpty()) {
                                 focusedPkg = games[(currentIndex + 1) % games.size].pkg
                                 true
                             } else false
                         }
-                        android.view.KeyEvent.KEYCODE_DPAD_LEFT,
-                        android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                        Key.DirectionLeft, Key.DirectionUp -> {
                             if (tab == 0 && games.isNotEmpty()) {
                                 focusedPkg = games[(currentIndex - 1 + games.size) % games.size].pkg
                                 true
                             } else false
                         }
-                        android.view.KeyEvent.KEYCODE_BUTTON_A -> {
+                        Key.ButtonA -> {
                             if (tab == 0 && focused != null) {
                                 play(focused)
                                 true
                             } else false
                         }
-                        android.view.KeyEvent.KEYCODE_BUTTON_B -> {
+                        Key.ButtonB -> {
                             tab = 0
                             true
                         }
