@@ -187,12 +187,12 @@ class MainActivity : ComponentActivity() {
         override fun onInputDeviceAdded(deviceId: Int) {
             val name = controllerName(deviceId) ?: return
             connectedControllers[deviceId] = name
-            controllerNotice = "Gamepad tersambung\\n$name"
+            controllerNotice = "Gamepad tersambung\n$name"
         }
 
         override fun onInputDeviceRemoved(deviceId: Int) {
             val name = connectedControllers.remove(deviceId) ?: return
-            controllerNotice = "Gamepad terputus\\n$name"
+            controllerNotice = "Gamepad terputus\n$name"
         }
 
         override fun onInputDeviceChanged(deviceId: Int) {
@@ -212,7 +212,7 @@ class MainActivity : ComponentActivity() {
         }
         if (connectedControllers.isNotEmpty()) {
             val names = connectedControllers.values.distinct().joinToString(", ")
-            controllerNotice = "Gamepad terdeteksi\\n$names"
+            controllerNotice = "Gamepad terdeteksi\n$names"
         }
     }
 
