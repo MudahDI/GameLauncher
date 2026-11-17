@@ -371,7 +371,8 @@ object MetadataRepository {
             val directory = File(context.filesDir, "metadata_artwork").apply { mkdirs() }
             val safeKind = kind.filter { it.isLetterOrDigit() }.take(20).ifBlank { "artwork" }
             val target = File(directory, "${packageName.hashCode()}_$safeKind.img")
-            val temp = File(directory, "${target.name}.tmp")
+            // Temp unik mencegah dua pencarian untuk game yang sama saling menimpa.
+            val temp = File.createTempFile("${target.name}.", ".tmp", directory)
             temporaryFile = temp
             var total = 0L
             conn.inputStream.use { input ->
@@ -389,8 +390,10 @@ object MetadataRepository {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             temp.inputStream().use { BitmapFactory.decodeStream(it, null, bounds) }
             require(bounds.outWidth in 1..16000 && bounds.outHeight in 1..16000) { "File artwork tidak valid." }
-            temp.copyTo(target, overwrite = true)
-            temp.delete()
+            // Temp dan target berada di direktori yang sama, sehingga rename menjadi
+            // penggantian file atomik: artwork lama tetap utuh jika unduhan gagal.
+            check(temp.renameTo(target)) { "Tidak dapat menyimpan artwork." }
+            temporaryFile = null
             Uri.fromFile(target)
         } finally {
             conn.disconnect()
