@@ -282,19 +282,20 @@ fun HeroPanel(
     store: Store,
     compact: Boolean,
     onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit
+    onOptions: (AppItem) -> Unit,
+    landscape: Boolean = false
 ) {
     if (focused == null) {
         HintText("Belum ada game terdeteksi. Tambahkan app lewat tab ATUR.")
         return
     }
-    val iconSize = if (compact) 84.dp else 112.dp
+    val iconSize = if (landscape) 68.dp else if (compact) 84.dp else 112.dp
     val isFav = focused.pkg in store.favorites
     val heroShape = RoundedCornerShape(18.dp)
     Box(
         Modifier
             .fillMaxWidth()
-            .height(if (compact) 148.dp else 196.dp)
+            .height(if (landscape) 124.dp else if (compact) 148.dp else 196.dp)
             .clip(heroShape)
             .background(Deck.Panel)
     ) {
@@ -327,7 +328,7 @@ fun HeroPanel(
                 Text(
                     focused.name,
                     color = Color.White,
-                    fontSize = if (compact) 24.sp else 34.sp,
+                    fontSize = if (landscape) 22.sp else if (compact) 24.sp else 34.sp,
                     fontWeight = FontWeight.Light,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -377,8 +378,9 @@ fun HomeScreen(
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.fillMaxWidth().widthIn(max = 960.dp)) {
-                        HeroPanel(focused, store, compact, onPlay, onOptions)
+                    // Batasi lebar banner khusus landscape agar artwork tidak terlalu panoramik.
+                    Box(Modifier.fillMaxWidth().widthIn(max = 760.dp)) {
+                        HeroPanel(focused, store, compact, onPlay, onOptions, landscape = true)
                     }
                 }
                 if (recent.isNotEmpty()) CardRow(
