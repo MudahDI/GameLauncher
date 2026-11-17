@@ -83,7 +83,7 @@ fun LauncherApp(allApps: List<AppItem>) {
                 modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.35f)
             )
         }
-        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+        Column(Modifier.fillMaxSize().navigationBarsPadding()) {
             TopBar(tab) { tab = it }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
