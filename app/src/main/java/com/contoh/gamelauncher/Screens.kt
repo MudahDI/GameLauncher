@@ -25,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -127,7 +128,7 @@ fun GameCard(
         animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
         label = "cardScale"
     )
-    val shape = RoundedCornerShape(10.dp)
+    val shape = RoundedCornerShape(store.cardCornerDp.dp)
     Box(
         Modifier
             .size(width, width * 4 / 3)
@@ -244,7 +245,7 @@ fun CardRow(
     LazyRow(
         modifier = Modifier.focusGroup(),
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(store.gridSpacingDp.dp)
     ) {
         items(list, key = { it.pkg }) { app ->
             GameCard(
@@ -270,7 +271,8 @@ fun GameGrid(
     tile: Dp = 110.dp,
     focusedPkg: String? = null,
     onFocus: (AppItem) -> Unit = {},
-    emptyLabel: String = "Tidak ada item."
+    emptyLabel: String = "Tidak ada item.",
+    spacing: Dp = 16.dp
 ) {
     if (list.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -279,9 +281,9 @@ fun GameGrid(
     } else {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(tile + 12.dp),
-            contentPadding = PaddingValues(24.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            contentPadding = PaddingValues((spacing + 8.dp.value).dp),
+            horizontalArrangement = Arrangement.spacedBy(spacing),
+            verticalArrangement = Arrangement.spacedBy(spacing),
             modifier = Modifier.fillMaxSize().focusGroup()
         ) {
             items(list, key = { it.pkg }) { app ->
@@ -490,7 +492,7 @@ fun HomeScreen(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compact = maxHeight < 420.dp
         val landscape = maxWidth > maxHeight
-        val cardWidth = if (compact) 100.dp else 132.dp
+        val cardWidth = if (compact) store.cardSizeDp.coerceAtMost(104).dp else store.cardSizeDp.dp
         // Ketuk sekali untuk memilih, ketuk kartu yang sama (atau tombol MAINKAN) untuk bermain.
         val tap: (AppItem) -> Unit = { a ->
             if (a.pkg == focused?.pkg) onPlay(a) else onFocus(a)
@@ -569,7 +571,7 @@ fun SearchScreen(
             label = { Text("Cari game atau aplikasi") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
         )
-        GameGrid(results, store, onPlay, onOptions, focusedPkg = focusedPkg, onFocus = { focusedPkg = it.pkg }, emptyLabel = "Tidak ada hasil.")
+        GameGrid(results, store, onPlay, onOptions, tile = store.cardSizeDp.dp, focusedPkg = focusedPkg, onFocus = { focusedPkg = it.pkg }, emptyLabel = "Tidak ada hasil.", spacing = store.gridSpacingDp.dp)
     }
 }
 
@@ -618,9 +620,11 @@ fun LibraryScreen(
         }
         GameGrid(
             list, store, onPlay, onOptions,
+            tile = store.cardSizeDp.dp,
             focusedPkg = focusedPkg,
             onFocus = { focusedPkg = it.pkg },
-            emptyLabel = if (showGames) "Belum ada game." else "Belum ada aplikasi."
+            emptyLabel = if (showGames) "Belum ada game." else "Belum ada aplikasi.",
+            spacing = store.gridSpacingDp.dp
         )
     }
 }
@@ -642,6 +646,25 @@ fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
 }
 
 @Composable
+private fun SettingSlider(
+    title: String,
+    valueLabel: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onValueChange: (Float) -> Unit
+) {
+    Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Spacer(Modifier.weight(1f))
+            Text(valueLabel, color = Deck.Accent, fontSize = 12.sp)
+        }
+        Slider(value = value, onValueChange = onValueChange, valueRange = valueRange, steps = steps)
+    }
+}
+
+@Composable
 fun SettingsScreen(
     onAdd: () -> Unit,
     onReset: () -> Unit,
@@ -649,7 +672,8 @@ fun SettingsScreen(
     onClearWallpaper: () -> Unit,
     onAccent: (String) -> Unit,
     currentAccent: String,
-    hasWallpaper: Boolean
+    hasWallpaper: Boolean,
+    store: Store
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
@@ -690,6 +714,19 @@ fun SettingsScreen(
             Spacer(Modifier.height(8.dp))
             SettingRow("Hapus wallpaper", "Kembali ke latar charcoal bawaan", onClearWallpaper)
         }
+        Spacer(Modifier.height(24.dp))
+        Text("TATA LETAK", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        SettingSlider("Ukuran kartu", "${store.cardSizeDp} dp", store.cardSizeDp.toFloat(), 88f, 148f, 4f) { store.setCardSize(it.toInt()) }
+        SettingSlider("Jarak antar-kartu", "${store.gridSpacingDp} dp", store.gridSpacingDp.toFloat(), 6f, 24f, 1f) { store.setGridSpacing(it.toInt()) }
+        SettingSlider("Sudut kartu", "${store.cardCornerDp} dp", store.cardCornerDp.toFloat(), 4f, 20f, 1f) { store.setCardCorner(it.toInt()) }
+        Spacer(Modifier.height(24.dp))
+        Text("WALLPAPER", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        SettingSlider("Intensitas wallpaper", "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.08f, 0.65f, 0.01f) { store.setWallpaperOpacity(it) }
+        SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.20f, 0.85f, 0.01f) { store.setWallpaperOverlay(it) }
+        Spacer(Modifier.height(10.dp))
+        SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna aksen, dan efek wallpaper", { store.resetAppearance() })
         Spacer(Modifier.height(24.dp))
         Text("APLIKASI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
