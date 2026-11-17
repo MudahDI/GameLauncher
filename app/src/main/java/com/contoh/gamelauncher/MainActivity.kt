@@ -62,6 +62,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
+    var showQuickMenu by rememberSaveable { mutableStateOf(false) }
 
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
@@ -97,6 +98,23 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     }
                     AndroidKeyEvent.KEYCODE_BUTTON_R1 -> {
                         tab = (tab + 1) % 4
+                        true
+                    }
+                    AndroidKeyEvent.KEYCODE_BUTTON_START -> {
+                        if (!showPicker && !confirmReset && selectedPkg == null) {
+                            showQuickMenu = !showQuickMenu
+                        }
+                        true
+                    }
+                    AndroidKeyEvent.KEYCODE_BUTTON_B,
+                    AndroidKeyEvent.KEYCODE_BACK -> {
+                        when {
+                            showQuickMenu -> showQuickMenu = false
+                            showPicker -> showPicker = false
+                            selectedPkg != null -> selectedPkg = null
+                            confirmReset -> confirmReset = false
+                            tab != 0 -> tab = 0
+                        }
                         true
                     }
                     else -> false
@@ -166,6 +184,34 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                 }
             },
             confirmButton = { TextButton(onClick = { selectedPkg = null }) { Text("Tutup") } }
+        )
+    }
+
+    if (showQuickMenu) {
+        AlertDialog(
+            onDismissRequest = { showQuickMenu = false },
+            title = { Text("Menu cepat") },
+            text = {
+                Column {
+                    listOf("Beranda", "Koleksi", "Cari", "Atur").forEachIndexed { index, label ->
+                        TextButton(
+                            onClick = {
+                                tab = index
+                                showQuickMenu = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                label,
+                                color = if (tab == index) Deck.Accent else Deck.Text
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showQuickMenu = false }) { Text("Tutup") }
+            }
         )
     }
 
