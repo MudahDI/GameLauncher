@@ -10,7 +10,7 @@
 
     <application
         android:icon="@mipmap/ic_launcher"
-        android:label="Game Launcher"
+        android:label="MDI Launcher"
         android:theme="@android:style/Theme.Material.NoActionBar">
         <activity
             android:name=".MainActivity"
