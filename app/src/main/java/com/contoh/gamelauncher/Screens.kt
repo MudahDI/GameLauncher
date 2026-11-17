@@ -142,14 +142,16 @@ fun GameCard(
     onClick: () -> Unit,
     onDoubleClick: () -> Unit,
     onLongClick: () -> Unit,
-    onFocus: () -> Unit = {}
+    onFocus: () -> Unit = {},
+    blurIconBackground: Boolean = false
 ) {
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.06f else 1f,
         animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
         label = "cardScale"
     )
-    val shape = RoundedCornerShape(store.cardCornerDp.dp)
+    val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
+    val coverUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, "cover") }
     Box(
         Modifier
             .size(width, width * 4 / 3)
@@ -177,17 +179,27 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
             .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
-        if (store.artworkUri(app.pkg, "cover") != null) {
+        if (coverUri != null) {
             ArtworkImage(app, store, "cover", Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
         } else {
-            Image(
-                app.icon,
-                null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().alpha(0.48f)
-            )
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+            if (blurIconBackground) {
+                Image(
+                    app.icon,
+                    null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().scale(1.12f).blur(18.dp).alpha(0.72f)
+                )
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
+            } else {
+                Image(
+                    app.icon,
+                    null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize().alpha(0.48f)
+                )
+                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+            }
             Image(
                 app.icon,
                 app.name,
@@ -269,7 +281,7 @@ fun CardRow(
         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(store.gridSpacingDp.dp)
     ) {
-        items(list, key = { it.pkg }) { app ->
+        items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
             GameCard(
                 app,
                 store,
@@ -309,7 +321,7 @@ fun GameGrid(
             verticalArrangement = Arrangement.spacedBy(spacing),
             modifier = Modifier.fillMaxSize().focusGroup()
         ) {
-            items(list, key = { it.pkg }) { app ->
+            items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
                 GameCard(
                     app,
                     store,
@@ -319,7 +331,8 @@ fun GameGrid(
                     { onFocus(app) },
                     { onPlay(app) },
                     { onOptions(app) },
-                    { onFocus(app) }
+                    { onFocus(app) },
+                    blurIconBackground = true
                 )
             }
         }

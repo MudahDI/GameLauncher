@@ -524,9 +524,11 @@ class MainActivity : ComponentActivity() {
             }
 
             val now = android.os.SystemClock.uptimeMillis()
-            if (direction != lastStickDirection || now - lastStickMoveAt >= 260L) {
+            if (direction != lastStickDirection || now - lastStickMoveAt >= 170L) {
                 lastStickDirection = direction
                 lastStickMoveAt = now
+                // Pasangan down/up mengikuti alur input navigasi Android normal.
+                dispatchKeyEvent(AndroidKeyEvent(AndroidKeyEvent.ACTION_DOWN, direction))
                 dispatchKeyEvent(AndroidKeyEvent(AndroidKeyEvent.ACTION_UP, direction))
             }
             return true
