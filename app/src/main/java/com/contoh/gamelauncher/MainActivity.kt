@@ -37,14 +37,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.nativeKeyEvent
 import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.focus.focusable
+import androidx.compose.foundation.focusable
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.draw.border
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -492,36 +490,34 @@ private enum class Page(val label: String, val glyph: String) {
     }
     BoxWithConstraints(Modifier.fillMaxSize().background(Background)
         .focusRequester(rootFocus).onPreviewKeyEvent { event ->
-            val native = event.nativeKeyEvent
-            if (event.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
-            val isController = native.source and (InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_JOYSTICK) != 0
-            if (isController) lastGamepadInput = when (native.keyCode) {
-                AndroidKeyEvent.KEYCODE_DPAD_UP -> "D-pad ↑"
-                AndroidKeyEvent.KEYCODE_DPAD_DOWN -> "D-pad ↓"
-                AndroidKeyEvent.KEYCODE_DPAD_LEFT -> "D-pad ←"
-                AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> "D-pad →"
-                AndroidKeyEvent.KEYCODE_BUTTON_A, AndroidKeyEvent.KEYCODE_ENTER -> "A / Confirm"
-                AndroidKeyEvent.KEYCODE_BUTTON_B, AndroidKeyEvent.KEYCODE_BACK, AndroidKeyEvent.KEYCODE_ESCAPE -> "B / Back"
-                AndroidKeyEvent.KEYCODE_BUTTON_X -> "X"
-                AndroidKeyEvent.KEYCODE_BUTTON_Y -> "Y"
-                AndroidKeyEvent.KEYCODE_BUTTON_L1 -> "L1"
-                AndroidKeyEvent.KEYCODE_BUTTON_R1 -> "R1"
-                AndroidKeyEvent.KEYCODE_BUTTON_START -> "Start"
-                else -> "Key ${native.keyCode}"
+            val code = event.key
+            fun key(code: Int) = Key(code.toLong())
+            lastGamepadInput = when (code) {
+                key(AndroidKeyEvent.KEYCODE_DPAD_UP) -> "D-pad ↑"
+                key(AndroidKeyEvent.KEYCODE_DPAD_DOWN) -> "D-pad ↓"
+                key(AndroidKeyEvent.KEYCODE_DPAD_LEFT) -> "D-pad ←"
+                key(AndroidKeyEvent.KEYCODE_DPAD_RIGHT) -> "D-pad →"
+                key(AndroidKeyEvent.KEYCODE_BUTTON_A), key(AndroidKeyEvent.KEYCODE_ENTER) -> "A / Confirm"
+                key(AndroidKeyEvent.KEYCODE_BUTTON_B), key(AndroidKeyEvent.KEYCODE_BACK), key(AndroidKeyEvent.KEYCODE_ESCAPE) -> "B / Back"
+                key(AndroidKeyEvent.KEYCODE_BUTTON_X) -> "X"
+                key(AndroidKeyEvent.KEYCODE_BUTTON_Y) -> "Y"
+                key(AndroidKeyEvent.KEYCODE_BUTTON_L1) -> "L1"
+                key(AndroidKeyEvent.KEYCODE_BUTTON_R1) -> "R1"
+                key(AndroidKeyEvent.KEYCODE_BUTTON_START) -> "Start"
+                else -> "Input"
             }
-            when (native.keyCode) {
-                AndroidKeyEvent.KEYCODE_BUTTON_B, AndroidKeyEvent.KEYCODE_BACK, AndroidKeyEvent.KEYCODE_ESCAPE -> {
+            when (code) {
+                key(AndroidKeyEvent.KEYCODE_BUTTON_B), key(AndroidKeyEvent.KEYCODE_BACK), key(AndroidKeyEvent.KEYCODE_ESCAPE) -> {
                     if (selectedPackage != null) selectedPackage = null
                     else if (page != Page.HOME) pageName = Page.HOME.name
-                    else return@onPreviewKeyEvent false
+                    else false
                     true
                 }
-                AndroidKeyEvent.KEYCODE_BUTTON_L1 -> { pageName = Page.values()[((page.ordinal - 1 + Page.values().size) % Page.values().size)].name; true }
-                AndroidKeyEvent.KEYCODE_BUTTON_R1 -> { pageName = Page.values()[(page.ordinal + 1) % Page.values().size].name; true }
-                AndroidKeyEvent.KEYCODE_BUTTON_A, AndroidKeyEvent.KEYCODE_BUTTON_X -> {
+                key(AndroidKeyEvent.KEYCODE_BUTTON_L1) -> { pageName = Page.values()[((page.ordinal - 1 + Page.values().size) % Page.values().size)].name; true }
+                key(AndroidKeyEvent.KEYCODE_BUTTON_R1) -> { pageName = Page.values()[(page.ordinal + 1) % Page.values().size].name; true }
+                key(AndroidKeyEvent.KEYCODE_BUTTON_A), key(AndroidKeyEvent.KEYCODE_ENTER), key(AndroidKeyEvent.KEYCODE_BUTTON_X) -> {
                     if (selectedPackage != null) selected?.let { launch(it) }
                     else if (page == Page.HOME) visible.firstOrNull()?.let { launch(it) }
-                    else false
                     true
                 }
                 else -> false
