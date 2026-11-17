@@ -50,7 +50,7 @@ fun loadAllApps(ctx: Context): List<AppItem> {
         .sortedBy { it.name.lowercase() }
 }
 
-class Store(ctx: Context) {
+class Store(ctx: Context) {\n    private val appContext = ctx.applicationContext
     private val sp = ctx.applicationContext
         .getSharedPreferences("launcher", Context.MODE_PRIVATE)
 
@@ -181,17 +181,23 @@ class Store(ctx: Context) {
     fun artworkUri(pkg: String, kind: String): Uri? =
         artworks["$kind:$pkg"]?.let { runCatching { Uri.parse(it) }.getOrNull() }
 
-    fun setArtwork(pkg: String, kind: String, uri: Uri) {
-        val key = "$kind:$pkg"
-        artworks = artworks + (key to uri.toString())
-        sp.edit().putString("artwork:$key", uri.toString()).apply()
+    private fun deleteManagedArtworkIfUnreferenced(
+        uriString: String?,
+        remainingArtworks: Map<String, String>
+    ) {
+        if (uriString.isNullOrBlank() || uriString in remainingArtworks.values) return
+        // Hanya hapus file internal hasil unduhan launcher; URI content dari pemilih file
+        // adalah milik penyedia dokumen dan tidak boleh dihapus oleh launcher.
+        val uri = runCatching { Uri.parse(uriString) }.getOrNull() ?: return
+        if (uri.scheme != "file") return
+        runCatching {
+            val artworkDir = java.io.File(spFileDir(), "metadata_artwork").canonicalFile
+            val candidate = java.io.File(uri.path ?: return@runCatching).canonicalFile
+            if (candidate.parentFile == artworkDir && candidate.isFile) candidate.delete()
+        }
     }
 
-    fun clearArtwork(pkg: String, kind: String) {
-        val key = "$kind:$pkg"
-        artworks = artworks - key
-        sp.edit().remove("artwork:$key").apply()
-    }
+
 
     fun isGame(app: AppItem): Boolean = when {
         app.pkg in forcedGames -> true
