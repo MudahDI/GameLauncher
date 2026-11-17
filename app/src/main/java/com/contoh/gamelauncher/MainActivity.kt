@@ -14,6 +14,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -194,7 +196,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             onDismissRequest = { selectedPkg = null },
             title = { Text(a.name) },
             text = {
-                Column {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
                     TextButton(onClick = { store.toggleFav(a.pkg); selectedPkg = null }) {
                         Text(if (fav) "★ Hapus dari favorit" else "☆ Tambah ke favorit")
                     }
@@ -209,6 +211,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     TextButton(onClick = {
                         pendingArtworkPkg = a.pkg
                         pendingArtworkKind = "cover"
+                        selectedPkg = null
                         artworkPicker.launch(arrayOf("image/*"))
                     }) { Text(if (store.artworkUri(a.pkg, "cover") == null) "Pilih cover portrait" else "Ganti cover portrait") }
                     if (store.artworkUri(a.pkg, "cover") != null) {
@@ -217,6 +220,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     TextButton(onClick = {
                         pendingArtworkPkg = a.pkg
                         pendingArtworkKind = "banner"
+                        selectedPkg = null
                         artworkPicker.launch(arrayOf("image/*"))
                     }) { Text(if (store.artworkUri(a.pkg, "banner") == null) "Pilih banner landscape" else "Ganti banner landscape") }
                     if (store.artworkUri(a.pkg, "banner") != null) {
