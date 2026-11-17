@@ -37,7 +37,8 @@ fun loadAllApps(ctx: Context): List<AppItem> {
         .mapNotNull { info ->
             // Satu app bermasalah (ikon rusak, dsb.) tidak boleh menggagalkan seluruh daftar.
             runCatching {
-                val drawable = pm.getApplicationIcon(info.packageName)
+                // Gunakan ApplicationInfo yang sudah diperoleh; hindari lookup paket kedua.
+                val drawable = info.loadIcon(pm)
                 AppItem(
                     info.loadLabel(pm).toString(),
                     info.packageName,
@@ -50,6 +51,7 @@ fun loadAllApps(ctx: Context): List<AppItem> {
 }
 
 class Store(ctx: Context) {
+    private val appContext = ctx.applicationContext
     private val sp = ctx.applicationContext
         .getSharedPreferences("launcher", Context.MODE_PRIVATE)
 
@@ -180,17 +182,41 @@ class Store(ctx: Context) {
     fun artworkUri(pkg: String, kind: String): Uri? =
         artworks["$kind:$pkg"]?.let { runCatching { Uri.parse(it) }.getOrNull() }
 
+    private fun deleteManagedArtworkIfUnreferenced(
+        uriString: String?,
+        remainingArtworks: Map<String, String>
+    ) {
+        if (uriString.isNullOrBlank() || uriString in remainingArtworks.values) return
+        // Hanya hapus file internal hasil unduhan launcher; URI content dari pemilih file
+        // adalah milik penyedia dokumen dan tidak boleh dihapus oleh launcher.
+        val uri = runCatching { Uri.parse(uriString) }.getOrNull() ?: return
+        if (uri.scheme != "file") return
+        runCatching {
+            val artworkDir = java.io.File(appContext.filesDir, "metadata_artwork").canonicalFile
+            val candidate = java.io.File(uri.path ?: return@runCatching).canonicalFile
+            if (candidate.parentFile == artworkDir && candidate.isFile) candidate.delete()
+        }
+    }
+
     fun setArtwork(pkg: String, kind: String, uri: Uri) {
         val key = "$kind:$pkg"
-        artworks = artworks + (key to uri.toString())
+        val previous = artworks[key]
+        val updated = artworks + (key to uri.toString())
+        artworks = updated
         sp.edit().putString("artwork:$key", uri.toString()).apply()
+        if (previous != uri.toString()) deleteManagedArtworkIfUnreferenced(previous, updated)
     }
 
     fun clearArtwork(pkg: String, kind: String) {
         val key = "$kind:$pkg"
-        artworks = artworks - key
+        val previous = artworks[key]
+        val updated = artworks - key
+        artworks = updated
         sp.edit().remove("artwork:$key").apply()
+        deleteManagedArtworkIfUnreferenced(previous, updated)
     }
+
+
 
     fun isGame(app: AppItem): Boolean = when {
         app.pkg in forcedGames -> true
@@ -264,10 +290,21 @@ class Store(ctx: Context) {
 
     fun clearHistory() {
         recent = emptyList()
+
+        // Riwayat mencakup daftar terakhir dimainkan, timestamp, dan total waktu bermain.
+        // Hapus berdasarkan prefiks agar data paket yang tidak lagi terpasang ikut dibersihkan.
         val edit = sp.edit().remove("recent")
-        lastPlayedAt.keys.forEach { edit.remove("last_played:$it") }
-        edit.apply()
+        sp.all.keys
+            .filter { it.startsWith("last_played:") || it.startsWith("playtime:") }
+            .forEach(edit::remove)
+
+        // Jangan biarkan sesi tertunda menambahkan waktu bermain kembali setelah riwayat dibersihkan.
+        edit.remove("pending_play_pkg")
+            .remove("pending_play_start")
+            .apply()
+
         lastPlayedAt = emptyMap()
+        playtimeMs = emptyMap()
     }
 
     fun resetList() {
