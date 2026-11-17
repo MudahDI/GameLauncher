@@ -1,6 +1,7 @@
 package com.contoh.gamelauncher
 
 import android.os.Bundle
+import android.content.Intent
 import android.content.res.Configuration
 import android.hardware.input.InputManager
 import android.view.InputDevice
@@ -8,6 +9,8 @@ import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.Image
@@ -63,6 +66,20 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     var showQuickMenu by rememberSaveable { mutableStateOf(false) }
+    var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
+    val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val pkg = pendingArtworkPkg
+        val kind = pendingArtworkKind
+        if (uri != null && pkg != null && kind != null) {
+            runCatching {
+                ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            store.setArtwork(pkg, kind, uri)
+        }
+        pendingArtworkPkg = null
+        pendingArtworkKind = null
+    }
 
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
@@ -188,6 +205,22 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         }
                     ) {
                         Text(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game")
+                    }
+                    TextButton(onClick = {
+                        pendingArtworkPkg = a.pkg
+                        pendingArtworkKind = "cover"
+                        artworkPicker.launch(arrayOf("image/*"))
+                    }) { Text(if (store.artworkUri(a.pkg, "cover") == null) "Pilih cover portrait" else "Ganti cover portrait") }
+                    if (store.artworkUri(a.pkg, "cover") != null) {
+                        TextButton(onClick = { store.clearArtwork(a.pkg, "cover") }) { Text("Hapus cover") }
+                    }
+                    TextButton(onClick = {
+                        pendingArtworkPkg = a.pkg
+                        pendingArtworkKind = "banner"
+                        artworkPicker.launch(arrayOf("image/*"))
+                    }) { Text(if (store.artworkUri(a.pkg, "banner") == null) "Pilih banner landscape" else "Ganti banner landscape") }
+                    if (store.artworkUri(a.pkg, "banner") != null) {
+                        TextButton(onClick = { store.clearArtwork(a.pkg, "banner") }) { Text("Hapus banner") }
                     }
                     TextButton(onClick = { store.removeApp(a.pkg); selectedPkg = null }) {
                         Text("Sembunyikan dari launcher")
