@@ -5,6 +5,8 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import android.content.pm.ApplicationInfo
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -18,7 +20,8 @@ data class AppItem(
     val name: String,
     val pkg: String,
     val icon: ImageBitmap,
-    val isGame: Boolean
+    val isGame: Boolean,
+    val monochromeIcon: ImageBitmap? = null
 )
 
 /** Game dikenali dari kategori resmi ATAU flag lama (banyak game lawas hanya memakai flag). */
@@ -37,11 +40,16 @@ fun loadAllApps(ctx: Context): List<AppItem> {
         .mapNotNull { info ->
             // Satu app bermasalah (ikon rusak, dsb.) tidak boleh menggagalkan seluruh daftar.
             runCatching {
+                val drawable = info.loadIcon(pm)
+                val monochrome = if (Build.VERSION.SDK_INT >= 33) {
+                    (drawable as? AdaptiveIconDrawable)?.monochrome
+                } else null
                 AppItem(
                     info.loadLabel(pm).toString(),
                     info.packageName,
-                    info.loadIcon(pm).toBitmap(192, 192).asImageBitmap(),
-                    info.looksLikeGame()
+                    drawable.toBitmap(192, 192).asImageBitmap(),
+                    info.looksLikeGame(),
+                    monochrome?.toBitmap(192, 192)?.asImageBitmap()
                 )
             }.getOrNull()
         }
@@ -68,7 +76,20 @@ class Store(ctx: Context) {
     var artworks by mutableStateOf(readArtworkMap())
     var descriptions by mutableStateOf(readDescriptionMap())
     var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
+    init {
+        // Migrasi sekali: gunakan identitas biru MDI sebagai aksen awal versi ini.
+        if (!sp.getBoolean("blue_branding_migrated", false)) {
+            sp.edit().putString("accent_hex", "#1A9FFF")
+                .putBoolean("blue_branding_migrated", true).apply()
+        }
+    }
     var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
+    var monoIconsEnabled by mutableStateOf(sp.getBoolean("mono_icons_enabled", true))
+
+    fun setMonoIconsEnabled(enabled: Boolean) {
+        monoIconsEnabled = enabled
+        sp.edit().putBoolean("mono_icons_enabled", enabled).apply()
+    }
     var cardSizeDp by mutableStateOf(sp.getInt("card_size_dp", 112).coerceIn(88, 148))
     var gridSpacingDp by mutableStateOf(sp.getInt("grid_spacing_dp", 14).coerceIn(6, 24))
     var cardCornerDp by mutableStateOf(sp.getInt("card_corner_dp", 10).coerceIn(4, 20))

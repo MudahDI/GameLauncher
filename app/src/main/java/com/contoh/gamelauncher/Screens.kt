@@ -143,7 +143,9 @@ fun GameCard(
     onDoubleClick: () -> Unit,
     onLongClick: () -> Unit,
     onFocus: () -> Unit = {},
-    blurIconBackground: Boolean = false
+    blurIconBackground: Boolean = false,
+    useMonoIcons: Boolean = false,
+    showMdiBranding: Boolean = false
 ) {
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.06f else 1f,
@@ -152,6 +154,9 @@ fun GameCard(
     )
     val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
     val coverUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, "cover") }
+    val hasMonoIcon = useMonoIcons && app.monochromeIcon != null
+    val displayIcon = if (hasMonoIcon) app.monochromeIcon!! else app.icon
+    val iconTint = if (hasMonoIcon) androidx.compose.ui.graphics.ColorFilter.tint(Deck.Accent) else null
     Box(
         Modifier
             .size(width, width * 4 / 3)
@@ -185,8 +190,9 @@ fun GameCard(
         } else {
             if (blurIconBackground) {
                 Image(
-                    app.icon,
+                    displayIcon,
                     null,
+                    colorFilter = iconTint,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().scale(1.12f).blur(18.dp).alpha(0.72f)
                 )
@@ -201,12 +207,13 @@ fun GameCard(
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
             }
             Image(
-                app.icon,
+                displayIcon,
                 app.name,
                 Modifier
                     .align(Alignment.Center)
                     .size(width * 0.55f)
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(RoundedCornerShape(14.dp)),
+                colorFilter = iconTint
             )
         }
         Box(
@@ -228,6 +235,18 @@ fun GameCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        if (showMdiBranding && coverUri == null) {
+            Row(
+                Modifier.align(Alignment.TopEnd).padding(6.dp)
+                    .clip(RoundedCornerShape(5.dp))
+                    .background(Color(0xCC101923))
+                    .padding(horizontal = 5.dp, vertical = 3.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text("M", color = Color(0xFF1A9FFF), fontSize = 10.sp, fontWeight = FontWeight.Black)
+                Text("DI", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp)
+            }
         }
         if (isFav) {
             Text(
@@ -307,7 +326,9 @@ fun GameGrid(
     focusedPkg: String? = null,
     onFocus: (AppItem) -> Unit = {},
     emptyLabel: String = "Tidak ada item.",
-    spacing: Dp = 16.dp
+    spacing: Dp = 16.dp,
+    useMonoIcons: Boolean = false,
+    showMdiBranding: Boolean = false
 ) {
     if (list.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -711,7 +732,9 @@ fun LibraryScreen(
             focusedPkg = focusedPkg,
             onFocus = { focusedPkg = it.pkg },
             emptyLabel = if (onlyFav) "Belum ada favorit di kategori ini." else if (showGames) "Belum ada game." else "Belum ada aplikasi.",
-            spacing = store.gridSpacingDp.dp
+            spacing = store.gridSpacingDp.dp,
+            useMonoIcons = !showGames && store.monoIconsEnabled,
+            showMdiBranding = !showGames
         )
     }
 }
@@ -791,7 +814,13 @@ fun SettingsScreen(
                 }
             }
         }
-        Spacer(Modifier.height(22.dp))
+        Spacer(Modifier.height(18.dp))
+        SettingRow(
+            if (store.monoIconsEnabled) "Ikon monokrom: aktif" else "Ikon monokrom: nonaktif",
+            "Gunakan lapisan ikon monokrom bawaan aplikasi (Android 13+). Ikon tanpa lapisan monokrom tetap tampil normal.",
+            { store.setMonoIconsEnabled(!store.monoIconsEnabled) }
+        )
+        Spacer(Modifier.height(10.dp))
         SettingRow(
             "Ganti wallpaper",
             "Pilih gambar dari perangkat sebagai latar launcher",
