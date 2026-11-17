@@ -9,7 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.focus.focusGroup
+import androidx.compose.foundation.focusGroup
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
