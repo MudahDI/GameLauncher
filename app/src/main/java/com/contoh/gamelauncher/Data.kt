@@ -59,13 +59,36 @@ class Store(ctx: Context) {
     var added by mutableStateOf(readSet("added"))
     var removed by mutableStateOf(readSet("removed"))
     var favorites by mutableStateOf(readSet("favorites"))
+    // Override kategori manual; package yang tidak ada di kedua set mengikuti deteksi Android.
+    var forcedGames by mutableStateOf(readSet("forced_games"))
+    var forcedApps by mutableStateOf(readSet("forced_apps"))
     var recent by mutableStateOf(readList("recent"))
+
+    fun isGame(app: AppItem): Boolean = when {
+        app.pkg in forcedGames -> true
+        app.pkg in forcedApps -> false
+        else -> app.isGame
+    }
+
+    fun moveToGame(pkg: String) {
+        forcedGames = forcedGames + pkg
+        forcedApps = forcedApps - pkg
+        persist()
+    }
+
+    fun moveToApps(pkg: String) {
+        forcedApps = forcedApps + pkg
+        forcedGames = forcedGames - pkg
+        persist()
+    }
 
     private fun persist() {
         sp.edit()
             .putStringSet("added", HashSet(added))
             .putStringSet("removed", HashSet(removed))
             .putStringSet("favorites", HashSet(favorites))
+            .putStringSet("forced_games", HashSet(forcedGames))
+            .putStringSet("forced_apps", HashSet(forcedApps))
             .putString("recent", recent.joinToString(","))
             .apply()
     }
@@ -97,6 +120,8 @@ class Store(ctx: Context) {
     fun resetList() {
         added = emptySet()
         removed = emptySet()
+        forcedGames = emptySet()
+        forcedApps = emptySet()
         persist()
     }
 }
