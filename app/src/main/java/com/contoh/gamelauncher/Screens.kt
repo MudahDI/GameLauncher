@@ -144,7 +144,6 @@ fun GameCard(
     onLongClick: () -> Unit,
     onFocus: () -> Unit = {},
     blurIconBackground: Boolean = false,
-    useMonoIcons: Boolean = false,
     showMdiBranding: Boolean = false
 ) {
     val scale by animateFloatAsState(
@@ -154,9 +153,7 @@ fun GameCard(
     )
     val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
     val coverUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, "cover") }
-    val hasMonoIcon = useMonoIcons && app.monochromeIcon != null
-    val displayIcon = if (hasMonoIcon) app.monochromeIcon!! else app.icon
-    val iconTint = if (hasMonoIcon) androidx.compose.ui.graphics.ColorFilter.tint(Deck.Accent) else null
+    val displayIcon = app.icon
     Box(
         Modifier
             .size(width, width * 4 / 3)
@@ -192,7 +189,6 @@ fun GameCard(
                 Image(
                     displayIcon,
                     null,
-                    colorFilter = iconTint,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize().scale(1.12f).blur(18.dp).alpha(0.72f)
                 )
@@ -213,7 +209,6 @@ fun GameCard(
                     .align(Alignment.Center)
                     .size(width * 0.55f)
                     .clip(RoundedCornerShape(14.dp)),
-                colorFilter = iconTint
             )
         }
         Box(
@@ -327,7 +322,6 @@ fun GameGrid(
     onFocus: (AppItem) -> Unit = {},
     emptyLabel: String = "Tidak ada item.",
     spacing: Dp = 16.dp,
-    useMonoIcons: Boolean = false,
     showMdiBranding: Boolean = false
 ) {
     if (list.isEmpty()) {
@@ -354,7 +348,6 @@ fun GameGrid(
                     { onOptions(app) },
                     { onFocus(app) },
                     blurIconBackground = true,
-                    useMonoIcons = useMonoIcons,
                     showMdiBranding = showMdiBranding
                 )
             }
@@ -735,7 +728,6 @@ fun LibraryScreen(
             onFocus = { focusedPkg = it.pkg },
             emptyLabel = if (onlyFav) "Belum ada favorit di kategori ini." else if (showGames) "Belum ada game." else "Belum ada aplikasi.",
             spacing = store.gridSpacingDp.dp,
-            useMonoIcons = !showGames && store.monoIconsEnabled,
             showMdiBranding = !showGames
         )
     }
@@ -817,12 +809,6 @@ fun SettingsScreen(
             }
         }
         Spacer(Modifier.height(18.dp))
-        SettingRow(
-            if (store.monoIconsEnabled) "Ikon monokrom: aktif" else "Ikon monokrom: nonaktif",
-            "Gunakan lapisan ikon monokrom bawaan aplikasi (Android 13+). Ikon tanpa lapisan monokrom tetap tampil normal.",
-            { store.updateMonoIconsEnabled(!store.monoIconsEnabled) }
-        )
-        Spacer(Modifier.height(10.dp))
         SettingRow(
             "Ganti wallpaper",
             "Pilih gambar dari perangkat sebagai latar launcher",

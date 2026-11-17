@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.ui.graphics.Color
 import android.content.pm.ApplicationInfo
-import android.graphics.drawable.AdaptiveIconDrawable
 import android.os.Build
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,8 +19,7 @@ data class AppItem(
     val name: String,
     val pkg: String,
     val icon: ImageBitmap,
-    val isGame: Boolean,
-    val monochromeIcon: ImageBitmap? = null
+    val isGame: Boolean
 )
 
 /** Game dikenali dari kategori resmi ATAU flag lama (banyak game lawas hanya memakai flag). */
@@ -41,15 +39,11 @@ fun loadAllApps(ctx: Context): List<AppItem> {
             // Satu app bermasalah (ikon rusak, dsb.) tidak boleh menggagalkan seluruh daftar.
             runCatching {
                 val drawable = pm.getApplicationIcon(info.packageName)
-                val monochrome = if (Build.VERSION.SDK_INT >= 33) {
-                    (drawable as? AdaptiveIconDrawable)?.monochrome
-                } else null
                 AppItem(
                     info.loadLabel(pm).toString(),
                     info.packageName,
                     drawable.toBitmap(192, 192).asImageBitmap(),
-                    info.looksLikeGame(),
-                    monochrome?.toBitmap(192, 192)?.asImageBitmap()
+                    info.looksLikeGame()
                 )
             }.getOrNull()
         }
@@ -84,12 +78,6 @@ class Store(ctx: Context) {
         }
     }
     var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
-    var monoIconsEnabled by mutableStateOf(sp.getBoolean("mono_icons_enabled", true))
-
-    fun updateMonoIconsEnabled(enabled: Boolean) {
-        monoIconsEnabled = enabled
-        sp.edit().putBoolean("mono_icons_enabled", enabled).apply()
-    }
     var cardSizeDp by mutableStateOf(sp.getInt("card_size_dp", 112).coerceIn(88, 148))
     var gridSpacingDp by mutableStateOf(sp.getInt("grid_spacing_dp", 14).coerceIn(6, 24))
     var cardCornerDp by mutableStateOf(sp.getInt("card_corner_dp", 10).coerceIn(4, 20))
