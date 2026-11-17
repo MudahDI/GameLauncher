@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
@@ -36,7 +39,7 @@ object Deck {
     val Bg = Color(0xFF0E141B)
     val Panel = Color(0xFF1B2838)
     val PanelLight = Color(0xFF2A475E)
-    val Accent = Color(0xFF1A9FFF)
+    var Accent by mutableStateOf(Color(0xFF1A9FFF))
     val PlayLight = Color(0xFF75B022)
     val PlayDark = Color(0xFF588A1B)
     val Text = Color(0xFFDCDEDF)
@@ -67,7 +70,7 @@ fun rememberBatteryPercent(): State<Int> {
 }
 
 @Composable
-fun HeaderBar() {
+fun HeaderBar(onSettings: () -> Unit) {
     val clock by rememberClock()
     val battery by rememberBatteryPercent()
     Row(
@@ -98,12 +101,22 @@ fun HeaderBar() {
             Spacer(Modifier.width(12.dp))
         }
         Text(clock, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+        Spacer(Modifier.width(12.dp))
+        Box(
+            Modifier.size(36.dp)
+                .clip(RoundedCornerShape(9.dp))
+                .background(Deck.Panel)
+                .clickable(onClick = onSettings),
+            contentAlignment = Alignment.Center
+        ) {
+            Text("⚙", color = Deck.Text, fontSize = 20.sp)
+        }
     }
 }
 
 @Composable
 fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
-    val tabs = listOf("BERANDA", "KOLEKSI", "CARI", "ATUR")
+    val tabs = listOf("BERANDA", "KOLEKSI", "CARI")
     Row(
         Modifier.fillMaxWidth()
             .height(48.dp)
