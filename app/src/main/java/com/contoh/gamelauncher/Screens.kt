@@ -1,7 +1,5 @@
 package com.contoh.gamelauncher
 
-import android.view.KeyEvent as AndroidKeyEvent
-
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -9,10 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.nativeKeyEvent
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -71,20 +65,9 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
             .background(Deck.Panel)
-            // clickable/combinedClickable menyediakan target fokus untuk D-pad dan tombol A.
-            .onFocusChanged { if (it.isFocused) onFocus() }
-            .onPreviewKeyEvent { event ->
-                if (
-                    event.type == KeyEventType.KeyUp &&
-                    event.nativeKeyEvent.keyCode == AndroidKeyEvent.KEYCODE_BUTTON_Y
-                ) {
-                    onLongClick()
-                    true
-                } else {
-                    false
-                }
-            }
+            // combinedClickable menyediakan aksi sentuh dan aktivasi tombol utama gamepad.
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
         Image(
             app.icon,
@@ -306,7 +289,7 @@ fun HomeScreen(
             if (favs.isNotEmpty()) {
                 CardRow(
                     "FAVORIT", favs, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions
+                    cardWidth, compact, tap, onOptions, onFocus
                 )
             }
             if (visible.isNotEmpty()) {
