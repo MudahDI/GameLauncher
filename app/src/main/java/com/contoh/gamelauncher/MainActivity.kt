@@ -383,31 +383,43 @@ private enum class Page(val label: String, val glyph: String) {
         "Aplikasi" -> !it.isGame
         "Favorit" -> it.pkg in store.favorites
         else -> true
-    } }.let { if (descending) it.sortedByDescending { a -> a.name.lowercase() } else it.sortedBy { a -> a.name.lowercase() } }
-    Column(Modifier.fillMaxSize().background(Background)) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = if (compact) 18.dp else 30.dp, vertical = 20.dp)) {
-            Text("YOUR COLLECTION", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Column(Modifier.weight(1f)) {
-                    Text("Library", color = Foreground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-                    Text("${filtered.size} titles in your library", color = Muted, fontSize = 11.sp)
+    } }.let { if (descending) it.sortedByDescending { app -> app.name.lowercase() } else it.sortedBy { app -> app.name.lowercase() } }
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(if (compact) 112.dp else 154.dp),
+        modifier = Modifier.fillMaxSize().background(Background),
+        contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp, end = if (compact) 18.dp else 30.dp, bottom = 30.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 4.dp)) {
+                Text("YOUR COLLECTION", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text("Library", color = Foreground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                        Text("${filtered.size} titles in your library", color = Muted, fontSize = 11.sp)
+                    }
+                    Text("+ ADD GAME", color = Background, fontSize = 9.sp, fontWeight = FontWeight.Black,
+                        modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Accent)
+                            .clickable(onClick = add).padding(horizontal = 15.dp, vertical = 11.dp))
                 }
-                Text("+ ADD GAME", color = Background, fontSize = 9.sp, fontWeight = FontWeight.Black,
-                    modifier = Modifier.clip(RoundedCornerShape(10.dp)).background(Accent)
-                        .clickable(onClick = add).padding(horizontal = 15.dp, vertical = 11.dp))
-            }
-            Spacer(Modifier.height(17.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                listOf("Semua", "Game", "Aplikasi", "Favorit").forEach { FilterChip(it, filter == it) { filter = it } }
-                Spacer(Modifier.weight(1f))
-                Text(if (descending) "Z–A" else "A–Z", color = Muted, fontSize = 9.sp,
-                    modifier = Modifier.clickable { descending = !descending }.padding(8.dp))
+                Spacer(Modifier.height(17.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    listOf("Semua", "Game", "Aplikasi", "Favorit").forEach { option ->
+                        FilterChip(option, filter == option) { filter = option }
+                    }
+                    Spacer(Modifier.weight(1f))
+                    Text(if (descending) "Z–A" else "A–Z", color = Muted, fontSize = 9.sp,
+                        modifier = Modifier.clickable { descending = !descending }.padding(8.dp))
+                }
             }
         }
-        if (filtered.isEmpty()) EmptyState("Library is empty", "Try another filter or add a game.", "Add game", add)
-        else LazyVerticalGrid(columns = GridCells.Adaptive(if (compact) 112.dp else 154.dp),
-            contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp, end = if (compact) 18.dp else 30.dp, bottom = 30.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+        if (filtered.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                EmptyState("Library is empty", "Try another filter or add a game.", "Add game", add)
+            }
+        } else {
             items(filtered, key = { it.pkg }) { app ->
                 Column(Modifier.clickable { details(app) }) {
                     Box(Modifier.fillMaxWidth().aspectRatio(1.22f).clip(RoundedCornerShape(14.dp))
@@ -431,19 +443,29 @@ private enum class Page(val label: String, val glyph: String) {
     play: (AppItem) -> Unit, details: (AppItem) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     val results = apps.filter { it.name.contains(query, true) || it.pkg.contains(query, true) }
-    Column(Modifier.fillMaxSize().background(Background).padding(horizontal = if (compact) 18.dp else 30.dp)) {
-        Spacer(Modifier.height(20.dp))
-        Text("DISCOVER YOUR LIBRARY", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
-        Text("Search", color = Foreground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 16.dp),
-            singleLine = true, placeholder = { Text("Search games and apps…", color = Muted) },
-            shape = RoundedCornerShape(14.dp))
-        Text("${results.size} RESULTS", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-        Spacer(Modifier.height(12.dp))
-        if (results.isEmpty()) EmptyState("No results", "Try another title or package name.")
-        else LazyVerticalGrid(columns = GridCells.Adaptive(if (compact) 112.dp else 154.dp),
-            contentPadding = PaddingValues(bottom = 24.dp), horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalArrangement = Arrangement.spacedBy(18.dp)) {
+
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(if (compact) 112.dp else 154.dp),
+        modifier = Modifier.fillMaxSize().background(Background),
+        contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp, end = if (compact) 18.dp else 30.dp, bottom = 28.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column(Modifier.fillMaxWidth().padding(top = 20.dp, bottom = 4.dp)) {
+                Text("DISCOVER YOUR LIBRARY", color = Accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.7.sp)
+                Text("Search", color = Foreground, fontSize = 28.sp, fontWeight = FontWeight.Bold)
+                OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(top = 12.dp, bottom = 10.dp),
+                    singleLine = true, placeholder = { Text("Search games and apps…", color = Muted) },
+                    shape = RoundedCornerShape(14.dp))
+                Text("${results.size} RESULTS", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+            }
+        }
+        if (results.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                EmptyState("No results", "Try another title or package name.")
+            }
+        } else {
             items(results, key = { it.pkg }) { app ->
                 Column(Modifier.clickable { details(app) }) {
                     Box(Modifier.fillMaxWidth().aspectRatio(1.22f).clip(RoundedCornerShape(14.dp))
