@@ -4,19 +4,20 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Badan gamepad -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,42 H74 A8,8 0 0 1 82,50 V64 A8,8 0 0 1 74,72 H34 A8,8 0 0 1 26,64 V50 A8,8 0 0 1 34,42 Z" />
-    <!-- D-pad -->
+        android:fillColor="#00000000"
+        android:strokeColor="#8B5CF6"
+        android:strokeWidth="7"
+        android:strokeLineCap="round"
+        android:pathData="M12,75 C25,98 72,96 94,45 C101,28 93,18 82,15" />
     <path
-        android:fillColor="#0B0F1A"
-        android:pathData="M38,51 H42 V55 H46 V59 H42 V63 H38 V59 H34 V55 H38 Z" />
-    <!-- Tombol -->
+        android:fillColor="#E8E9F2"
+        android:pathData="M25,39 C28,33 34,30 41,31 L67,31 C74,30 80,33 83,39 L94,65 C97,73 91,80 83,79 L69,72 L39,72 L25,79 C17,80 11,73 14,65 Z" />
     <path
-        android:fillColor="#0B0F1A"
-        android:pathData="M66,52 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0" />
-    <path
-        android:fillColor="#0B0F1A"
-        android:pathData="M72,60 m-3,0 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0" />
+        android:fillColor="#171522"
+        android:pathData="M30,48 H36 V54 H42 V60 H36 V66 H30 V60 H24 V54 H30 Z" />
+    <path android:fillColor="#171522" android:pathData="M70,45 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" />
+    <path android:fillColor="#171522" android:pathData="M80,54 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" />
+    <path android:fillColor="#171522" android:pathData="M70,63 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" />
+    <path android:fillColor="#171522" android:pathData="M60,54 m-3.5,0 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0" />
 </vector>
