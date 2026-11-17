@@ -76,7 +76,7 @@ internal class GamepadInputRouter(
         // standard Compose activation key; B is handled by the root back action.
         val mappedCode = when (event.keyCode) {
             KeyEvent.KEYCODE_BUTTON_A -> KeyEvent.KEYCODE_DPAD_CENTER
-            KeyEvent.KEYCODE_BUTTON_B -> KeyEvent.KEYCODE_BACK
+            KeyEvent.KEYCODE_BUTTON_B -> KeyEvent.KEYCODE_BUTTON_B
             else -> return null
         }
         return KeyEvent(
