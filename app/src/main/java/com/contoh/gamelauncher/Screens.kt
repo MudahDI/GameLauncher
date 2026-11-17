@@ -1,4 +1,4 @@
-package com.contoh.gamelauncher
+package com.mdh.gamelauncher
 
 import android.view.KeyEvent as AndroidKeyEvent
 import android.graphics.BitmapFactory
