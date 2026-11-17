@@ -1,4 +1,4 @@
-# GameLauncher
+# MDI Launcher
 
 Launcher Android bertema game dengan tampilan ala Steam Deck, dibangun dengan Jetpack Compose dan Material 3.
 
@@ -26,7 +26,7 @@ Paling nyaman dipakai dalam mode landscape.
 gradle assembleDebug
 ```
 
-APK ada di `app/build/outputs/apk/debug/`. Setiap push juga membangun APK lewat GitHub Actions (artifact `GameLauncher-debug`).
+APK ada di `app/build/outputs/apk/debug/`. Setiap push juga membangun APK lewat GitHub Actions (artifact `MDI Launcher-debug`).
 
 ## Struktur
 
@@ -39,4 +39,4 @@ APK ada di `app/build/outputs/apk/debug/`. Setiap push juga membangun APK lewat 
 
 ## Catatan
 
-`applicationId` masih memakai `com.contoh.gamelauncher`. Ganti sebelum dirilis.
+`applicationId` masih memakai `com.mdh.gamelauncher`. Ganti sebelum dirilis.
