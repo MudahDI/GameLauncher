@@ -69,6 +69,45 @@ class Store(ctx: Context) {
     var descriptions by mutableStateOf(readDescriptionMap())
     var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
     var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
+    var cardSizeDp by mutableStateOf(sp.getInt("card_size_dp", 112).coerceIn(88, 148))
+    var gridSpacingDp by mutableStateOf(sp.getInt("grid_spacing_dp", 14).coerceIn(6, 24))
+    var cardCornerDp by mutableStateOf(sp.getInt("card_corner_dp", 10).coerceIn(4, 20))
+    var wallpaperOpacity by mutableStateOf(sp.getFloat("wallpaper_opacity", 0.28f).coerceIn(0.08f, 0.65f))
+    var wallpaperOverlay by mutableStateOf(sp.getFloat("wallpaper_overlay", 0.48f).coerceIn(0.20f, 0.85f))
+
+    fun setCardSize(value: Int) {
+        cardSizeDp = value.coerceIn(88, 148)
+        sp.edit().putInt("card_size_dp", cardSizeDp).apply()
+    }
+
+    fun setGridSpacing(value: Int) {
+        gridSpacingDp = value.coerceIn(6, 24)
+        sp.edit().putInt("grid_spacing_dp", gridSpacingDp).apply()
+    }
+
+    fun setCardCorner(value: Int) {
+        cardCornerDp = value.coerceIn(4, 20)
+        sp.edit().putInt("card_corner_dp", cardCornerDp).apply()
+    }
+
+    fun setWallpaperOpacity(value: Float) {
+        wallpaperOpacity = value.coerceIn(0.08f, 0.65f)
+        sp.edit().putFloat("wallpaper_opacity", wallpaperOpacity).apply()
+    }
+
+    fun setWallpaperOverlay(value: Float) {
+        wallpaperOverlay = value.coerceIn(0.20f, 0.85f)
+        sp.edit().putFloat("wallpaper_overlay", wallpaperOverlay).apply()
+    }
+
+    fun resetAppearance() {
+        setAccent("#1A9FFF")
+        setCardSize(112)
+        setGridSpacing(14)
+        setCardCorner(10)
+        setWallpaperOpacity(0.28f)
+        setWallpaperOverlay(0.48f)
+    }
 
     fun setWallpaper(uri: Uri?) {
         wallpaperUri = uri
