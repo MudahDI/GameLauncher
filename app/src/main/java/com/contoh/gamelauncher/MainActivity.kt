@@ -3,6 +3,7 @@ package com.contoh.gamelauncher
 import android.os.Bundle
 import android.hardware.input.InputManager
 import android.view.InputDevice
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -30,6 +31,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.padding
@@ -84,6 +87,20 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
         Modifier
             .fillMaxSize()
             .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+                when (event.nativeKeyEvent.keyCode) {
+                    AndroidKeyEvent.KEYCODE_BUTTON_L1 -> {
+                        tab = (tab - 1 + 4) % 4
+                        true
+                    }
+                    AndroidKeyEvent.KEYCODE_BUTTON_R1 -> {
+                        tab = (tab + 1) % 4
+                        true
+                    }
+                    else -> false
+                }
+            }
     ) {
         if (focused != null) {
             Image(
