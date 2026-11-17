@@ -5,14 +5,14 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -84,7 +84,7 @@ fun LauncherApp(allApps: List<AppItem>) {
                 modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.35f)
             )
         }
-        Column(Modifier.fillMaxSize().navigationBarsPadding()) {
+        Column(Modifier.fillMaxSize()) {
             TopBar(tab) { tab = it }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
@@ -146,13 +146,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
-        // Jaga ikon status bar tetap kontras di atas header transparan.
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
-        WindowCompat.getInsetsController(window, window.decorView).apply {
-            isAppearanceLightStatusBars = false
-            isAppearanceLightNavigationBars = false
-        }
+        // Immersive sticky: status bar dan navigation bar tersembunyi,
+        // tetapi bisa dimunculkan sementara dengan swipe dari tepi layar.
+        hideSystemBars()
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
@@ -175,6 +171,19 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    private fun hideSystemBars() {
+        WindowInsetsControllerCompat(window, window.decorView).apply {
+            systemBarsBehavior =
+                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            hide(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) hideSystemBars()
     }
 
     override fun onRestart() {
