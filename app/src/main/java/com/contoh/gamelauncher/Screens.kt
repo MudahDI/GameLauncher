@@ -2,8 +2,6 @@ package com.mdh.gamelauncher
 
 import android.view.KeyEvent as AndroidKeyEvent
 import android.graphics.BitmapFactory
-import android.content.Intent
-import android.content.IntentFilter
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.remember
@@ -57,10 +55,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import kotlinx.coroutines.delay
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
 // Artwork lokal; jika belum tersedia atau gagal dibaca, gunakan ikon aplikasi.
 @Composable
@@ -482,89 +476,6 @@ fun HeroPanel(
 }
 
 
-private data class DashboardInfo(val timestamp: Long, val batteryPercent: Int)
-
-@Composable
-private fun HomeDashboard(
-    gameCount: Int,
-    favoriteCount: Int,
-    recentCount: Int,
-    landscape: Boolean
-) {
-    val context = LocalContext.current
-    val info by produceState(
-        initialValue = DashboardInfo(System.currentTimeMillis(), -1),
-        key1 = context
-    ) {
-        while (true) {
-            val battery = runCatching {
-                context.registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
-            }.getOrNull()
-            val level = battery?.getIntExtra("level", -1) ?: -1
-            val scale = battery?.getIntExtra("scale", -1) ?: -1
-            val percent = if (level >= 0 && scale > 0) (level * 100 / scale).coerceIn(0, 100) else -1
-            value = DashboardInfo(System.currentTimeMillis(), percent)
-            delay(30_000)
-        }
-    }
-    val time = remember(info.timestamp) {
-        SimpleDateFormat("HH:mm", Locale("id", "ID")).format(Date(info.timestamp))
-    }
-    val date = remember(info.timestamp) {
-        SimpleDateFormat("EEEE, d MMMM yyyy", Locale("id", "ID")).format(Date(info.timestamp))
-            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale("id", "ID")) else it.toString() }
-    }
-
-    Row(
-        Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(Brush.horizontalGradient(listOf(Deck.Panel.copy(alpha = 0.98f), Deck.PanelLight.copy(alpha = 0.88f))))
-            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(18.dp))
-            .padding(horizontal = 18.dp, vertical = if (landscape) 12.dp else 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(time, color = Color.White, fontSize = if (landscape) 34.sp else 32.sp, fontWeight = FontWeight.Bold, letterSpacing = (-1).sp)
-            Text(date, color = Deck.TextDim, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-        }
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                DashboardStat("GAME", gameCount)
-                DashboardStat("FAVORIT", favoriteCount)
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                DashboardStat("TERAKHIR", recentCount)
-                if (info.batteryPercent >= 0) {
-                    Text(
-                        "BAT " + info.batteryPercent + "%",
-                        color = Deck.Accent,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.clip(RoundedCornerShape(8.dp))
-                            .background(Deck.Accent.copy(alpha = 0.12f))
-                            .padding(horizontal = 8.dp, vertical = 5.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun DashboardStat(label: String, count: Int) {
-    Row(
-        modifier = Modifier.clip(RoundedCornerShape(8.dp))
-            .background(Color.White.copy(alpha = 0.055f))
-            .padding(horizontal = 8.dp, vertical = 5.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(5.dp)
-    ) {
-        Text(count.toString(), color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-        Text(label, color = Deck.TextDim, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.4.sp)
-    }
-}
-
 @Composable
 fun HomeScreen(
     visible: List<AppItem>,
@@ -597,8 +508,6 @@ fun HomeScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                HomeDashboard(visible.size, favs.size, recent.size, landscape = true)
-                Spacer(Modifier.height(12.dp))
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     // Batasi lebar banner khusus landscape agar artwork tidak terlalu panoramik.
                     Box(Modifier.fillMaxWidth().widthIn(max = 760.dp)) {
@@ -624,8 +533,6 @@ fun HomeScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 14.dp)
             ) {
-                HomeDashboard(visible.size, favs.size, recent.size, landscape = false)
-                Spacer(Modifier.height(14.dp))
                 HeroPanel(focused, store, compact, onPlay, onOptions)
                 if (recent.isNotEmpty()) CardRow(
                     "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
