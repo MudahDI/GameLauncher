@@ -16,6 +16,7 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -74,6 +75,40 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+
+@Composable
+private fun OptionAction(
+    title: String,
+    subtitle: String,
+    symbol: String,
+    danger: Boolean = false,
+    onClick: () -> Unit
+) {
+    val tint = if (danger) Color(0xFFFF7777) else Deck.Text
+    Row(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Deck.Panel)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+                .background(if (danger) Color(0xFF4A252B) else Deck.PanelLight),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = Deck.TextDim, fontSize = 11.sp, lineHeight = 14.sp)
+        }
+        Text("›", color = Deck.TextDim, fontSize = 22.sp)
+    }
+}
+
 
 @Composable
 private fun WallpaperBackground(store: Store) {
@@ -286,39 +321,6 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     if (showPicker) {
         AddAppDialog(candidates, { store.addApp(it.pkg) }, { showPicker = false })
     }
-
-@Composable
-private fun OptionAction(
-    title: String,
-    subtitle: String,
-    symbol: String,
-    danger: Boolean = false,
-    onClick: () -> Unit
-) {
-    val tint = if (danger) Color(0xFFFF7777) else Deck.Text
-    Row(
-        Modifier.fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(Deck.Panel)
-            .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Box(
-            Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
-                .background(if (danger) Color(0xFF4A252B) else Deck.PanelLight),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
-        }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = Deck.TextDim, fontSize = 11.sp, lineHeight = 14.sp)
-        }
-        Text("›", color = Deck.TextDim, fontSize = 22.sp)
-    }
-}
 
     selected?.let { a ->
         val fav = a.pkg in store.favorites
