@@ -191,7 +191,7 @@ class Store(ctx: Context) {\n    private val appContext = ctx.applicationContext
         val uri = runCatching { Uri.parse(uriString) }.getOrNull() ?: return
         if (uri.scheme != "file") return
         runCatching {
-            val artworkDir = java.io.File(spFileDir(), "metadata_artwork").canonicalFile
+            val artworkDir = java.io.File(appContext.filesDir, "metadata_artwork").canonicalFile
             val candidate = java.io.File(uri.path ?: return@runCatching).canonicalFile
             if (candidate.parentFile == artworkDir && candidate.isFile) candidate.delete()
         }
