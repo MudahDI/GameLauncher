@@ -127,6 +127,18 @@ fun ArtworkImage(
 
 // ---------- Komponen ----------
 
+@Composable
+fun MdiBrandingBadge(modifier: Modifier = Modifier) {
+    Row(
+        modifier.clip(RoundedCornerShape(5.dp)).background(Color(0xCC101923))
+            .padding(horizontal = 5.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text("M", color = Color(0xFF1A9FFF), fontSize = 10.sp, fontWeight = FontWeight.Black)
+        Text("DI", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp)
+    }
+}
+
 /** Kartu game potret ala Steam Deck. Kartu yang sedang fokus membesar dan diberi garis putih. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -172,6 +184,7 @@ fun GameCard(
                     modifier = Modifier.fillMaxSize().scale(1.12f).blur(18.dp).alpha(0.72f)
                 )
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
+            MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(10.dp))
             } else {
                 Image(
                     app.icon,
@@ -210,17 +223,8 @@ fun GameCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        if (showMdiBranding && coverUri == null) {
-            Row(
-                Modifier.align(Alignment.TopEnd).padding(6.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(Color(0xCC101923))
-                    .padding(horizontal = 5.dp, vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("M", color = Color(0xFF1A9FFF), fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Text("DI", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp)
-            }
+        if (showMdiBranding) {
+            MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(6.dp))
         }
         if (isFav) {
             Text(
@@ -283,7 +287,8 @@ fun CardRow(
                 { onTap(app) },
                 { onPlay(app) },
                 { onOptions(app) },
-                { onFocus(app) }
+                { onFocus(app) },
+                showMdiBranding = true
             )
         }
     }
@@ -379,6 +384,7 @@ fun HeroPanel(
                     contentScale = ContentScale.Crop
                 )
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.16f)))
+                MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(7.dp))
             }
             Column(
                 Modifier.weight(1f).fillMaxHeight(),
@@ -706,7 +712,7 @@ fun LibraryScreen(
             onFocus = { focusedPkg = it.pkg },
             emptyLabel = if (onlyFav) "Belum ada favorit di kategori ini." else if (showGames) "Belum ada game." else "Belum ada aplikasi.",
             spacing = store.gridSpacingDp.dp,
-            showMdiBranding = !showGames
+            showMdiBranding = true
         )
     }
 }
