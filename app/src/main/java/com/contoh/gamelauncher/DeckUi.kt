@@ -67,62 +67,76 @@ fun rememberBatteryPercent(): State<Int> {
 }
 
 @Composable
-fun TopBar(selected: Int, onSelect: (Int) -> Unit) {
+fun HeaderBar() {
     val clock by rememberClock()
     val battery by rememberBatteryPercent()
-    val tabs = listOf("BERANDA", "KOLEKSI", "CARI", "ATUR")
+    Row(
+        Modifier.fillMaxWidth()
+            .height(48.dp)
+            .background(Color.Black.copy(alpha = 0.30f))
+            .padding(horizontal = 18.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            "MDI",
+            color = Deck.Accent,
+            fontSize = 18.sp,
+            fontWeight = FontWeight.ExtraBold,
+            letterSpacing = 1.5.sp
+        )
+        Spacer(Modifier.width(9.dp))
+        Text(
+            "LAUNCHER",
+            color = Deck.Text,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.SemiBold,
+            letterSpacing = 2.sp
+        )
+        Spacer(Modifier.weight(1f))
+        if (battery >= 0) {
+            Text("$battery%", color = Deck.TextDim, fontSize = 12.sp)
+            Spacer(Modifier.width(12.dp))
+        }
+        Text(clock, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.Medium)
+    }
+}
 
-    BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f))) {
-        val wide = maxWidth >= 700.dp
-        Row(
-            Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (wide) {
+@Composable
+fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
+    val tabs = listOf("BERANDA", "KOLEKSI", "CARI", "ATUR")
+    Row(
+        Modifier.fillMaxWidth()
+            .height(58.dp)
+            .background(Color(0xF20B1017))
+            .padding(horizontal = 8.dp, vertical = 5.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        tabs.forEachIndexed { index, label ->
+            val active = index == selected
+            Column(
+                Modifier.weight(1f).fillMaxHeight()
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (active) Deck.Panel else Color.Transparent)
+                    .clickable { onSelect(index) }
+                    .padding(vertical = 5.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
                 Text(
-                    "MDI LAUNCHER",
-                    color = Deck.Accent,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp,
-                    modifier = Modifier.padding(start = 8.dp, end = 24.dp)
+                    label,
+                    color = if (active) Color.White else Deck.TextDim,
+                    fontSize = 11.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                    letterSpacing = 0.8.sp
+                )
+                Spacer(Modifier.height(4.dp))
+                Box(
+                    Modifier.width(if (active) 20.dp else 0.dp)
+                        .height(2.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(Deck.Accent)
                 )
             }
-            tabs.forEachIndexed { i, label ->
-                val on = i == selected
-                Column(
-                    Modifier.clickable { onSelect(i) }.padding(horizontal = 8.dp, vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        label,
-                        color = if (on) Color.White else Deck.TextDim,
-                        fontSize = 12.sp,
-                        fontWeight = if (on) FontWeight.SemiBold else FontWeight.Normal,
-                        letterSpacing = 1.sp
-                    )
-                    Spacer(Modifier.height(4.dp))
-                    Box(
-                        Modifier
-                            .width(24.dp)
-                            .height(2.dp)
-                            .background(if (on) Deck.Accent else Color.Transparent)
-                    )
-                }
-            }
-            Spacer(Modifier.weight(1f))
-            if (wide && battery >= 0) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    BatteryGlyph(battery)
-                    Text("$battery%", color = Deck.Text, fontSize = 13.sp)
-                }
-                Spacer(Modifier.width(16.dp))
-            }
-            Text(clock, color = Deck.Text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.width(8.dp))
         }
     }
 }
