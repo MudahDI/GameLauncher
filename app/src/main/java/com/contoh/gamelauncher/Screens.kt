@@ -168,7 +168,6 @@ fun GameCard(
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
                 when (event.nativeKeyEvent.keyCode) {
-                    (if (store.swapAB) AndroidKeyEvent.KEYCODE_BUTTON_B else AndroidKeyEvent.KEYCODE_BUTTON_A),
                     AndroidKeyEvent.KEYCODE_DPAD_CENTER,
                     AndroidKeyEvent.KEYCODE_ENTER -> {
                         if (focused) onDoubleClick() else onClick()
@@ -346,7 +345,7 @@ fun GameGrid(
                     tile,
                     app.pkg in store.favorites,
                     app.pkg == focusedPkg,
-                    { onFocus(app) },
+                    { onPlay(app) },
                     { onPlay(app) },
                     { onOptions(app) },
                     { onFocus(app) },
@@ -838,13 +837,11 @@ fun SettingsScreen(
         Spacer(Modifier.height(24.dp))
         Text("GAMEPAD", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Tukar tombol A / B", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-                Text("Aktifkan jika tombol fisik confirm dan kembali tertukar pada gamepad.", color = Deck.TextDim, fontSize = 11.sp)
-            }
-            Switch(checked = store.swapAB, onCheckedChange = { store.updateSwapAB(it) })
-        }
+        SettingRow(
+            "Kontrol standar",
+            "A: konfirmasi dan buka · B: kembali · D-pad/analog: navigasi · L1/R1: ganti tab",
+            {}
+        )
         Spacer(Modifier.height(24.dp))
         Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))

@@ -79,7 +79,6 @@ class Store(ctx: Context) {
     var descriptions by mutableStateOf(readDescriptionMap())
     var metadataTitles by mutableStateOf(readMetadataTitleMap())
     var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
-    var swapAB by mutableStateOf(sp.getBoolean("swap_ab", false))
     init {
         // Migrasi sekali: gunakan identitas biru MDI sebagai aksen awal versi ini.
         if (!sp.getBoolean("blue_branding_migrated", false)) {
@@ -131,11 +130,6 @@ class Store(ctx: Context) {
     fun setWallpaper(uri: Uri?) {
         wallpaperUri = uri
         sp.edit().putString("wallpaper_uri", uri?.toString()).apply()
-    }
-
-    fun updateSwapAB(enabled: Boolean) {
-        swapAB = enabled
-        sp.edit().putBoolean("swap_ab", enabled).apply()
     }
 
     fun setAccent(hex: String) {
