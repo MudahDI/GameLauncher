@@ -2,6 +2,8 @@ package com.mdh.gamelauncher
 
 import android.view.KeyEvent as AndroidKeyEvent
 import android.graphics.BitmapFactory
+import android.graphics.Bitmap
+import android.util.LruCache
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.remember
@@ -40,6 +42,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -56,6 +59,45 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+// Cache bitmap bersama agar artwork tidak didekode ulang setiap kali tab dibuat kembali.
+internal object ArtworkBitmapCache {
+    private val cache = LruCache<String, Bitmap>(
+        (Runtime.getRuntime().maxMemory() / 1024L / 8L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+    )
+
+    @Synchronized
+    fun get(key: String): Bitmap? = cache.get(key)
+
+    @Synchronized
+    fun put(key: String, bitmap: Bitmap) {
+        cache.put(key, bitmap)
+    }
+
+    fun load(context: android.content.Context, uri: android.net.Uri, maxDimension: Int = 1280): androidx.compose.ui.graphics.ImageBitmap? {
+        val key = "${uri}|$maxDimension"
+        get(key)?.let { return it.asImageBitmap() }
+        return runCatching {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            var sample = 1
+            if (bounds.outWidth > 0 && bounds.outHeight > 0) {
+                while (maxOf(bounds.outWidth, bounds.outHeight) / sample > maxDimension) sample *= 2
+            } else {
+                sample = 2
+            }
+            val options = BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = Bitmap.Config.ARGB_8888
+            }
+            val bitmap = context.contentResolver.openInputStream(uri)?.use {
+                BitmapFactory.decodeStream(it, null, options)
+            } ?: return null
+            put(key, bitmap)
+            bitmap.asImageBitmap()
+        }.getOrNull()
+    }
+}
+
 // Artwork lokal; jika belum tersedia atau gagal dibaca, gunakan ikon aplikasi.
 @Composable
 fun ArtworkImage(
@@ -68,36 +110,11 @@ fun ArtworkImage(
     val context = LocalContext.current
     val uri = store.artworkUri(app.pkg, kind)
     val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null,
+        initialValue = uri?.let { ArtworkBitmapCache.get("${it}|1280")?.asImageBitmap() },
         key1 = uri
     ) {
         value = if (uri == null) null else withContext(Dispatchers.IO) {
-            runCatching {
-                // Baca dimensi terlebih dahulu agar artwork resolusi tinggi tidak
-                // didekode penuh ke memori hanya untuk ditampilkan sebagai cover.
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                context.contentResolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream, null, bounds)
-                }
-
-                val sampleSize = if (bounds.outWidth > 0 && bounds.outHeight > 0) {
-                    var sample = 1
-                    while (maxOf(bounds.outWidth, bounds.outHeight) / sample > 1600) {
-                        sample *= 2
-                    }
-                    sample
-                } else {
-                    2
-                }
-
-                val options = BitmapFactory.Options().apply {
-                    inSampleSize = sampleSize
-                    inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
-                }
-                context.contentResolver.openInputStream(uri)?.use { stream ->
-                    BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
-                }
-            }.getOrNull()
+            ArtworkBitmapCache.load(context, uri, 1280)
         }
     }
     Image(
@@ -165,7 +182,7 @@ fun GameCard(
                 app.icon,
                 null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(24.dp)
+                modifier = Modifier.fillMaxSize().alpha(0.48f)
             )
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
             Image(
