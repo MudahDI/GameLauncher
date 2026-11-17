@@ -120,6 +120,7 @@ fun GameCard(
     isFav: Boolean,
     focused: Boolean,
     onClick: () -> Unit,
+    onDoubleClick: () -> Unit,
     onLongClick: () -> Unit,
     onFocus: () -> Unit = {}
 ) {
@@ -143,7 +144,7 @@ fun GameCard(
                     AndroidKeyEvent.KEYCODE_BUTTON_A,
                     AndroidKeyEvent.KEYCODE_DPAD_CENTER,
                     AndroidKeyEvent.KEYCODE_ENTER -> {
-                        onClick()
+                        if (focused) onDoubleClick() else onClick()
                         true
                     }
                     AndroidKeyEvent.KEYCODE_BUTTON_X -> {
@@ -153,7 +154,7 @@ fun GameCard(
                     else -> false
                 }
             }
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
             .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
         if (store.artworkUri(app.pkg, "cover") != null) {
@@ -238,6 +239,7 @@ fun CardRow(
     cardWidth: Dp,
     compact: Boolean,
     onTap: (AppItem) -> Unit,
+    onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
     onFocus: (AppItem) -> Unit
 ) {
@@ -255,6 +257,7 @@ fun CardRow(
                 app.pkg in store.favorites,
                 app.pkg == focusedPkg,
                 { onTap(app) },
+                { onPlay(app) },
                 { onOptions(app) },
                 { onFocus(app) }
             )
@@ -293,6 +296,7 @@ fun GameGrid(
                     tile,
                     app.pkg in store.favorites,
                     app.pkg == focusedPkg,
+                    { onFocus(app) },
                     { onPlay(app) },
                     { onOptions(app) },
                     { onFocus(app) }
@@ -493,10 +497,8 @@ fun HomeScreen(
         val compact = maxHeight < 420.dp
         val landscape = maxWidth > maxHeight
         val cardWidth = if (compact) store.cardSizeDp.coerceAtMost(104).dp else store.cardSizeDp.dp
-        // Ketuk sekali untuk memilih, ketuk kartu yang sama (atau tombol MAINKAN) untuk bermain.
-        val tap: (AppItem) -> Unit = { a ->
-            if (a.pkg == focused?.pkg) onPlay(a) else onFocus(a)
-        }
+        // Ketuk sekali untuk memilih, ketuk dua kali untuk bermain.
+        val tap: (AppItem) -> Unit = { a -> onFocus(a) }
 
         if (landscape) {
             // Kembalikan susunan landscape sebelumnya: banner di atas, deretan game di bawah.
@@ -513,17 +515,17 @@ fun HomeScreen(
                 }
                 if (recent.isNotEmpty()) CardRow(
                     "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions, onFocus
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (favs.isNotEmpty()) CardRow(
                     "FAVORIT", favs, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions, onFocus
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (visible.isNotEmpty()) CardRow(
                     "SEMUA GAME", visible, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions, onFocus
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
-                HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
+                HintText("Ketuk untuk memilih · ketuk dua kali untuk bermain · tahan untuk opsi")
             }
         } else {
             Column(
@@ -534,17 +536,17 @@ fun HomeScreen(
                 HeroPanel(focused, store, compact, onPlay, onOptions)
                 if (recent.isNotEmpty()) CardRow(
                     "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions, onFocus
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (favs.isNotEmpty()) CardRow(
                     "FAVORIT", favs, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions, onFocus
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (visible.isNotEmpty()) CardRow(
                     "SEMUA GAME", visible, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions, onFocus
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
-                HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
+                HintText("Ketuk untuk memilih · ketuk dua kali untuk bermain · tahan untuk opsi")
             }
         }
     }
@@ -723,8 +725,8 @@ fun SettingsScreen(
         Spacer(Modifier.height(24.dp))
         Text("WALLPAPER", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        SettingSlider("Intensitas wallpaper", "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.08f..0.65f, 56) { store.updateWallpaperOpacity(it) }
-        SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.20f..0.85f, 64) { store.updateWallpaperOverlay(it) }
+        SettingSlider("Intensitas wallpaper", "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.05f..1.00f, 94) { store.updateWallpaperOpacity(it) }
+        SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
         SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna aksen, dan efek wallpaper", { store.resetAppearance() })
         Spacer(Modifier.height(24.dp))
