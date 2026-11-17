@@ -64,9 +64,8 @@ internal class GamepadInputRouter(
 
     /** Return a normalized event only for actual controller-originated keys. */
     fun mapKeyEvent(event: KeyEvent): KeyEvent? {
-        val device = InputDevice.getDevice(event.deviceId) ?: return null
-        if (!isController(device) || !isControllerKeySource(event)) return null
-
+        // BUTTON_A/B are unambiguous controller key codes. Some HID pads expose
+        // their key source inconsistently, so do not reject these by source mask.
         val mappedCode = when (event.keyCode) {
             KeyEvent.KEYCODE_BUTTON_A -> KeyEvent.KEYCODE_DPAD_CENTER
             KeyEvent.KEYCODE_BUTTON_B -> KeyEvent.KEYCODE_BACK
@@ -89,14 +88,18 @@ internal class GamepadInputRouter(
     ): Boolean {
         if (closed || event.action != MotionEvent.ACTION_MOVE) return false
         val device = event.device ?: return false
-        if (!isController(device) || !event.isFromSource(InputDevice.SOURCE_JOYSTICK)) return false
+        val joystickSource = event.isFromSource(InputDevice.SOURCE_JOYSTICK) ||
+            event.isFromSource(InputDevice.SOURCE_GAMEPAD)
+        if (!isController(device) || !joystickSource) return false
 
         val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
         val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
         val x = event.getAxisValue(MotionEvent.AXIS_X)
         val y = event.getAxisValue(MotionEvent.AXIS_Y)
-        val xFlat = device.getMotionRange(MotionEvent.AXIS_X, event.source)?.flat ?: 0.12f
-        val yFlat = device.getMotionRange(MotionEvent.AXIS_Y, event.source)?.flat ?: 0.12f
+        val xFlat = (device.getMotionRange(MotionEvent.AXIS_X, event.source)
+            ?: device.getMotionRange(MotionEvent.AXIS_X))?.flat ?: 0.12f
+        val yFlat = (device.getMotionRange(MotionEvent.AXIS_Y, event.source)
+            ?: device.getMotionRange(MotionEvent.AXIS_Y))?.flat ?: 0.12f
         val direction = resolveDirection(x, y, hatX, hatY, xFlat, yFlat)
 
         updateDirection(direction, device.id, dispatchDirection)
@@ -164,7 +167,10 @@ internal class GamepadInputRouter(
     }
 
     override fun onInputDeviceAdded(deviceId: Int) = refresh()
-    override fun onInputDeviceRemoved(deviceId: Int) = refresh()
+    override fun onInputDeviceRemoved(deviceId: Int) {
+        onStop()
+        refresh()
+    }
     override fun onInputDeviceChanged(deviceId: Int) = refresh()
 
     private fun isController(device: InputDevice): Boolean =
@@ -174,7 +180,4 @@ internal class GamepadInputRouter(
             device.supportsSource(InputDevice.SOURCE_DPAD)
         )
 
-    private fun isControllerKeySource(event: KeyEvent): Boolean =
-        event.isFromSource(InputDevice.SOURCE_GAMEPAD) ||
-            event.isFromSource(InputDevice.SOURCE_DPAD)
 }
