@@ -33,7 +33,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -106,24 +110,38 @@ object MetadataRepository {
     fun sources(context: Context): List<MetadataSourceConfig> = loadMetadataSources(context)
 
     suspend fun search(context: Context, query: String, packageName: String? = null): List<GameMetadataResult> = withContext(Dispatchers.IO) {
+        val cleanQuery = query.trim()
+        require(cleanQuery.isNotBlank()) { "Masukkan judul game terlebih dahulu." }
         val enabled = loadMetadataSources(context).filter { it.enabled }
         require(enabled.isNotEmpty()) { "Aktifkan setidaknya satu sumber database game." }
+
+        // Jalankan provider aktif bersamaan agar pencarian gabungan tidak menunggu satu per satu.
+        val outcomes = coroutineScope {
+            enabled.map { source ->
+                async(Dispatchers.IO) {
+                    val outcome = try {
+                        Result.success(when (source.id) {
+                            "wikipedia" -> searchWikipedia(cleanQuery)
+                            "google_play" -> searchGooglePlay(cleanQuery, packageName)
+                            "rawg" -> searchRawg(cleanQuery, source.apiKey)
+                            "igdb" -> searchIgdb(cleanQuery, source.apiKey)
+                            "steamgriddb" -> searchSteamGridDb(cleanQuery, source.apiKey)
+                            else -> if (source.id.startsWith("custom_")) searchCustom(cleanQuery, source) else emptyList()
+                        })
+                    } catch (error: Exception) {
+                        if (error is CancellationException) throw error
+                        Result.failure(error)
+                    }
+                    source to outcome
+                }
+            }.awaitAll()
+        }
+
         val results = mutableListOf<GameMetadataResult>()
         val errors = mutableListOf<String>()
-        enabled.forEach { source ->
-            try {
-                val found = when (source.id) {
-                    "wikipedia" -> searchWikipedia(query)
-                    "google_play" -> searchGooglePlay(query, packageName)
-                    "rawg" -> searchRawg(query, source.apiKey)
-                    "igdb" -> searchIgdb(query, source.apiKey)
-                    "steamgriddb" -> searchSteamGridDb(query, source.apiKey)
-                    else -> if (source.id.startsWith("custom_")) searchCustom(query, source) else emptyList()
-                }
-                results += found
-            } catch (error: Exception) {
-                errors += "${source.name}: ${error.message ?: "gagal"}"
-            }
+        outcomes.forEach { (source, outcome) ->
+            outcome.onSuccess { results += it }
+                .onFailure { errors += "${source.name}: ${it.message ?: "gagal"}" }
         }
         if (results.isEmpty() && errors.isNotEmpty()) {
             throw IllegalStateException(errors.joinToString("\n"))
@@ -133,8 +151,8 @@ object MetadataRepository {
 
     private fun connection(url: String, method: String = "GET", headers: Map<String, String> = emptyMap()): HttpURLConnection =
         (URL(url).openConnection() as HttpURLConnection).apply {
-            connectTimeout = 10000
-            readTimeout = 15000
+            connectTimeout = 8000
+            readTimeout = 12000
             requestMethod = method
             headers.forEach { (key, value) -> setRequestProperty(key, value) }
             setRequestProperty("User-Agent", "MDILauncher/2.1 (Android game metadata)")
@@ -439,8 +457,14 @@ fun GameMetadataDialog(app: AppItem, onDismiss: () -> Unit, onApply: (GameMetada
                 }
                 selected?.let { result ->
                     Text("Dipilih: ${result.title} · ${result.sourceName}", color = Deck.Accent, fontSize = 11.sp)
-                    Text(if (result.thumbnailUrl != null) "Artwork tersedia; akan disimpan untuk cover dan banner."
-                        else "Tidak ada artwork. Judul dan deskripsi tetap bisa diterapkan.", color = Deck.TextDim, fontSize = 10.sp)
+                    val artworkStatus = when {
+                        result.coverUrl != null && result.bannerUrl != null -> "Cover portrait dan banner landscape tersedia."
+                        result.coverUrl != null -> "Artwork cover tersedia."
+                        result.bannerUrl != null -> "Artwork banner tersedia."
+                        result.thumbnailUrl != null -> "Artwork tersedia dari sumber ini."
+                        else -> "Tidak ada artwork. Judul dan deskripsi tetap bisa diterapkan."
+                    }
+                    Text(artworkStatus, color = Deck.TextDim, fontSize = 10.sp)
                 }
             }
         },
