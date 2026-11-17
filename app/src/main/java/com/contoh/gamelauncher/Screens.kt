@@ -1,12 +1,6 @@
-package com.mdh.gamelauncher
+package com.contoh.gamelauncher
 
-import android.graphics.BitmapFactory
-import android.graphics.Bitmap
-import java.io.FileInputStream
-import android.util.LruCache
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.runtime.remember
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -19,111 +13,40 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Slider
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-// Cache bitmap bersama agar artwork tidak didekode ulang setiap kali tab dibuat kembali.
-internal object ArtworkBitmapCache {
-    private val cache = object : LruCache<String, Bitmap>(
-        (Runtime.getRuntime().maxMemory() / 1024L / 8L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-    ) {
-        override fun sizeOf(key: String, value: Bitmap): Int =
-            (value.byteCount / 1024).coerceAtLeast(1)
-    }
-
-    @Synchronized
-    fun get(key: String): Bitmap? = cache.get(key)
-
-    @Synchronized
-    fun put(key: String, bitmap: Bitmap) {
-        cache.put(key, bitmap)
-    }
-
-    fun load(context: android.content.Context, uri: android.net.Uri, maxDimension: Int = 1280): androidx.compose.ui.graphics.ImageBitmap? {
-        val key = "${uri}|$maxDimension"
-        get(key)?.let { return it.asImageBitmap() }
-        return runCatching {
-            fun openArtworkStream() = if (uri.scheme == "file") uri.path?.let { FileInputStream(it) } else context.contentResolver.openInputStream(uri)
-            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            openArtworkStream()?.use { BitmapFactory.decodeStream(it, null, bounds) }
-            var sample = 1
-            if (bounds.outWidth > 0 && bounds.outHeight > 0) {
-                while (maxOf(bounds.outWidth, bounds.outHeight) / sample > maxDimension) sample *= 2
-            } else {
-                sample = 2
-            }
-            val options = BitmapFactory.Options().apply {
-                inSampleSize = sample
-                inPreferredConfig = Bitmap.Config.ARGB_8888
-            }
-            val bitmap = openArtworkStream()?.use {
-                BitmapFactory.decodeStream(it, null, options)
-            } ?: return null
-            put(key, bitmap)
-            bitmap.asImageBitmap()
-        }.getOrNull()
-    }
-}
-
-// Artwork lokal; jika belum tersedia atau gagal dibaca, gunakan ikon aplikasi.
-@Composable
-fun ArtworkImage(
-    app: AppItem,
-    store: Store,
-    kind: String,
-    modifier: Modifier = Modifier,
-    contentScale: ContentScale = ContentScale.Crop
-) {
-    val context = LocalContext.current
-    val uri = store.artworkUri(app.pkg, kind)
-    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = uri?.let { ArtworkBitmapCache.get("${it}|1280")?.asImageBitmap() },
-        key1 = uri
-    ) {
-        value = if (uri == null) null else withContext(Dispatchers.IO) {
-            ArtworkBitmapCache.load(context, uri, 1280)
-        }
-    }
-    Image(
-        bitmap ?: app.icon,
-        contentDescription = app.name,
-        modifier = modifier,
-        contentScale = contentScale
-    )
-}
 
 // ---------- Komponen ----------
 
@@ -132,25 +55,14 @@ fun ArtworkImage(
 @Composable
 fun GameCard(
     app: AppItem,
-    store: Store,
     width: Dp,
     isFav: Boolean,
     focused: Boolean,
     onClick: () -> Unit,
-    onDoubleClick: () -> Unit,
-    onLongClick: () -> Unit,
-    onFocus: () -> Unit = {},
-    blurIconBackground: Boolean = false,
-    showMdiBranding: Boolean = false
+    onLongClick: () -> Unit
 ) {
-    val scale by animateFloatAsState(
-        targetValue = if (focused) 1.06f else 1f,
-        animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
-        label = "cardScale"
-    )
-    val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
-    val coverUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, "cover") }
-    val displayIcon = app.icon
+    val scale by animateFloatAsState(if (focused) 1.08f else 1f, label = "cardScale")
+    val shape = RoundedCornerShape(10.dp)
     Box(
         Modifier
             .size(width, width * 4 / 3)
@@ -158,38 +70,23 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
             .background(Deck.Panel)
-            .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
-        if (coverUri != null) {
-            ArtworkImage(app, store, "cover", Modifier.fillMaxSize())
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
-        } else {
-            if (blurIconBackground) {
-                Image(
-                    displayIcon,
-                    null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().scale(1.12f).blur(18.dp).alpha(0.72f)
-                )
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
-            } else {
-                Image(
-                    app.icon,
-                    null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().alpha(0.48f)
-                )
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-            }
-            Image(
-                displayIcon,
-                app.name,
-                Modifier
-                    .align(Alignment.Center)
-                    .size(width * 0.55f)
-                    .clip(RoundedCornerShape(14.dp)),
-            )
-        }
+        Image(
+            app.icon,
+            null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().blur(24.dp)
+        )
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+        Image(
+            app.icon,
+            app.name,
+            Modifier
+                .align(Alignment.Center)
+                .size(width * 0.55f)
+                .clip(RoundedCornerShape(14.dp))
+        )
         Box(
             Modifier
                 .align(Alignment.BottomStart)
@@ -210,18 +107,6 @@ fun GameCard(
                 overflow = TextOverflow.Ellipsis
             )
         }
-        if (showMdiBranding && coverUri == null) {
-            Row(
-                Modifier.align(Alignment.TopEnd).padding(6.dp)
-                    .clip(RoundedCornerShape(5.dp))
-                    .background(Color(0xCC101923))
-                    .padding(horizontal = 5.dp, vertical = 3.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text("M", color = Color(0xFF1A9FFF), fontSize = 10.sp, fontWeight = FontWeight.Black)
-                Text("DI", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp)
-            }
-        }
         if (isFav) {
             Text(
                 "★",
@@ -241,7 +126,7 @@ fun SectionTitle(text: String, compact: Boolean) {
         fontSize = if (compact) 12.sp else 13.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 1.5.sp,
-        modifier = Modifier.padding(start = 16.dp, top = 14.dp)
+        modifier = Modifier.padding(start = 32.dp, top = 14.dp)
     )
 }
 
@@ -251,10 +136,11 @@ fun HintText(text: String) {
         text,
         color = Deck.TextDim,
         fontSize = 13.sp,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+        modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
     )
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CardRow(
     title: String,
@@ -264,27 +150,49 @@ fun CardRow(
     cardWidth: Dp,
     compact: Boolean,
     onTap: (AppItem) -> Unit,
-    onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    onFocus: (AppItem) -> Unit
+    scrollToFocus: Boolean = false,
+    isActiveRow: Boolean = false
 ) {
-    SectionTitle(title, compact)
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(store.gridSpacingDp.dp)
-    ) {
-        items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
-            GameCard(
-                app,
-                store,
-                cardWidth,
-                app.pkg in store.favorites,
-                app.pkg == focusedPkg,
-                { onTap(app) },
-                { onPlay(app) },
-                { onOptions(app) },
-                { onFocus(app) }
-            )
+    val listState = rememberLazyListState()
+    val bring = remember { BringIntoViewRequester() }
+    val currentList by rememberUpdatedState(list)
+
+    // Khusus mode gamepad: geser baris agar kartu yang dipilih selalu terlihat penuh.
+    LaunchedEffect(focusedPkg, scrollToFocus) {
+        if (!scrollToFocus) return@LaunchedEffect
+        val idx = currentList.indexOfFirst { it.pkg == focusedPkg }
+        if (idx >= 0) {
+            val info = listState.layoutInfo
+            val item = info.visibleItemsInfo.find { it.index == idx }
+            val fully = item != null &&
+                item.offset >= info.viewportStartOffset &&
+                item.offset + item.size <= info.viewportEndOffset
+            if (!fully) listState.animateScrollToItem(idx)
+        }
+    }
+    // Dan gulir halaman ke baris yang sedang aktif.
+    LaunchedEffect(focusedPkg, isActiveRow) {
+        if (isActiveRow) bring.bringIntoView()
+    }
+
+    Column(Modifier.fillMaxWidth().bringIntoViewRequester(bring)) {
+        SectionTitle(title, compact)
+        LazyRow(
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            items(list, key = { it.pkg }) { app ->
+                GameCard(
+                    app,
+                    cardWidth,
+                    app.pkg in store.favorites,
+                    app.pkg == focusedPkg,
+                    { onTap(app) },
+                    { onOptions(app) }
+                )
+            }
         }
     }
 }
@@ -296,37 +204,79 @@ fun GameGrid(
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
     tile: Dp = 110.dp,
-    focusedPkg: String? = null,
-    onFocus: (AppItem) -> Unit = {},
-    emptyLabel: String = "Tidak ada item.",
-    spacing: Dp = 16.dp,
-    showMdiBranding: Boolean = false
+    pad: GamepadInput? = null
 ) {
+    val gridState = rememberLazyGridState()
+    var padPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    val currentList by rememberUpdatedState(list)
+    val padActive = pad?.active == true
+    // Pilihan gamepad; kalau belum ada atau sudah tidak di daftar, mulai dari game pertama.
+    val sel = padPkg?.takeIf { p -> list.any { it.pkg == p } } ?: list.firstOrNull()?.pkg
+    // Sorotan hanya tampil saat gamepad dipakai, jadi tampilan sentuh tidak berubah.
+    val shown = if (padActive) sel else null
+
+    val onKey by rememberUpdatedState<(Pad) -> Unit>({ key ->
+        val l = list
+        if (l.isNotEmpty()) {
+            val cols = (gridState.layoutInfo.visibleItemsInfo.maxOfOrNull { it.column } ?: 0) + 1
+            val cur = l.indexOfFirst { it.pkg == sel }.coerceAtLeast(0)
+            when (key) {
+                Pad.Left -> { padPkg = l[(cur - 1).coerceAtLeast(0)].pkg }
+                Pad.Right -> { padPkg = l[(cur + 1).coerceAtMost(l.lastIndex)].pkg }
+                Pad.Up -> { padPkg = l[if (cur - cols >= 0) cur - cols else cur].pkg }
+                Pad.Down -> {
+                    val target = cur + cols
+                    padPkg = l[
+                        when {
+                            target <= l.lastIndex -> target
+                            cur / cols < l.lastIndex / cols -> l.lastIndex
+                            else -> cur
+                        }
+                    ].pkg
+                }
+                Pad.Confirm -> { onPlay(l[cur]) }
+                Pad.Favorite -> { store.toggleFav(l[cur].pkg) }
+                else -> {}
+            }
+        }
+    })
+    if (pad != null) {
+        LaunchedEffect(pad) { pad.events.collect { onKey(it) } }
+    }
+
+    LaunchedEffect(shown) {
+        val idx = currentList.indexOfFirst { it.pkg == shown }
+        if (shown != null && idx >= 0) {
+            val info = gridState.layoutInfo
+            val item = info.visibleItemsInfo.find { it.index == idx }
+            val fully = item != null &&
+                item.offset.y >= info.viewportStartOffset &&
+                item.offset.y + item.size.height <= info.viewportEndOffset
+            if (!fully) gridState.animateScrollToItem(idx)
+        }
+    }
+
     if (list.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(emptyLabel, color = Deck.TextDim)
+            Text("Tidak ada game.", color = Deck.TextDim)
         }
     } else {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(tile + 12.dp),
-            contentPadding = PaddingValues(horizontal = spacing + 8.dp, vertical = spacing + 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(spacing),
-            verticalArrangement = Arrangement.spacedBy(spacing),
+            state = gridState,
+            contentPadding = PaddingValues(24.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
+            items(list, key = { it.pkg }) { app ->
                 GameCard(
                     app,
-                    store,
                     tile,
                     app.pkg in store.favorites,
-                    app.pkg == focusedPkg,
+                    app.pkg == shown,
                     { onPlay(app) },
-                    { onPlay(app) },
-                    { onOptions(app) },
-                    { onFocus(app) },
-                    blurIconBackground = true,
-                    showMdiBranding = showMdiBranding
+                    { onOptions(app) }
                 )
             }
         }
@@ -341,175 +291,47 @@ fun HeroPanel(
     store: Store,
     compact: Boolean,
     onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit,
-    landscape: Boolean = false
+    onOptions: (AppItem) -> Unit
 ) {
     if (focused == null) {
         HintText("Belum ada game terdeteksi. Tambahkan app lewat tab ATUR.")
         return
     }
+    val iconSize = if (compact) 84.dp else 112.dp
     val isFav = focused.pkg in store.favorites
-    val heroShape = RoundedCornerShape(18.dp)
-
-    if (landscape) {
-        // Layout landscape memakai artwork 16:9 yang terpisah dari panel informasi.
-        // Ruang horizontal dipakai untuk judul, status, dan aksi agar banner tidak
-        // berubah menjadi strip panoramik.
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(148.dp)
-                .clip(heroShape)
-                .background(Deck.Panel)
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                Modifier
-                    .width(228.dp)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(12.dp))
-            ) {
-                ArtworkImage(
-                    focused,
-                    store,
-                    "banner",
-                    Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.16f)))
-            }
-            Column(
-                Modifier.weight(1f).fillMaxHeight(),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    "SEDANG DIPILIH",
-                    color = Deck.Accent,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.4.sp
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    focused.name,
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
-                    color = Deck.TextDim,
-                    fontSize = 12.sp
-                )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
-                    DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
-                    DeckButton("⋯", compact = true) { onOptions(focused) }
-                }
-            }
-            Column(
-                Modifier.width(190.dp).fillMaxHeight(),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("DESKRIPSI", color = Deck.TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                Spacer(Modifier.height(7.dp))
-                Text(
-                    store.description(focused.pkg).ifBlank { "Belum ada deskripsi. Tambahkan melalui Opsi game." },
-                    color = Color.White.copy(alpha = 0.88f),
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
-                    maxLines = 5,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
-        }
-    } else {
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(if (compact) 158.dp else 218.dp)
-                .clip(heroShape)
-                .background(Deck.Panel)
-        ) {
-            ArtworkImage(
-                focused, store, "banner",
-                Modifier.fillMaxSize().clip(heroShape),
-                contentScale = ContentScale.Crop
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Image(
+            focused.icon,
+            focused.name,
+            Modifier.size(iconSize).clip(RoundedCornerShape(20.dp))
+        )
+        Spacer(Modifier.width(20.dp))
+        Column {
+            Text(
+                focused.name,
+                color = Color.White,
+                fontSize = if (compact) 24.sp else 34.sp,
+                fontWeight = FontWeight.Light,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
-            Box(
-                Modifier.fillMaxSize().background(
-                    Brush.verticalGradient(
-                        0.0f to Color.Black.copy(alpha = 0.08f),
-                        0.38f to Color.Transparent,
-                        1.0f to Color.Black.copy(alpha = 0.88f)
-                    )
-                )
+            Text(
+                if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
+                color = Deck.TextDim,
+                fontSize = 13.sp
             )
-            Column(
-                Modifier.align(Alignment.BottomStart)
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 15.dp)
-            ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(6.dp).clip(RoundedCornerShape(50)).background(Deck.Accent))
-                    Spacer(Modifier.width(7.dp))
-                    Text(
-                        "GAME TERPILIH",
-                        color = Color.White.copy(alpha = 0.82f),
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    )
-                    Spacer(Modifier.weight(1f))
-                    if (isFav) Text("★ FAVORIT", color = Color(0xFFFFD54F), fontSize = 9.sp, fontWeight = FontWeight.Bold)
-                }
-                Spacer(Modifier.height(5.dp))
-                Text(
-                    focused.name,
-                    color = Color.White,
-                    fontSize = if (compact) 19.sp else 24.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
-                    color = Color.White.copy(alpha = 0.72f),
-                    fontSize = 11.sp
-                )
-                if (store.description(focused.pkg).isNotBlank() && !compact) {
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        store.description(focused.pkg),
-                        color = Color.White.copy(alpha = 0.84f),
-                        fontSize = 11.sp,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Spacer(Modifier.height(9.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
-                    DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
-                    DeckButton("⋯", compact = true) { onOptions(focused) }
-                }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PlayButton("▶  MAINKAN") { onPlay(focused) }
+                DeckButton(if (isFav) "★" else "☆") { store.toggleFav(focused.pkg) }
+                DeckButton("⋯") { onOptions(focused) }
             }
         }
     }
 }
-
 
 @Composable
 fun HomeScreen(
@@ -518,70 +340,97 @@ fun HomeScreen(
     focused: AppItem?,
     onFocus: (AppItem) -> Unit,
     onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit
+    onOptions: (AppItem) -> Unit,
+    pad: GamepadInput? = null
 ) {
-    // Lookup map avoids repeated linear scans for recently played apps.
-    val visibleByPackage = remember(visible) { visible.associateBy { it.pkg } }
-    val recent = remember(visibleByPackage, store.recent) {
-        store.recent.mapNotNull(visibleByPackage::get)
+    val recent = store.recent.mapNotNull { p -> visible.find { it.pkg == p } }
+    val favs = visible.filter { it.pkg in store.favorites }
+    // Urutan baris sama persis dengan yang ditampilkan di bawah (baris kosong dilewati).
+    val rows = listOf(recent, favs, visible).filter { it.isNotEmpty() }
+
+    var padRow by rememberSaveable { mutableStateOf(0) }
+    val padActive = pad?.active == true
+    val activeRow = padRow.coerceIn(0, (rows.size - 1).coerceAtLeast(0))
+    val scrollState = rememberScrollState()
+
+    val onKey by rememberUpdatedState<(Pad) -> Unit>({ key ->
+        val f = focused
+        when (key) {
+            Pad.Confirm -> { if (f != null) onPlay(f) }
+            Pad.Favorite -> { if (f != null) store.toggleFav(f.pkg) }
+            Pad.Left, Pad.Right, Pad.Up, Pad.Down -> {
+                if (rows.isNotEmpty()) {
+                    // Baris saat ini: baris aktif kalau memuat game terpilih, kalau tidak baris pertama yang memuatnya.
+                    val r = if (f != null && rows[activeRow].any { it.pkg == f.pkg }) {
+                        activeRow
+                    } else {
+                        rows.indexOfFirst { row -> f != null && row.any { it.pkg == f.pkg } }
+                            .coerceAtLeast(0)
+                    }
+                    val col = if (f == null) -1 else rows[r].indexOfFirst { it.pkg == f.pkg }
+                    val pick: (Int, Int) -> Unit = { row, c ->
+                        val nr = row.coerceIn(0, rows.lastIndex)
+                        val list = rows[nr]
+                        onFocus(list[c.coerceIn(0, list.lastIndex)])
+                        padRow = nr
+                    }
+                    when (key) {
+                        Pad.Left -> { pick(r, if (col < 0) 0 else col - 1) }
+                        Pad.Right -> { pick(r, if (col < 0) 0 else col + 1) }
+                        Pad.Up -> { pick(r - 1, col) }
+                        else -> { pick(r + 1, col) }
+                    }
+                }
+            }
+            else -> {}
+        }
+    })
+    if (pad != null) {
+        LaunchedEffect(pad) { pad.events.collect { onKey(it) } }
     }
-    val favs = remember(visible, store.favorites) {
-        visible.filter { it.pkg in store.favorites }
+    // Kembali ke baris pertama: gulir ke atas supaya panel game terlihat lagi.
+    LaunchedEffect(padActive, activeRow) {
+        if (padActive && activeRow == 0) scrollState.animateScrollTo(0)
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compact = maxHeight < 420.dp
-        val landscape = maxWidth > maxHeight
-        val cardWidth = if (compact) store.cardSizeDp.coerceAtMost(104).dp else store.cardSizeDp.dp
-        // Ketuk sekali untuk memilih, ketuk dua kali untuk bermain.
-        val tap: (AppItem) -> Unit = { a -> onFocus(a) }
+        val cardWidth = if (compact) 104.dp else 132.dp
+        // Ketuk sekali untuk memilih, ketuk kartu yang sama (atau tombol MAINKAN) untuk bermain.
+        val tap: (AppItem) -> Unit = { a ->
+            if (a.pkg == focused?.pkg) onPlay(a) else onFocus(a)
+        }
 
-        if (landscape) {
-            // Kembalikan susunan landscape sebelumnya: banner di atas, deretan game di bawah.
-            Column(
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
-            ) {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    // Batasi lebar banner khusus landscape agar artwork tidak terlalu panoramik.
-                    Box(Modifier.fillMaxWidth().widthIn(max = 760.dp)) {
-                        HeroPanel(focused, store, compact, onPlay, onOptions, landscape = true)
-                    }
-                }
-                if (recent.isNotEmpty()) CardRow(
+        Column(
+            Modifier.fillMaxSize().verticalScroll(scrollState).padding(bottom = 16.dp)
+        ) {
+            HeroPanel(focused, store, compact, onPlay, onOptions)
+
+            var r = 0
+            if (recent.isNotEmpty()) {
+                CardRow(
                     "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
+                    cardWidth, compact, tap, onOptions,
+                    scrollToFocus = padActive, isActiveRow = padActive && activeRow == r
                 )
-                if (favs.isNotEmpty()) CardRow(
+                r++
+            }
+            if (favs.isNotEmpty()) {
+                CardRow(
                     "FAVORIT", favs, focused?.pkg, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
+                    cardWidth, compact, tap, onOptions,
+                    scrollToFocus = padActive, isActiveRow = padActive && activeRow == r
                 )
-                if (visible.isNotEmpty()) CardRow(
+                r++
+            }
+            if (visible.isNotEmpty()) {
+                CardRow(
                     "SEMUA GAME", visible, focused?.pkg, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
+                    cardWidth, compact, tap, onOptions,
+                    scrollToFocus = padActive, isActiveRow = padActive && activeRow == r
                 )
             }
-        } else {
-            Column(
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 18.dp, vertical = 14.dp)
-            ) {
-                HeroPanel(focused, store, compact, onPlay, onOptions)
-                if (recent.isNotEmpty()) CardRow(
-                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
-                if (favs.isNotEmpty()) CardRow(
-                    "FAVORIT", favs, focused?.pkg, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
-                if (visible.isNotEmpty()) CardRow(
-                    "SEMUA GAME", visible, focused?.pkg, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
-            }
+            HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
         }
     }
 }
@@ -591,132 +440,64 @@ fun SearchScreen(
     visible: List<AppItem>,
     store: Store,
     onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit
+    onOptions: (AppItem) -> Unit,
+    pad: GamepadInput? = null
 ) {
     var q by rememberSaveable { mutableStateOf("") }
-    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    val results = remember(visible, q) {
-        if (q.isBlank()) visible
-        else visible.filter { it.name.contains(q, ignoreCase = true) }
-    }
+    val results =
+        if (q.isBlank()) visible else visible.filter { it.name.contains(q, ignoreCase = true) }
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = q,
             onValueChange = { q = it },
             singleLine = true,
-            label = { Text("Cari game atau aplikasi") },
+            label = { Text("Cari game") },
             modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
         )
-        GameGrid(results, store, onPlay, onOptions, tile = store.cardSizeDp.dp, focusedPkg = focusedPkg, onFocus = { focusedPkg = it.pkg }, emptyLabel = "Tidak ada hasil.", spacing = store.gridSpacingDp.dp)
+        GameGrid(results, store, onPlay, onOptions, pad = pad)
     }
 }
 
 @Composable
 fun LibraryScreen(
-    games: List<AppItem>,
-    apps: List<AppItem>,
+    visible: List<AppItem>,
     store: Store,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    onAdd: () -> Unit
+    onAdd: () -> Unit,
+    pad: GamepadInput? = null
 ) {
-    var showGames by rememberSaveable { mutableStateOf(true) }
     var onlyFav by rememberSaveable { mutableStateOf(false) }
-    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    val source = if (showGames) games else apps
-    val list = remember(source, onlyFav, store.favorites) {
-        if (onlyFav) source.filter { it.pkg in store.favorites } else source
-    }
-
+    val list = if (onlyFav) visible.filter { it.pkg in store.favorites } else visible
+    val on = Color.White
+    val off = Deck.TextDim
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 14.dp, top = 13.dp, bottom = 10.dp),
+            Modifier.fillMaxWidth().padding(start = 32.dp, end = 12.dp, top = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "PERPUSTAKAAN",
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.7.sp
-                )
-                Text(
-                    "${list.size} item ditampilkan",
-                    color = Deck.TextDim,
-                    fontSize = 11.sp
-                )
+            Text("KOLEKSI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+            Spacer(Modifier.weight(1f))
+            TextButton(onClick = { onlyFav = false }) {
+                Text("Semua", color = if (!onlyFav) on else off)
             }
-            TextButton(onClick = onAdd) {
-                Text("+ PULIHKAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+            TextButton(onClick = { onlyFav = true }) {
+                Text("★ Fav", color = if (onlyFav) on else off)
             }
+            TextButton(onClick = onAdd) { Text("+ Tambah", color = Deck.Accent) }
         }
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            listOf(
-                Triple(true, "GAME", games.size),
-                Triple(false, "APLIKASI", apps.size)
-            ).forEach { (isGames, label, count) ->
-                val active = showGames == isGames
-                Column(
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (active) Deck.PanelLight else Deck.Panel.copy(alpha = 0.55f))
-                        .clickable { showGames = isGames; onlyFav = false }
-                        .padding(horizontal = 13.dp, vertical = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        label,
-                        color = if (active) Color.White else Deck.TextDim,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
-                    )
-                    Text(
-                        count.toString(),
-                        color = if (active) Deck.Accent else Deck.TextDim,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-            Box(
-                Modifier.width(46.dp).height(43.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (onlyFav) Deck.Accent.copy(alpha = 0.20f) else Deck.Panel.copy(alpha = 0.55f))
-                    .clickable { onlyFav = !onlyFav },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    if (onlyFav) "★" else "☆",
-                    color = if (onlyFav) Deck.Accent else Deck.TextDim,
-                    fontSize = 20.sp
-                )
-            }
-        }
-        Spacer(Modifier.height(5.dp))
-        GameGrid(
-            list, store, onPlay, onOptions,
-            tile = store.cardSizeDp.dp,
-            focusedPkg = focusedPkg,
-            onFocus = { focusedPkg = it.pkg },
-            emptyLabel = if (onlyFav) "Belum ada favorit di kategori ini." else if (showGames) "Belum ada game." else "Belum ada aplikasi.",
-            spacing = store.gridSpacingDp.dp,
-            showMdiBranding = !showGames
-        )
+        GameGrid(list, store, onPlay, onOptions, pad = pad)
     }
 }
 
 @Composable
-fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
+fun SettingRow(title: String, subtitle: String, onClick: () -> Unit, selected: Boolean = false) {
+    val shape = RoundedCornerShape(8.dp)
     Column(
         Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(8.dp))
+            .clip(shape)
+            .then(if (selected) Modifier.border(2.dp, Color.White, shape) else Modifier)
             .background(Deck.Panel)
             .clickable(onClick = onClick)
             .padding(16.dp)
@@ -728,105 +509,38 @@ fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
 }
 
 @Composable
-private fun SettingSlider(
-    title: String,
-    valueLabel: String,
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    steps: Int,
-    onValueChange: (Float) -> Unit
-) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-            Spacer(Modifier.weight(1f))
-            Text(valueLabel, color = Deck.Accent, fontSize = 12.sp)
+fun SettingsScreen(onAdd: () -> Unit, onReset: () -> Unit, pad: GamepadInput? = null) {
+    var sel by rememberSaveable { mutableStateOf(0) }
+    val padActive = pad?.active == true
+    val onKey by rememberUpdatedState<(Pad) -> Unit>({ key ->
+        when (key) {
+            Pad.Up -> { sel = 0 }
+            Pad.Down -> { sel = 1 }
+            Pad.Confirm -> { if (sel == 0) onAdd() else onReset() }
+            else -> {}
         }
-        Slider(value = value, onValueChange = onValueChange, valueRange = valueRange, steps = steps)
+    })
+    if (pad != null) {
+        LaunchedEffect(pad) { pad.events.collect { onKey(it) } }
     }
-}
 
-@Composable
-fun SettingsScreen(
-    onAdd: () -> Unit,
-    onReset: () -> Unit,
-    onWallpaper: () -> Unit,
-    onClearWallpaper: () -> Unit,
-    onAccent: (String) -> Unit,
-    currentAccent: String,
-    hasWallpaper: Boolean,
-    store: Store,
-    onManageMetadataSources: () -> Unit
-) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
     ) {
-        Text("TAMPILAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
-        Spacer(Modifier.height(12.dp))
-        Text("Warna aksen", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        Text("Ubah warna tombol, fokus, dan elemen aktif launcher.", color = Deck.TextDim, fontSize = 12.sp)
-        Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-            listOf(
-                "#1A9FFF" to "Biru",
-                "#8B5CF6" to "Ungu",
-                "#20C997" to "Mint",
-                "#F59E0B" to "Amber",
-                "#EF5DA8" to "Pink",
-                "#E5E7EB" to "Putih"
-            ).forEach { (hex, label) ->
-                val selected = currentAccent.equals(hex, ignoreCase = true)
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Box(
-                        Modifier.size(34.dp).clip(RoundedCornerShape(50))
-                            .background(Color(android.graphics.Color.parseColor(hex)))
-                            .then(if (selected) Modifier.border(2.dp, Color.White, RoundedCornerShape(50)) else Modifier)
-                            .clickable { onAccent(hex) }
-                    )
-                    Text(label, color = Deck.TextDim, fontSize = 10.sp)
-                }
-            }
-        }
-        Spacer(Modifier.height(18.dp))
-        SettingRow(
-            "Ganti wallpaper",
-            "Pilih gambar dari perangkat sebagai latar launcher",
-            onWallpaper
-        )
-        if (hasWallpaper) {
-            Spacer(Modifier.height(8.dp))
-            SettingRow("Hapus wallpaper", "Kembali ke latar charcoal bawaan", onClearWallpaper)
-        }
-        Spacer(Modifier.height(24.dp))
-        Text("TATA LETAK", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
-        Spacer(Modifier.height(12.dp))
-        SettingSlider("Ukuran kartu", "${store.cardSizeDp} dp", store.cardSizeDp.toFloat(), 88f..148f, 14) { store.setCardSize(it.toInt()) }
-        SettingSlider("Jarak antar-kartu", "${store.gridSpacingDp} dp", store.gridSpacingDp.toFloat(), 6f..24f, 17) { store.setGridSpacing(it.toInt()) }
-        SettingSlider("Sudut kartu", "${store.cardCornerDp} dp", store.cardCornerDp.toFloat(), 4f..20f, 15) { store.setCardCorner(it.toInt()) }
-        Spacer(Modifier.height(24.dp))
-        Text("WALLPAPER", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
-        Spacer(Modifier.height(12.dp))
-        SettingSlider("Intensitas wallpaper", "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.05f..1.00f, 94) { store.updateWallpaperOpacity(it) }
-        SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
-        Spacer(Modifier.height(10.dp))
-        SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna aksen, dan efek wallpaper", { store.resetAppearance() })
-        Spacer(Modifier.height(24.dp))
-        Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
-        Spacer(Modifier.height(12.dp))
-        SettingRow("Sumber metadata game", "Kelola provider bawaan dan endpoint database kustom", onManageMetadataSources)
-        Spacer(Modifier.height(24.dp))
-        Text("APLIKASI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text("PENGATURAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         SettingRow(
-            "Pulihkan aplikasi tersembunyi",
-            "Tampilkan kembali aplikasi yang sebelumnya disembunyikan",
-            onAdd
+            "+ Tambah app ke launcher",
+            "Pilih dari semua aplikasi terpasang",
+            onAdd,
+            selected = padActive && sel == 0
         )
         Spacer(Modifier.height(10.dp))
         SettingRow(
-            "Reset kategori dan daftar",
-            "Kembalikan kategori otomatis dan tampilkan aplikasi tersembunyi (favorit tetap)",
-            onReset
+            "Kembalikan daftar otomatis",
+            "Batalkan semua tambahan dan penghapusan manual (favorit tetap)",
+            onReset,
+            selected = padActive && sel == 1
         )
     }
 }
@@ -840,10 +554,10 @@ fun AddAppDialog(
     val listMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Pulihkan aplikasi") },
+        title = { Text("Tambah app") },
         text = {
             if (candidates.isEmpty()) {
-                Text("Tidak ada aplikasi tersembunyi.")
+                Text("Tidak ada app lain untuk ditambahkan.")
             } else {
                 LazyColumn(Modifier.heightIn(max = listMaxHeight)) {
                     items(candidates, key = { it.pkg }) { app ->
@@ -864,52 +578,4 @@ fun AddAppDialog(
         },
         confirmButton = { TextButton(onClick = onClose) { Text("Selesai") } }
     )
-}
-
-
-@Composable
-fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Unit, onOptions: (AppItem) -> Unit) {
-    val byPackage = remember(visible) { visible.associateBy { it.pkg } }
-    val history = remember(store.recent, byPackage) { store.recent.mapNotNull(byPackage::get) }
-    val landscape = LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp
-    Column(Modifier.fillMaxSize().padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = 14.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("RIWAYAT BERMAIN", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Text("${history.size} game pernah dibuka", color = Deck.TextDim, fontSize = 11.sp)
-            }
-            TextButton(onClick = { store.clearHistory() }) { Text("BERSIHKAN", color = Deck.Accent, fontSize = 10.sp) }
-        }
-        if (history.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("◷", color = Deck.TextDim, fontSize = 36.sp)
-                    Text("Belum ada riwayat bermain", color = Color.White, fontSize = 14.sp)
-                    Text("Game yang kamu buka akan muncul di sini.", color = Deck.TextDim, fontSize = 11.sp)
-                }
-            }
-        } else {
-            LazyColumn(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(history, key = { it.pkg }) { app ->
-                    val playedAt = store.lastPlayedAt[app.pkg] ?: 0L
-                    val duration = store.playtimeMs[app.pkg] ?: 0L
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Deck.Panel).clickable { onPlay(app) }.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Image(app.icon, app.name, Modifier.size(if (landscape) 48.dp else 54.dp).clip(RoundedCornerShape(9.dp)))
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(app.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("Terakhir: " + if (playedAt > 0L) android.text.format.DateUtils.getRelativeTimeSpanString(playedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS) else "—", color = Deck.TextDim, fontSize = 10.sp)
-                            Text("Total bermain: " + formatPlaytime(duration), color = Deck.Accent, fontSize = 10.sp)
-                        }
-                        TextButton(onClick = { onOptions(app) }) { Text("•••", color = Deck.TextDim) }
-                    }
-                }
-            }
-        }
-    }
-}
-private fun formatPlaytime(milliseconds: Long): String {
-    val minutes = (milliseconds / 60000L).coerceAtLeast(0L)
-    val hours = minutes / 60L
-    return if (hours > 0L) "${hours}j ${minutes % 60L}m" else "${minutes}m"
 }

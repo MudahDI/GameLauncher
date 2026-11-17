@@ -1,4 +1,4 @@
-# MDI Launcher
+# GameLauncher
 
 Launcher Android bertema game dengan tampilan ala Steam Deck, dibangun dengan Jetpack Compose dan Material 3.
 
@@ -12,8 +12,22 @@ Launcher Android bertema game dengan tampilan ala Steam Deck, dibangun dengan Je
 - Tambah atau hapus app secara manual; daftar otomatis bisa dikembalikan kapan saja
 - Daftar app dimuat ulang otomatis saat kembali ke launcher (game baru langsung muncul)
 - Tombol Back dari tab mana pun kembali ke Beranda
+- **Dukungan gamepad** (lihat di bawah)
 
 Paling nyaman dipakai dalam mode landscape.
+
+## Gamepad
+
+| Tombol | Fungsi |
+|--------|--------|
+| D-pad / stik kiri | Pindah pilihan (kiri/kanan dalam baris, atas/bawah antarbaris) |
+| A | Mainkan game terpilih (di Atur: jalankan menu terpilih) |
+| B | Kembali ke Beranda |
+| X | Buka tab Cari |
+| Y | Tambah atau hapus favorit |
+| L1 / R1 | Tab sebelumnya / berikutnya |
+
+Sorotan gamepad di Koleksi, Cari, dan Atur muncul begitu gamepad dipakai dan hilang lagi saat layar disentuh. Dialog (opsi game, tambah app, konfirmasi) belum bisa dikendalikan dengan gamepad.
 
 ## Kebutuhan
 
@@ -26,7 +40,7 @@ Paling nyaman dipakai dalam mode landscape.
 gradle assembleDebug
 ```
 
-APK ada di `app/build/outputs/apk/debug/`. Setiap push juga membangun APK lewat GitHub Actions (artifact `MDI Launcher-debug`).
+APK ada di `app/build/outputs/apk/debug/`. Setiap push juga membangun APK lewat GitHub Actions (artifact `GameLauncher-debug`).
 
 ## Struktur
 
@@ -34,9 +48,10 @@ APK ada di `app/build/outputs/apk/debug/`. Setiap push juga membangun APK lewat 
 |------|-----|
 | `Data.kt` | Model `AppItem`, pemuat daftar app, dan penyimpanan `Store` |
 | `DeckUi.kt` | Palet warna `Deck`, bar atas, jam, baterai, dan tombol |
+| `Gamepad.kt` | Aksi gamepad (`Pad`) dan jembatan input (`GamepadInput`) |
 | `Screens.kt` | Kartu game dan layar (Beranda, Koleksi, Cari, Atur) |
-| `MainActivity.kt` | Root `LauncherApp` dan activity |
+| `MainActivity.kt` | Root `LauncherApp`, activity, dan penerjemah tombol gamepad |
 
 ## Catatan
 
-`applicationId` masih memakai `com.mdh.gamelauncher`. Ganti sebelum dirilis.
+`applicationId` masih memakai `com.contoh.gamelauncher`. Ganti sebelum dirilis.
