@@ -7,7 +7,6 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -73,7 +72,7 @@ fun TopBar(selected: Int, onSelect: (Int) -> Unit) {
     val battery by rememberBatteryPercent()
     val tabs = listOf("BERANDA", "KOLEKSI", "CARI", "ATUR")
 
-    BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f)).statusBarsPadding()) {
+    BoxWithConstraints(Modifier.fillMaxWidth().background(Color.Black.copy(alpha = 0.35f))) {
         val wide = maxWidth >= 700.dp
         Row(
             Modifier.fillMaxWidth().height(52.dp).padding(horizontal = 12.dp),
