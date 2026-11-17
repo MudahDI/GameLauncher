@@ -184,7 +184,6 @@ fun GameCard(
                     modifier = Modifier.fillMaxSize().scale(1.12f).blur(18.dp).alpha(0.72f)
                 )
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
-            MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(10.dp))
             } else {
                 Image(
                     app.icon,
