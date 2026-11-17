@@ -290,26 +290,31 @@ fun HeroPanel(
     }
     val iconSize = if (compact) 84.dp else 112.dp
     val isFav = focused.pkg in store.favorites
+    val heroShape = RoundedCornerShape(18.dp)
     Box(
         Modifier
             .fillMaxWidth()
             .height(if (compact) 148.dp else 196.dp)
-            .clip(RoundedCornerShape(14.dp))
+            .clip(heroShape)
+            .background(Deck.Panel)
     ) {
+        // Clip gambar dan seluruh overlay ke bentuk yang sama: keempat sudut konsisten.
         ArtworkImage(
             focused, store, "banner",
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize().clip(heroShape),
             contentScale = ContentScale.Crop
         )
+        // Scrim meredupkan artwork tanpa membuat sisi kanan memudar ke luar kartu.
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.30f)))
         Box(
             Modifier.fillMaxSize().background(
-                Brush.horizontalGradient(
-                    listOf(Color.Black.copy(alpha = 0.86f), Color.Black.copy(alpha = 0.48f), Color.Transparent)
+                Brush.verticalGradient(
+                    listOf(Color.Transparent, Color.Black.copy(alpha = 0.52f))
                 )
             )
         )
         Row(
-            Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 12.dp),
+            Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp),
             verticalAlignment = Alignment.Bottom
         ) {
             Image(
@@ -357,43 +362,61 @@ fun HomeScreen(
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compact = maxHeight < 420.dp
-        val cardWidth = if (compact) 104.dp else 132.dp
+        val landscape = maxWidth > maxHeight
+        val cardWidth = if (compact) 100.dp else 132.dp
         // Ketuk sekali untuk memilih, ketuk kartu yang sama (atau tombol MAINKAN) untuk bermain.
         val tap: (AppItem) -> Unit = { a ->
             if (a.pkg == focused?.pkg) onPlay(a) else onFocus(a)
         }
 
-        Column(
-            Modifier.fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp, vertical = 16.dp)
-        ) {
-            // Banner diberi batas lebar di landscape agar tidak menjadi terlalu panoramik.
-            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                Box(Modifier.fillMaxWidth().widthIn(max = 960.dp)) {
-                    HeroPanel(focused, store, compact, onPlay, onOptions)
+        if (landscape) {
+            // Landscape memakai komposisi dua kolom agar banner tidak menjadi terlalu panjang.
+            Row(
+                Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
+                verticalAlignment = Alignment.Top
+            ) {
+                Box(Modifier.weight(1.08f).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
+                    HeroPanel(focused, store, true, onPlay, onOptions)
+                }
+                Column(
+                    Modifier.weight(0.92f).fillMaxHeight().verticalScroll(rememberScrollState())
+                ) {
+                    if (recent.isNotEmpty()) CardRow(
+                        "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
+                        cardWidth, true, tap, onOptions, onFocus
+                    )
+                    if (favs.isNotEmpty()) CardRow(
+                        "FAVORIT", favs, focused?.pkg, store,
+                        cardWidth, true, tap, onOptions, onFocus
+                    )
+                    if (visible.isNotEmpty()) CardRow(
+                        "SEMUA GAME", visible, focused?.pkg, store,
+                        cardWidth, true, tap, onOptions, onFocus
+                    )
                 }
             }
-
-            if (recent.isNotEmpty()) {
-                CardRow(
+        } else {
+            Column(
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 18.dp, vertical = 14.dp)
+            ) {
+                HeroPanel(focused, store, compact, onPlay, onOptions)
+                if (recent.isNotEmpty()) CardRow(
                     "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
                     cardWidth, compact, tap, onOptions, onFocus
                 )
-            }
-            if (favs.isNotEmpty()) {
-                CardRow(
+                if (favs.isNotEmpty()) CardRow(
                     "FAVORIT", favs, focused?.pkg, store,
                     cardWidth, compact, tap, onOptions, onFocus
                 )
-            }
-            if (visible.isNotEmpty()) {
-                CardRow(
+                if (visible.isNotEmpty()) CardRow(
                     "SEMUA GAME", visible, focused?.pkg, store,
                     cardWidth, compact, tap, onOptions, onFocus
                 )
+                HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
             }
-            HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
         }
     }
 }
