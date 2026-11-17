@@ -279,49 +279,91 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
         AddAppDialog(candidates, { store.addApp(it.pkg) }, { showPicker = false })
     }
 
+@Composable
+private fun OptionAction(
+    title: String,
+    subtitle: String,
+    symbol: String,
+    danger: Boolean = false,
+    onClick: () -> Unit
+) {
+    val tint = if (danger) Color(0xFFFF7777) else Deck.Text
+    Row(
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Deck.Panel)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 11.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+                .background(if (danger) Color(0xFF4A252B) else Deck.PanelLight),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = Deck.TextDim, fontSize = 11.sp, lineHeight = 14.sp)
+        }
+        Text("›", color = Deck.TextDim, fontSize = 22.sp)
+    }
+}
+
     selected?.let { a ->
         val fav = a.pkg in store.favorites
         AlertDialog(
             onDismissRequest = { selectedPkg = null },
-            title = { Text(a.name) },
+            title = {
+                Column {
+                    Text(a.name, color = Color.White)
+                    Text("OPSI GAME", color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                }
+            },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    TextButton(onClick = { store.toggleFav(a.pkg); selectedPkg = null }) {
-                        Text(if (fav) "★ Hapus dari favorit" else "☆ Tambah ke favorit")
+                Column(
+                    Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    OptionAction(if (fav) "Hapus dari favorit" else "Tambahkan ke favorit", "Atur game ini sebagai favorit", if (fav) "★" else "☆") {
+                        store.toggleFav(a.pkg); selectedPkg = null
                     }
-                    TextButton(
-                        onClick = {
-                            if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
-                            selectedPkg = null
-                        }
-                    ) {
-                        Text(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game")
+                    OptionAction(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game", "Ubah kategori di koleksi launcher", "⇄") {
+                        if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
+                        selectedPkg = null
                     }
-                    TextButton(onClick = {
+                    OptionAction("Edit deskripsi", "Ubah informasi yang tampil di halaman utama", "✎") {
                         descriptionDraft = store.description(a.pkg)
                         editingDescriptionPkg = a.pkg
                         selectedPkg = null
-                    }) { Text("Edit deskripsi game") }
-                    TextButton(onClick = {
+                    }
+                    OptionAction(if (store.artworkUri(a.pkg, "cover") == null) "Pilih cover portrait" else "Ganti cover portrait", "Artwork untuk kartu koleksi", "▣") {
                         pendingArtworkPkg = a.pkg
                         pendingArtworkKind = "cover"
                         selectedPkg = null
                         artworkPicker.launch(arrayOf("image/*"))
-                    }) { Text(if (store.artworkUri(a.pkg, "cover") == null) "Pilih cover portrait" else "Ganti cover portrait") }
-                    if (store.artworkUri(a.pkg, "cover") != null) {
-                        TextButton(onClick = { store.clearArtwork(a.pkg, "cover") }) { Text("Hapus cover") }
                     }
-                    TextButton(onClick = {
+                    if (store.artworkUri(a.pkg, "cover") != null) {
+                        OptionAction("Hapus cover portrait", "Kembali menggunakan ikon aplikasi", "⌫", danger = true) {
+                            store.clearArtwork(a.pkg, "cover")
+                        }
+                    }
+                    OptionAction(if (store.artworkUri(a.pkg, "banner") == null) "Pilih banner landscape" else "Ganti banner landscape", "Artwork untuk panel utama mode landscape", "▤") {
                         pendingArtworkPkg = a.pkg
                         pendingArtworkKind = "banner"
                         selectedPkg = null
                         artworkPicker.launch(arrayOf("image/*"))
-                    }) { Text(if (store.artworkUri(a.pkg, "banner") == null) "Pilih banner landscape" else "Ganti banner landscape") }
-                    if (store.artworkUri(a.pkg, "banner") != null) {
-                        TextButton(onClick = { store.clearArtwork(a.pkg, "banner") }) { Text("Hapus banner") }
                     }
-                    TextButton(onClick = { store.removeApp(a.pkg); selectedPkg = null }) {
-                        Text("Sembunyikan dari launcher")
+                    if (store.artworkUri(a.pkg, "banner") != null) {
+                        OptionAction("Hapus banner landscape", "Kembali menggunakan artwork bawaan", "⌫", danger = true) {
+                            store.clearArtwork(a.pkg, "banner")
+                        }
+                    }
+                    OptionAction("Sembunyikan dari launcher", "Hapus game ini dari daftar tanpa menghapus aplikasinya", "−", danger = true) {
+                        store.removeApp(a.pkg)
+                        selectedPkg = null
                     }
                 }
             },
