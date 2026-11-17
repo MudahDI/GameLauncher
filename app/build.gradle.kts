@@ -4,14 +4,14 @@ plugins {
 }
 
 android {
-    namespace = "com.contoh.gamelauncher"
+    namespace = "com.mdh.gamelauncher"
     compileSdk = 34
     defaultConfig {
-        applicationId = "com.contoh.gamelauncher"
+        applicationId = "com.mdh.gamelauncher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 200
+        versionName = "2.0"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
