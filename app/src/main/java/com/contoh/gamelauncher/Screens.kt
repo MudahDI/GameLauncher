@@ -372,10 +372,10 @@ fun LibraryScreen(
             Text("KOLEKSI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { showGames = true; onlyFav = false }) {
-                Text("GAME  \${games.size}", color = if (showGames) on else off)
+                Text("GAME  ${games.size}", color = if (showGames) on else off)
             }
             TextButton(onClick = { showGames = false; onlyFav = false }) {
-                Text("APLIKASI  \${apps.size}", color = if (!showGames) on else off)
+                Text("APLIKASI  ${apps.size}", color = if (!showGames) on else off)
             }
             TextButton(onClick = { onlyFav = !onlyFav }) {
                 Text(if (onlyFav) "★ Fav" else "☆ Fav", color = if (onlyFav) Deck.Accent else off)
