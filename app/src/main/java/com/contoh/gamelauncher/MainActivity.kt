@@ -687,13 +687,18 @@ class MainActivity : ComponentActivity() {
     override fun dispatchKeyEvent(event: AndroidKeyEvent): Boolean {
         // Gunakan konvensi gamepad standar: A = confirm. Terjemahkan ke DPAD_CENTER
         // agar semua komponen clickable Compose dapat diaktifkan, bukan hanya kartu game.
-        if (event.keyCode == AndroidKeyEvent.KEYCODE_BUTTON_A) {
-            val centerEvent = AndroidKeyEvent(
+        val mappedKey = when (event.keyCode) {
+            AndroidKeyEvent.KEYCODE_BUTTON_A -> AndroidKeyEvent.KEYCODE_DPAD_CENTER
+            AndroidKeyEvent.KEYCODE_BUTTON_B -> AndroidKeyEvent.KEYCODE_BACK
+            else -> event.keyCode
+        }
+        if (mappedKey != event.keyCode) {
+            val mappedEvent = AndroidKeyEvent(
                 event.downTime, event.eventTime, event.action,
-                AndroidKeyEvent.KEYCODE_DPAD_CENTER, event.repeatCount,
-                event.metaState, event.deviceId, event.scanCode, event.flags, event.source
+                mappedKey, event.repeatCount, event.metaState,
+                event.deviceId, event.scanCode, event.flags, event.source
             )
-            return super.dispatchKeyEvent(centerEvent)
+            return super.dispatchKeyEvent(mappedEvent)
         }
         return super.dispatchKeyEvent(event)
     }
@@ -703,19 +708,15 @@ class MainActivity : ComponentActivity() {
             (event.isFromSource(InputDevice.SOURCE_JOYSTICK) ||
                 event.isFromSource(InputDevice.SOURCE_GAMEPAD))) {
             val device = event.device
-            val xRange = device?.getMotionRange(MotionEvent.AXIS_X, InputDevice.SOURCE_JOYSTICK)
-            val yRange = device?.getMotionRange(MotionEvent.AXIS_Y, InputDevice.SOURCE_JOYSTICK)
-            if (xRange == null || yRange == null) {
-                return super.dispatchGenericMotionEvent(event)
-            }
-
+            val xRange = device?.getMotionRange(MotionEvent.AXIS_X)
+            val yRange = device?.getMotionRange(MotionEvent.AXIS_Y)
             val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
             val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
             val x = if (kotlin.math.abs(hatX) > 0.5f) hatX else event.getAxisValue(MotionEvent.AXIS_X)
             val y = if (kotlin.math.abs(hatY) > 0.5f) hatY else event.getAxisValue(MotionEvent.AXIS_Y)
-            // D-pad/HAT diprioritaskan; analog memakai dead-zone sesuai karakteristik controller.
-            val xThreshold = if (kotlin.math.abs(hatX) > 0.5f) 0.5f else maxOf(0.55f, xRange.flat * 2f)
-            val yThreshold = if (kotlin.math.abs(hatY) > 0.5f) 0.5f else maxOf(0.55f, yRange.flat * 2f)
+            // D-pad/HAT diprioritaskan; jika hanya HAT tersedia, analog range tidak diwajibkan.
+            val xThreshold = if (kotlin.math.abs(hatX) > 0.5f) 0.5f else maxOf(0.55f, (xRange?.flat ?: 0.25f) * 2f)
+            val yThreshold = if (kotlin.math.abs(hatY) > 0.5f) 0.5f else maxOf(0.55f, (yRange?.flat ?: 0.25f) * 2f)
             val direction = when {
                 kotlin.math.abs(x) > kotlin.math.abs(y) && x < -xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_LEFT
                 kotlin.math.abs(x) > kotlin.math.abs(y) && x > xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_RIGHT
