@@ -185,25 +185,14 @@ private fun NavigationItem(page: LauncherPage, selected: Boolean, horizontal: Bo
 @Composable
 private fun NavigationBar(page: LauncherPage, landscape: Boolean, onSelect: (LauncherPage) -> Unit) {
     if (landscape) {
-        Column(
-            Modifier.width(190.dp).fillMaxHeight().background(SurfaceLow).padding(14.dp),
-            verticalArrangement = Arrangement.spacedBy(7.dp)
+        Row(
+            Modifier.fillMaxWidth().background(SurfaceLow).padding(horizontal = 20.dp, vertical = 7.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                BrandMark()
-                Spacer(Modifier.width(10.dp))
-                Column {
-                    Text("GAME", color = TextMuted, fontSize = 8.sp, letterSpacing = 2.sp, fontWeight = FontWeight.Bold)
-                    Text("LAUNCHER", color = TextMain, fontSize = 15.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.5.sp)
-                }
-            }
-            Spacer(Modifier.height(24.dp))
-            Text("MENU", color = TextMuted, fontSize = 9.sp, letterSpacing = 1.5.sp, modifier = Modifier.padding(start = 9.dp, bottom = 4.dp))
             LauncherPage.values().forEach { item ->
                 NavigationItem(item, item == page, true) { onSelect(item) }
             }
-            Spacer(Modifier.weight(1f))
-            Text("GAME LAUNCHER 2.0", color = TextMuted, fontSize = 9.sp, modifier = Modifier.padding(start = 5.dp))
         }
     } else {
         Row(
@@ -562,20 +551,19 @@ private fun LauncherRoot(allApps: List<AppItem>) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Charcoal)) {
         val landscape = maxWidth > maxHeight && maxWidth >= 600.dp
         val compact = !landscape && maxWidth < 600.dp
-        Row(Modifier.fillMaxSize().safeDrawingPadding()) {
+        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+            Row(
+                Modifier.fillMaxWidth().height(58.dp).padding(horizontal = if (compact) 18.dp else 28.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                BrandMark()
+                Spacer(Modifier.width(10.dp))
+                Text("GAME LAUNCHER", color = TextMain, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Spacer(Modifier.weight(1f))
+                Text("2.0", color = TextMuted, fontSize = 10.sp)
+            }
             if (landscape) NavigationBar(page, true) { pageName = it.name }
-            Column(Modifier.weight(1f).fillMaxHeight()) {
-                Row(
-                    Modifier.fillMaxWidth().height(58.dp).padding(horizontal = if (compact) 18.dp else 28.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    BrandMark()
-                    Spacer(Modifier.width(10.dp))
-                    Text("GAME LAUNCHER", color = TextMain, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
-                    Spacer(Modifier.weight(1f))
-                    Text("2.0", color = TextMuted, fontSize = 10.sp)
-                }
-                Box(Modifier.weight(1f).fillMaxWidth()) {
+            Box(Modifier.weight(1f).fillMaxWidth()) {
                     if (selectedApp != null) {
                         DetailPage(
                             selectedApp,
@@ -594,9 +582,8 @@ private fun LauncherRoot(allApps: List<AppItem>) {
                             LauncherPage.SETTINGS -> SettingsPage({ showAdd = true }, { showReset = true })
                         }
                     }
-                }
-                if (!landscape) NavigationBar(page, false) { pageName = it.name }
             }
+            if (!landscape) NavigationBar(page, false) { pageName = it.name }
         }
     }
 
