@@ -1,5 +1,6 @@
 package com.contoh.gamelauncher
 
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -29,6 +30,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
@@ -66,6 +69,22 @@ fun GameCard(
             .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
             .background(Deck.Panel)
             // combinedClickable menyediakan aksi sentuh dan aktivasi tombol utama gamepad.
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+                when (event.nativeKeyEvent.keyCode) {
+                    AndroidKeyEvent.KEYCODE_BUTTON_A,
+                    AndroidKeyEvent.KEYCODE_DPAD_CENTER,
+                    AndroidKeyEvent.KEYCODE_ENTER -> {
+                        onClick()
+                        true
+                    }
+                    AndroidKeyEvent.KEYCODE_BUTTON_X -> {
+                        onLongClick()
+                        true
+                    }
+                    else -> false
+                }
+            }
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
