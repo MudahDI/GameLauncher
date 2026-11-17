@@ -353,7 +353,9 @@ fun GameGrid(
                     { onPlay(app) },
                     { onOptions(app) },
                     { onFocus(app) },
-                    blurIconBackground = true
+                    blurIconBackground = false,
+                    useMonoIcons = useMonoIcons,
+                    showMdiBranding = showMdiBranding
                 )
             }
         }
