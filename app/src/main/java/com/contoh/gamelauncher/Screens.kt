@@ -3,6 +3,8 @@ package com.mdh.gamelauncher
 import android.view.KeyEvent as AndroidKeyEvent
 import android.graphics.BitmapFactory
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.runtime.remember
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -120,7 +122,11 @@ fun GameCard(
     onLongClick: () -> Unit,
     onFocus: () -> Unit = {}
 ) {
-    val scale by animateFloatAsState(if (focused) 1.08f else 1f, label = "cardScale")
+    val scale by animateFloatAsState(
+        targetValue = if (focused) 1.06f else 1f,
+        animationSpec = spring(dampingRatio = 0.82f, stiffness = 420f),
+        label = "cardScale"
+    )
     val shape = RoundedCornerShape(10.dp)
     Box(
         Modifier
@@ -381,8 +387,14 @@ fun HomeScreen(
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit
 ) {
-    val recent = store.recent.mapNotNull { p -> visible.find { it.pkg == p } }
-    val favs = visible.filter { it.pkg in store.favorites }
+    // Lookup map avoids repeated linear scans for recently played apps.
+    val visibleByPackage = remember(visible) { visible.associateBy { it.pkg } }
+    val recent = remember(visibleByPackage, store.recent) {
+        store.recent.mapNotNull(visibleByPackage::get)
+    }
+    val favs = remember(visible, store.favorites) {
+        visible.filter { it.pkg in store.favorites }
+    }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compact = maxHeight < 420.dp
@@ -454,8 +466,10 @@ fun SearchScreen(
 ) {
     var q by rememberSaveable { mutableStateOf("") }
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    val results =
-        if (q.isBlank()) visible else visible.filter { it.name.contains(q, ignoreCase = true) }
+    val results = remember(visible, q) {
+        if (q.isBlank()) visible
+        else visible.filter { it.name.contains(q, ignoreCase = true) }
+    }
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(
             value = q,
@@ -481,7 +495,9 @@ fun LibraryScreen(
     var onlyFav by rememberSaveable { mutableStateOf(false) }
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     val source = if (showGames) games else apps
-    val list = if (onlyFav) source.filter { it.pkg in store.favorites } else source
+    val list = remember(source, onlyFav, store.favorites) {
+        if (onlyFav) source.filter { it.pkg in store.favorites } else source
+    }
     val on = Color.White
     val off = Deck.TextDim
 
