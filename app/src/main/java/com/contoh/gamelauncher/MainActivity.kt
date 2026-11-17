@@ -67,13 +67,16 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
 
-    val visible = allApps.filter { (it.isGame || it.pkg in store.added) && it.pkg !in store.removed }
-    val visiblePkgs = visible.map { it.pkg }.toSet()
-    val candidates = allApps.filter { it.pkg !in visiblePkgs }
+    // Semua aplikasi launcher tampil otomatis; klasifikasi mengikuti deteksi Android
+    // kecuali pengguna pernah mengubah kategori secara manual.
+    val visible = allApps.filter { it.pkg !in store.removed }
+    val games = visible.filter { store.isGame(it) }
+    val apps = visible.filterNot { store.isGame(it) }
+    val candidates = allApps.filter { it.pkg in store.removed }
     // Game yang sedang dipilih; kalau belum ada, pakai yang terakhir dimainkan lalu game pertama.
-    val focused = visible.find { it.pkg == focusedPkg }
-        ?: store.recent.firstNotNullOfOrNull { p -> visible.find { it.pkg == p } }
-        ?: visible.firstOrNull()
+    val focused = games.find { it.pkg == focusedPkg }
+        ?: store.recent.firstNotNullOfOrNull { p -> games.find { it.pkg == p } }
+        ?: games.firstOrNull()
     val selected = selectedPkg?.let { p -> allApps.find { it.pkg == p } }
 
     val play: (AppItem) -> Unit = { a ->
@@ -134,10 +137,10 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
                     0 -> HomeScreen(
-                        visible, store, focused,
+                        games, store, focused,
                         { focusedPkg = it.pkg }, play, options
                     )
-                    1 -> LibraryScreen(visible, store, play, options) { showPicker = true }
+                    1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
                     2 -> SearchScreen(visible, store, play, options)
                     else -> SettingsScreen(
                         onAdd = { showPicker = true },
@@ -178,8 +181,16 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     TextButton(onClick = { store.toggleFav(a.pkg); selectedPkg = null }) {
                         Text(if (fav) "★ Hapus dari favorit" else "☆ Tambah ke favorit")
                     }
+                    TextButton(
+                        onClick = {
+                            if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
+                            selectedPkg = null
+                        }
+                    ) {
+                        Text(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game")
+                    }
                     TextButton(onClick = { store.removeApp(a.pkg); selectedPkg = null }) {
-                        Text("Hapus dari launcher")
+                        Text("Sembunyikan dari launcher")
                     }
                 }
             },
@@ -219,7 +230,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
         AlertDialog(
             onDismissRequest = { confirmReset = false },
             title = { Text("Kembalikan daftar otomatis?") },
-            text = { Text("Semua app yang kamu tambah atau hapus manual akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.") },
+            text = { Text("Kategori manual dan aplikasi tersembunyi akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.") },
             confirmButton = {
                 TextButton(onClick = { store.resetList(); confirmReset = false }) { Text("Kembalikan") }
             },
