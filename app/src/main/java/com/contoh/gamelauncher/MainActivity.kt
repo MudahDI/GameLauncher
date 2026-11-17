@@ -115,15 +115,11 @@ private fun WallpaperBackground(store: Store) {
     val context = LocalContext.current
     val uri = store.wallpaperUri
     val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = null,
+        initialValue = uri?.let { ArtworkBitmapCache.get("${it}|1440")?.asImageBitmap() },
         key1 = uri
     ) {
         value = if (uri == null) null else withContext(Dispatchers.IO) {
-            runCatching {
-                context.contentResolver.openInputStream(uri)?.use { stream ->
-                    android.graphics.BitmapFactory.decodeStream(stream)?.asImageBitmap()
-                }
-            }.getOrNull()
+            ArtworkBitmapCache.load(context, uri, 1440)
         }
     }
     if (bitmap != null) {
@@ -268,14 +264,6 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             }
     ) {
         WallpaperBackground(store)
-        if (focused != null) {
-            Image(
-                bitmap = focused.icon,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.35f)
-            )
-        }
         Column(Modifier.fillMaxSize()) {
             HeaderBar(onSettings = { tab = 3 })
             Box(Modifier.weight(1f).fillMaxWidth()) {
