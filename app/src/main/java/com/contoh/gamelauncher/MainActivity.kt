@@ -476,6 +476,7 @@ private enum class Page(val label: String, val glyph: String) {
     var lastGamepadInput by remember { mutableStateOf("Belum ada input") }
     var gamepadConnected by remember { mutableStateOf(false) }
     val rootFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { rootFocus.requestFocus() }
     val page = Page.values().firstOrNull { it.name == pageName } ?: Page.HOME
     val visible = allApps.filter { (it.isGame || it.pkg in store.added) && it.pkg !in store.removed }
     val selected = allApps.firstOrNull { it.pkg == selectedPackage }
