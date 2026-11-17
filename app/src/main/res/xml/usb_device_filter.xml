@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- USB HID interface umum untuk gamepad; keyboard dan mouse standar memakai subclass 1. -->
-    <usb-device class="3" subclass="0" />
-</resources>
