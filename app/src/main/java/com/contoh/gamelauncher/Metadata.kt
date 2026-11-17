@@ -65,6 +65,15 @@ data class MetadataSourceConfig(
     val enabled: Boolean = false
 )
 
+private inline fun <T> runCatchingPreservingCancellation(block: () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
+
 private val defaultMetadataSources = listOf(
     MetadataSourceConfig("wikipedia", "Wikipedia", enabled = true),
     MetadataSourceConfig("google_play", "Google Play", enabled = true),
@@ -222,7 +231,7 @@ object MetadataRepository {
         }
 
         return packages.take(8).mapNotNull { id ->
-            runCatching {
+            runCatchingPreservingCancellation {
                 val url = "https://play.google.com/store/apps/details?id=${URLEncoder.encode(id, "UTF-8")}&hl=en&gl=US"
                 val conn = connection(url, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
                 try {
@@ -235,7 +244,7 @@ object MetadataRepository {
                         return Html.fromHtml(raw, Html.FROM_HTML_MODE_LEGACY).toString().trim().takeIf { it.isNotBlank() }
                     }
                     val title = meta("og:title")?.substringBefore(" - Apps on Google Play")
-                        ?: return@runCatching null
+                        ?: return@runCatchingPreservingCancellation null
                     val description = meta("og:description") ?: meta("description").orEmpty()
                     val image = meta("og:image")?.takeIf { it.startsWith("https://") }
                     GameMetadataResult(title, description, image, url, "Google Play", coverUrl = image)
@@ -317,8 +326,8 @@ object MetadataRepository {
                 val id = item.optString("id").takeIf { it.matches(Regex("[0-9]+")) }
                     ?: return@mapNotNull null
                 if (title.isBlank()) return@mapNotNull null
-                val cover = runCatching { steamGridArtwork(apiKey, id, "grids") }.getOrNull()
-                val banner = runCatching { steamGridArtwork(apiKey, id, "heroes") }.getOrNull()
+                val cover = runCatchingPreservingCancellation { steamGridArtwork(apiKey, id, "grids") }.getOrNull()
+                val banner = runCatchingPreservingCancellation { steamGridArtwork(apiKey, id, "heroes") }.getOrNull()
                 GameMetadataResult(
                     title,
                     "Artwork SteamGridDB dengan rasio cover dan banner terpisah.",
@@ -371,7 +380,8 @@ object MetadataRepository {
             val directory = File(context.filesDir, "metadata_artwork").apply { mkdirs() }
             val safeKind = kind.filter { it.isLetterOrDigit() }.take(20).ifBlank { "artwork" }
             val target = File(directory, "${packageName.hashCode()}_$safeKind.img")
-            val temp = File(directory, "${target.name}.tmp")
+            // Temp unik mencegah dua pencarian untuk game yang sama saling menimpa.
+            val temp = File.createTempFile("${target.name}.", ".tmp", directory)
             temporaryFile = temp
             var total = 0L
             conn.inputStream.use { input ->
@@ -389,8 +399,10 @@ object MetadataRepository {
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             temp.inputStream().use { BitmapFactory.decodeStream(it, null, bounds) }
             require(bounds.outWidth in 1..16000 && bounds.outHeight in 1..16000) { "File artwork tidak valid." }
-            temp.copyTo(target, overwrite = true)
-            temp.delete()
+            // Temp dan target berada di direktori yang sama, sehingga rename menjadi
+            // penggantian file atomik: artwork lama tetap utuh jika unduhan gagal.
+            check(temp.renameTo(target)) { "Tidak dapat menyimpan artwork." }
+            temporaryFile = null
             Uri.fromFile(target)
         } finally {
             conn.disconnect()
@@ -433,6 +445,8 @@ fun GameMetadataDialog(app: AppItem, onDismiss: () -> Unit, onApply: (GameMetada
                                 activeNames = MetadataRepository.sources(context).filter { it.enabled }.joinToString { it.name }
                                 results = MetadataRepository.search(context, query, app.pkg)
                                 if (results.isEmpty()) error = "Tidak ada hasil dari sumber yang aktif."
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 error = e.message?.take(220) ?: "Pencarian gagal. Periksa koneksi dan konfigurasi API."
                             } finally { loading = false }
