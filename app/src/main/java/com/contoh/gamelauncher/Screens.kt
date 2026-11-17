@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.focusGroup
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -215,6 +216,7 @@ fun CardRow(
 ) {
     SectionTitle(title, compact)
     LazyRow(
+        modifier = Modifier.focusGroup(),
         contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
@@ -254,7 +256,7 @@ fun GameGrid(
             contentPadding = PaddingValues(24.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize().focusGroup()
         ) {
             items(list, key = { it.pkg }) { app ->
                 GameCard(
