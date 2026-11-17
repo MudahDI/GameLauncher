@@ -77,6 +77,7 @@ class Store(ctx: Context) {
     }
     var artworks by mutableStateOf(readArtworkMap())
     var descriptions by mutableStateOf(readDescriptionMap())
+    var metadataTitles by mutableStateOf(readMetadataTitleMap())
     var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
     init {
         // Migrasi sekali: gunakan identitas biru MDI sebagai aksen awal versi ini.
@@ -135,6 +136,24 @@ class Store(ctx: Context) {
         accentHex = hex
         sp.edit().putString("accent_hex", hex).apply()
         runCatching { Deck.Accent = Color(android.graphics.Color.parseColor(hex)) }
+    }
+
+    private fun readMetadataTitleMap(): Map<String, String> =
+        sp.all.entries.mapNotNull { (key, value) ->
+            if (key.startsWith("metadata_title:") && value is String) key.removePrefix("metadata_title:") to value else null
+        }.toMap()
+
+    fun displayName(pkg: String, fallback: String): String = metadataTitles[pkg]?.takeIf { it.isNotBlank() } ?: fallback
+
+    fun setMetadata(pkg: String, title: String, description: String) {
+        val cleanTitle = title.trim()
+        val cleanDescription = description.trim()
+        metadataTitles = if (cleanTitle.isEmpty()) metadataTitles - pkg else metadataTitles + (pkg to cleanTitle)
+        descriptions = if (cleanDescription.isEmpty()) descriptions - pkg else descriptions + (pkg to cleanDescription)
+        sp.edit().apply {
+            if (cleanTitle.isEmpty()) remove("metadata_title:$pkg") else putString("metadata_title:$pkg", cleanTitle)
+            if (cleanDescription.isEmpty()) remove("description:$pkg") else putString("description:$pkg", cleanDescription)
+        }.apply()
     }
 
     private fun readDescriptionMap(): Map<String, String> =

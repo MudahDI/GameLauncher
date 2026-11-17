@@ -52,6 +52,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -82,6 +83,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @Composable
 private fun OptionAction(
@@ -171,6 +173,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
     var descriptionDraft by rememberSaveable { mutableStateOf("") }
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
@@ -211,8 +215,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     val visible = remember(allApps, store.removed) {
         allApps.filter { it.pkg !in store.removed }
     }
-    val games = remember(visible, store.forcedGames, store.forcedApps) {
-        visible.filter { store.isGame(it) }
+    val games = remember(visible, store.forcedGames, store.forcedApps, store.metadataTitles) {
+        visible.filter { store.isGame(it) }.map { app -> app.copy(name = store.displayName(app.pkg, app.name)) }
     }
     val apps = remember(visible, store.forcedGames, store.forcedApps) {
         visible.filterNot { store.isGame(it) }
@@ -227,7 +231,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             ?: store.recent.firstNotNullOfOrNull(gamesByPackage::get)
             ?: games.firstOrNull()
     }
-    val selected = selectedPkg?.let { p -> allApps.find { it.pkg == p } }
+    val selected = selectedPkg?.let { p -> (games + apps).find { it.pkg == p } }
+    val metadataTarget = metadataPkg?.let { p -> (games + apps).find { it.pkg == p } }
 
     val play: (AppItem) -> Unit = { a ->
         ctx.packageManager.getLaunchIntentForPackage(a.pkg)?.let { launch ->
@@ -361,6 +366,10 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
                         selectedPkg = null
                     }
+                    if (store.isGame(a)) OptionAction("Cari metadata & artwork", "Cari judul, deskripsi, dan gambar dari Wikipedia", "⌕") {
+                        metadataPkg = a.pkg
+                        selectedPkg = null
+                    }
                     OptionAction("Edit deskripsi", "Ubah informasi yang tampil di halaman utama", "✎") {
                         descriptionDraft = store.description(a.pkg)
                         editingDescriptionPkg = a.pkg
@@ -395,6 +404,26 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                 }
             },
             confirmButton = { TextButton(onClick = { selectedPkg = null }) { Text("Tutup") } }
+        )
+    }
+
+    metadataTarget?.let { app ->
+        GameMetadataDialog(
+            app = app,
+            onDismiss = { metadataPkg = null },
+            onApply = { result ->
+                coroutineScope.launch {
+                    store.setMetadata(app.pkg, result.title, result.extract)
+                    val artworkUri = result.thumbnailUrl?.let { url ->
+                        withContext(Dispatchers.IO) { MetadataRepository.downloadThumbnail(ctx, app.pkg, url) }
+                    }
+                    if (artworkUri != null) {
+                        store.setArtwork(app.pkg, "cover", artworkUri)
+                        store.setArtwork(app.pkg, "banner", artworkUri)
+                    }
+                    metadataPkg = null
+                }
+            }
         )
     }
 

@@ -3,6 +3,7 @@ package com.mdh.gamelauncher
 import android.view.KeyEvent as AndroidKeyEvent
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
+import java.io.FileInputStream
 import android.util.LruCache
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -80,8 +81,9 @@ internal object ArtworkBitmapCache {
         val key = "${uri}|$maxDimension"
         get(key)?.let { return it.asImageBitmap() }
         return runCatching {
+            fun openArtworkStream() = if (uri.scheme == "file") uri.path?.let { FileInputStream(it) } else context.contentResolver.openInputStream(uri)
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            context.contentResolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+            openArtworkStream()?.use { BitmapFactory.decodeStream(it, null, bounds) }
             var sample = 1
             if (bounds.outWidth > 0 && bounds.outHeight > 0) {
                 while (maxOf(bounds.outWidth, bounds.outHeight) / sample > maxDimension) sample *= 2
@@ -92,7 +94,7 @@ internal object ArtworkBitmapCache {
                 inSampleSize = sample
                 inPreferredConfig = Bitmap.Config.ARGB_8888
             }
-            val bitmap = context.contentResolver.openInputStream(uri)?.use {
+            val bitmap = openArtworkStream()?.use {
                 BitmapFactory.decodeStream(it, null, options)
             } ?: return null
             put(key, bitmap)
