@@ -194,7 +194,7 @@ object MetadataRepository {
                 try {
                     val html = conn.inputStream.bufferedReader().use { it.readText() }
                     fun meta(key: String): String? {
-                        val tag = Regex("""<meta\b[^>]*(?:property|name)=["']\${Regex.escape(key)}["'][^>]*>""", RegexOption.IGNORE_CASE)
+                        val tag = Regex("""<meta\b[^>]*(?:property|name)=["']${Regex.escape(key)}["'][^>]*>""", RegexOption.IGNORE_CASE)
                             .findAll(html).firstOrNull()?.value ?: return null
                         val raw = Regex("""content=["']([^"']*)["']""", RegexOption.IGNORE_CASE)
                             .find(tag)?.groupValues?.getOrNull(1) ?: return null
