@@ -27,7 +27,8 @@ import kotlin.math.max
  */
 internal class GamepadInputRouter(
     context: Context,
-    private val onNotice: (String?) -> Unit
+    private val onNotice: (String?) -> Unit,
+    private val onInput: (String) -> Unit = {}
 ) : InputManager.InputDeviceListener {
 
     private val inputManager = context.getSystemService(Context.INPUT_SERVICE) as InputManager
@@ -67,8 +68,12 @@ internal class GamepadInputRouter(
 
     /** Return a normalized event only for actual controller-originated keys. */
     fun mapKeyEvent(event: KeyEvent): KeyEvent? {
-        // BUTTON_A/B are unambiguous controller key codes. Some HID pads expose
-        // their key source inconsistently, so do not reject these by source mask.
+        if (event.deviceId >= 0) {
+            val deviceName = InputDevice.getDevice(event.deviceId)?.name ?: "Unknown device"
+            onInput("KEY  ${KeyEvent.keyCodeToString(event.keyCode)} · ${if (event.action == KeyEvent.ACTION_DOWN) "DOWN" else "UP"} · source=0x${event.source.toString(16)} · device=$deviceName")
+        }
+        // Preserve the Android button layout. Only A is normalized to the
+        // standard Compose activation key; B is handled by the root back action.
         val mappedCode = when (event.keyCode) {
             KeyEvent.KEYCODE_BUTTON_A -> KeyEvent.KEYCODE_DPAD_CENTER
             KeyEvent.KEYCODE_BUTTON_B -> KeyEvent.KEYCODE_BACK
@@ -104,6 +109,7 @@ internal class GamepadInputRouter(
         val yFlat = (device.getMotionRange(MotionEvent.AXIS_Y, event.source)
             ?: device.getMotionRange(MotionEvent.AXIS_Y))?.flat ?: 0.12f
         val direction = resolveDirection(x, y, hatX, hatY, xFlat, yFlat)
+        onInput("AXIS  x=${"%.2f".format(x)} y=${"%.2f".format(y)} hat=(${"%.1f".format(hatX)},${"%.1f".format(hatY)}) · source=0x${event.source.toString(16)} · device=${device.name}")
 
         updateDirection(direction, device.id, dispatchDirection)
         return true
