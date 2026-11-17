@@ -383,15 +383,19 @@ fun HeroPanel(
                 }
             }
             Column(
-                Modifier.width(142.dp).fillMaxHeight(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+                Modifier.width(190.dp).fillMaxHeight(),
+                verticalArrangement = Arrangement.Center
             ) {
-                Text("NAVIGASI", color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.2.sp)
-                Spacer(Modifier.height(8.dp))
-                Text("A  Pilih", color = Color.White, fontSize = 12.sp)
-                Text("X  Opsi", color = Color.White, fontSize = 12.sp)
-                Text("B  Kembali", color = Color.White, fontSize = 12.sp)
+                Text("DESKRIPSI", color = Deck.TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                Spacer(Modifier.height(7.dp))
+                Text(
+                    store.description(focused.pkg).ifBlank { "Belum ada deskripsi. Tambahkan melalui Opsi game." },
+                    color = Color.White.copy(alpha = 0.88f),
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                    maxLines = 5,
+                    overflow = TextOverflow.Ellipsis
+                )
             }
         }
     } else {
@@ -440,6 +444,16 @@ fun HeroPanel(
                         color = Color.White.copy(alpha = 0.75f),
                         fontSize = 13.sp
                     )
+                    if (store.description(focused.pkg).isNotBlank()) {
+                        Spacer(Modifier.height(5.dp))
+                        Text(
+                            store.description(focused.pkg),
+                            color = Color.White.copy(alpha = 0.88f),
+                            fontSize = 12.sp,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                     Spacer(Modifier.height(8.dp))
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
