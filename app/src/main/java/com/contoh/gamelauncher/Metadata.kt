@@ -65,6 +65,15 @@ data class MetadataSourceConfig(
     val enabled: Boolean = false
 )
 
+private inline fun <T> runCatchingPreservingCancellation(block: () -> T): Result<T> =
+    try {
+        Result.success(block())
+    } catch (error: CancellationException) {
+        throw error
+    } catch (error: Exception) {
+        Result.failure(error)
+    }
+
 private val defaultMetadataSources = listOf(
     MetadataSourceConfig("wikipedia", "Wikipedia", enabled = true),
     MetadataSourceConfig("google_play", "Google Play", enabled = true),
@@ -222,7 +231,7 @@ object MetadataRepository {
         }
 
         return packages.take(8).mapNotNull { id ->
-            runCatching {
+            runCatchingPreservingCancellation {
                 val url = "https://play.google.com/store/apps/details?id=${URLEncoder.encode(id, "UTF-8")}&hl=en&gl=US"
                 val conn = connection(url, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
                 try {
@@ -317,8 +326,8 @@ object MetadataRepository {
                 val id = item.optString("id").takeIf { it.matches(Regex("[0-9]+")) }
                     ?: return@mapNotNull null
                 if (title.isBlank()) return@mapNotNull null
-                val cover = runCatching { steamGridArtwork(apiKey, id, "grids") }.getOrNull()
-                val banner = runCatching { steamGridArtwork(apiKey, id, "heroes") }.getOrNull()
+                val cover = runCatchingPreservingCancellation { steamGridArtwork(apiKey, id, "grids") }.getOrNull()
+                val banner = runCatchingPreservingCancellation { steamGridArtwork(apiKey, id, "heroes") }.getOrNull()
                 GameMetadataResult(
                     title,
                     "Artwork SteamGridDB dengan rasio cover dan banner terpisah.",
@@ -436,6 +445,8 @@ fun GameMetadataDialog(app: AppItem, onDismiss: () -> Unit, onApply: (GameMetada
                                 activeNames = MetadataRepository.sources(context).filter { it.enabled }.joinToString { it.name }
                                 results = MetadataRepository.search(context, query, app.pkg)
                                 if (results.isEmpty()) error = "Tidak ada hasil dari sumber yang aktif."
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 error = e.message?.take(220) ?: "Pencarian gagal. Periksa koneksi dan konfigurasi API."
                             } finally { loading = false }
