@@ -405,11 +405,10 @@ fun HeroPanel(
             }
         }
     } else {
-        val iconSize = if (compact) 84.dp else 112.dp
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(if (compact) 148.dp else 196.dp)
+                .height(if (compact) 158.dp else 218.dp)
                 .clip(heroShape)
                 .background(Deck.Panel)
         ) {
@@ -418,57 +417,66 @@ fun HeroPanel(
                 Modifier.fillMaxSize().clip(heroShape),
                 contentScale = ContentScale.Crop
             )
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.30f)))
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
             Box(
                 Modifier.fillMaxSize().background(
                     Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.52f))
+                        0.0f to Color.Black.copy(alpha = 0.08f),
+                        0.38f to Color.Transparent,
+                        1.0f to Color.Black.copy(alpha = 0.88f)
                     )
                 )
             )
-            Row(
-                Modifier.fillMaxSize().padding(horizontal = 20.dp, vertical = 14.dp),
-                verticalAlignment = Alignment.Bottom
+            Column(
+                Modifier.align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 15.dp)
             ) {
-                Image(
-                    focused.icon,
-                    focused.name,
-                    Modifier.size(iconSize).clip(RoundedCornerShape(16.dp))
-                )
-                Spacer(Modifier.width(18.dp))
-                Column(Modifier.weight(1f)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.size(6.dp).clip(RoundedCornerShape(50)).background(Deck.Accent))
+                    Spacer(Modifier.width(7.dp))
                     Text(
-                        focused.name,
-                        color = Color.White,
-                        fontSize = if (compact) 20.sp else 26.sp,
-                        fontWeight = FontWeight.Light,
+                        "GAME TERPILIH",
+                        color = Color.White.copy(alpha = 0.82f),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
+                    )
+                    Spacer(Modifier.weight(1f))
+                    if (isFav) Text("★ FAVORIT", color = Color(0xFFFFD54F), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+                Spacer(Modifier.height(5.dp))
+                Text(
+                    focused.name,
+                    color = Color.White,
+                    fontSize = if (compact) 19.sp else 24.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
+                    color = Color.White.copy(alpha = 0.72f),
+                    fontSize = 11.sp
+                )
+                if (store.description(focused.pkg).isNotBlank() && !compact) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        store.description(focused.pkg),
+                        color = Color.White.copy(alpha = 0.84f),
+                        fontSize = 11.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
-                        color = Color.White.copy(alpha = 0.75f),
-                        fontSize = 13.sp
-                    )
-                    if (store.description(focused.pkg).isNotBlank()) {
-                        Spacer(Modifier.height(5.dp))
-                        Text(
-                            store.description(focused.pkg),
-                            color = Color.White.copy(alpha = 0.88f),
-                            fontSize = 12.sp,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                    Spacer(Modifier.height(8.dp))
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
-                        DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
-                        DeckButton("⋯", compact = true) { onOptions(focused) }
-                    }
+                }
+                Spacer(Modifier.height(9.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
+                    DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
+                    DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
         }
@@ -592,39 +600,84 @@ fun LibraryScreen(
     val list = remember(source, onlyFav, store.favorites) {
         if (onlyFav) source.filter { it.pkg in store.favorites } else source
     }
-    val on = Color.White
-    val off = Deck.TextDim
 
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 4.dp),
+            Modifier.fillMaxWidth().padding(start = 20.dp, end = 14.dp, top = 13.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("KOLEKSI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = { showGames = true; onlyFav = false }) {
-                Text("GAME  ${games.size}", color = if (showGames) on else off)
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "PERPUSTAKAAN",
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.7.sp
+                )
+                Text(
+                    "${list.size} item ditampilkan",
+                    color = Deck.TextDim,
+                    fontSize = 11.sp
+                )
             }
-            TextButton(onClick = { showGames = false; onlyFav = false }) {
-                Text("APLIKASI  ${apps.size}", color = if (!showGames) on else off)
+            TextButton(onClick = onAdd) {
+                Text("+ PULIHKAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
         }
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 20.dp),
-            horizontalArrangement = Arrangement.End,
+            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            TextButton(onClick = { onlyFav = !onlyFav }) {
-                Text(if (onlyFav) "★ Favorit aktif" else "☆ Favorit", color = if (onlyFav) Deck.Accent else off)
+            listOf(
+                Triple(true, "GAME", games.size),
+                Triple(false, "APLIKASI", apps.size)
+            ).forEach { (isGames, label, count) ->
+                val active = showGames == isGames
+                Column(
+                    Modifier.weight(1f)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (active) Deck.PanelLight else Deck.Panel.copy(alpha = 0.55f))
+                        .clickable { showGames = isGames; onlyFav = false }
+                        .padding(horizontal = 13.dp, vertical = 10.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        label,
+                        color = if (active) Color.White else Deck.TextDim,
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 0.8.sp
+                    )
+                    Text(
+                        count.toString(),
+                        color = if (active) Deck.Accent else Deck.TextDim,
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
-            TextButton(onClick = onAdd) { Text("+ Pulihkan", color = Deck.Accent) }
+            Box(
+                Modifier.width(46.dp).height(43.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(if (onlyFav) Deck.Accent.copy(alpha = 0.20f) else Deck.Panel.copy(alpha = 0.55f))
+                    .clickable { onlyFav = !onlyFav },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    if (onlyFav) "★" else "☆",
+                    color = if (onlyFav) Deck.Accent else Deck.TextDim,
+                    fontSize = 20.sp
+                )
+            }
         }
+        Spacer(Modifier.height(5.dp))
         GameGrid(
             list, store, onPlay, onOptions,
             tile = store.cardSizeDp.dp,
             focusedPkg = focusedPkg,
             onFocus = { focusedPkg = it.pkg },
-            emptyLabel = if (showGames) "Belum ada game." else "Belum ada aplikasi.",
+            emptyLabel = if (onlyFav) "Belum ada favorit di kategori ini." else if (showGames) "Belum ada game." else "Belum ada aplikasi.",
             spacing = store.gridSpacingDp.dp
         )
     }
