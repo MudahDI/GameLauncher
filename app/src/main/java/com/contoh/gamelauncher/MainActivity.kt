@@ -1,6 +1,8 @@
 package com.contoh.gamelauncher
 
 import android.os.Bundle
+import android.hardware.input.InputManager
+import android.view.InputDevice
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -22,11 +24,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
@@ -35,11 +43,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
 
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>) {
+fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissControllerNotice: () -> Unit) {
     val ctx = LocalContext.current
     val store = remember { Store(ctx) }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur
@@ -101,6 +110,22 @@ fun LauncherApp(allApps: List<AppItem>) {
                 }
             }
         }
+        LaunchedEffect(controllerNotice) {
+            if (controllerNotice != null) {
+                delay(3200)
+                onDismissControllerNotice()
+            }
+        }
+        if (controllerNotice != null) {
+            Box(
+                Modifier.align(Alignment.TopCenter).padding(top = 60.dp, start = 20.dp, end = 20.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Deck.PanelLight.copy(alpha = 0.96f))
+                    .padding(horizontal = 18.dp, vertical = 12.dp)
+            ) {
+                Text(controllerNotice, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
     }
 
     if (showPicker) {
@@ -142,10 +167,61 @@ fun LauncherApp(allApps: List<AppItem>) {
 class MainActivity : ComponentActivity() {
     /** Naik setiap kali launcher kembali tampil, memicu pemuatan ulang daftar app. */
     private var refreshTick by mutableIntStateOf(0)
+    private var controllerNotice by mutableStateOf<String?>(null)
+    private lateinit var inputManager: InputManager
+    private val connectedControllers = mutableMapOf<Int, String>()
+
+    private fun isGameController(device: InputDevice?): Boolean {
+        if (device == null || device.isVirtual) return false
+        return device.supportsSource(InputDevice.SOURCE_GAMEPAD) ||
+            device.supportsSource(InputDevice.SOURCE_JOYSTICK)
+    }
+
+    private fun controllerName(deviceId: Int): String? {
+        val device = InputDevice.getDevice(deviceId) ?: return null
+        if (!isGameController(device)) return null
+        return device.name.ifBlank { "Gamepad" }
+    }
+
+    private val inputListener = object : InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) {
+            val name = controllerName(deviceId) ?: return
+            connectedControllers[deviceId] = name
+            controllerNotice = "Gamepad tersambung\\n$name"
+        }
+
+        override fun onInputDeviceRemoved(deviceId: Int) {
+            val name = connectedControllers.remove(deviceId) ?: return
+            controllerNotice = "Gamepad terputus\\n$name"
+        }
+
+        override fun onInputDeviceChanged(deviceId: Int) {
+            val name = controllerName(deviceId)
+            if (name == null) {
+                connectedControllers.remove(deviceId)
+            } else {
+                connectedControllers[deviceId] = name
+            }
+        }
+    }
+
+    private fun scanConnectedControllers() {
+        connectedControllers.clear()
+        InputDevice.getDeviceIds().forEach { id ->
+            controllerName(id)?.let { connectedControllers[id] = it }
+        }
+        if (connectedControllers.isNotEmpty()) {
+            val names = connectedControllers.values.distinct().joinToString(", ")
+            controllerNotice = "Gamepad terdeteksi\\n$names"
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        inputManager = getSystemService(INPUT_SERVICE) as InputManager
+        scanConnectedControllers()
+        inputManager.registerInputDeviceListener(inputListener, android.os.Handler(mainLooper))
         // Immersive sticky: status bar dan navigation bar tersembunyi,
         // tetapi bisa dimunculkan sementara dengan swipe dari tepi layar.
         hideSystemBars()
@@ -167,7 +243,7 @@ class MainActivity : ComponentActivity() {
                 if (list == null) {
                     Box(Modifier.fillMaxSize().background(Deck.Bg))
                 } else {
-                    LauncherApp(list)
+                    LauncherApp(list, controllerNotice) { controllerNotice = null }
                 }
             }
         }
@@ -190,5 +266,13 @@ class MainActivity : ComponentActivity() {
         super.onRestart()
         // Setelah bermain atau memasang game baru, muat ulang daftar.
         refreshTick++
+        scanConnectedControllers()
+    }
+
+    override fun onDestroy() {
+        if (::inputManager.isInitialized) {
+            inputManager.unregisterInputDeviceListener(inputListener)
+        }
+        super.onDestroy()
     }
 }
