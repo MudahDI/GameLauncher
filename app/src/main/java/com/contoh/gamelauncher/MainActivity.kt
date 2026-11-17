@@ -1,574 +1,362 @@
-package com.contoh.gamelauncher
+package com.mdh.gamelauncher
 
+import android.os.Bundle
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ApplicationInfo
-import android.os.Bundle
+import android.content.IntentFilter
+import android.app.PendingIntent
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
+import android.hardware.usb.UsbConstants
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
+import android.hardware.input.InputManager
+import android.view.InputDevice
+import android.view.MotionEvent
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
-// ---------- Data ----------
-
-data class AppItem(
-    val name: String,
-    val pkg: String,
-    val icon: ImageBitmap,
-    val isGame: Boolean
-)
-
-fun loadAllApps(ctx: Context): List<AppItem> {
-    val pm = ctx.packageManager
-    val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
-    return pm.queryIntentActivities(intent, 0)
-        .map { it.activityInfo.applicationInfo }
-        .filter { it.packageName != ctx.packageName }
-        .distinctBy { it.packageName }
-        .map {
-            AppItem(
-                it.loadLabel(pm).toString(),
-                it.packageName,
-                it.loadIcon(pm).toBitmap(192, 192).asImageBitmap(),
-                it.category == ApplicationInfo.CATEGORY_GAME
-            )
-        }
-        .sortedBy { it.name.lowercase() }
-}
-
-class Store(ctx: Context) {
-    private val sp = ctx.applicationContext
-        .getSharedPreferences("launcher", Context.MODE_PRIVATE)
-
-    private fun readSet(key: String): Set<String> =
-        sp.getStringSet(key, emptySet())?.toSet() ?: emptySet()
-
-    private fun readList(key: String): List<String> =
-        (sp.getString(key, "") ?: "").split(",").filter { it.isNotEmpty() }
-
-    var added by mutableStateOf(readSet("added"))
-    var removed by mutableStateOf(readSet("removed"))
-    var favorites by mutableStateOf(readSet("favorites"))
-    var recent by mutableStateOf(readList("recent"))
-
-    private fun persist() {
-        sp.edit()
-            .putStringSet("added", HashSet(added))
-            .putStringSet("removed", HashSet(removed))
-            .putStringSet("favorites", HashSet(favorites))
-            .putString("recent", recent.joinToString(","))
-            .apply()
-    }
-
-    fun addApp(pkg: String) {
-        added = added + pkg
-        removed = removed - pkg
-        persist()
-    }
-
-    fun removeApp(pkg: String) {
-        removed = removed + pkg
-        added = added - pkg
-        favorites = favorites - pkg
-        recent = recent - pkg
-        persist()
-    }
-
-    fun toggleFav(pkg: String) {
-        favorites = if (pkg in favorites) favorites - pkg else favorites + pkg
-        persist()
-    }
-
-    fun markPlayed(pkg: String) {
-        recent = (listOf(pkg) + recent.filter { it != pkg }).take(12)
-        persist()
-    }
-
-    fun resetList() {
-        added = emptySet()
-        removed = emptySet()
-        persist()
-    }
-}
-
-// ---------- Komponen ----------
-
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GameTile(
-    app: AppItem,
-    size: Dp,
-    isFav: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
+private fun OptionAction(
+    title: String,
+    subtitle: String,
+    symbol: String,
+    danger: Boolean = false,
+    onClick: () -> Unit
 ) {
-    Column(
-        Modifier
-            .width(size)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-    ) {
-        Box {
-            Image(
-                app.icon,
-                app.name,
-                Modifier.size(size).clip(RoundedCornerShape(16.dp))
-            )
-            if (isFav) {
-                Text(
-                    "★",
-                    color = Color(0xFFFFD54F),
-                    fontSize = 16.sp,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
-                )
-            }
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            app.name,
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = 12.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun BannerTile(
-    app: AppItem,
-    width: Dp,
-    height: Dp,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    Box(
-        Modifier
-            .size(width, height)
-            .clip(RoundedCornerShape(16.dp))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-    ) {
-        Image(
-            app.icon,
-            null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().blur(24.dp)
-        )
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
-        Image(
-            app.icon,
-            app.name,
-            Modifier
-                .align(Alignment.Center)
-                .size(height * 0.6f)
-                .clip(RoundedCornerShape(14.dp))
-        )
-        Box(
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))
-                    )
-                )
-                .padding(12.dp)
-        ) {
-            Text(
-                app.name,
-                color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-    }
-}
-
-@Composable
-fun SectionTitle(text: String, compact: Boolean) {
-    Text(
-        text,
-        color = Color.White,
-        fontSize = if (compact) 20.sp else 26.sp,
-        fontWeight = FontWeight.Light,
-        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp)
-    )
-}
-
-@Composable
-fun HintText(text: String) {
-    Text(
-        text,
-        color = Color.White.copy(alpha = 0.5f),
-        fontSize = 13.sp,
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-    )
-}
-
-@Composable
-fun GameGrid(
-    list: List<AppItem>,
-    store: Store,
-    onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit,
-    tile: Dp = 100.dp
-) {
-    if (list.isEmpty()) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Tidak ada game.", color = Color.White.copy(alpha = 0.6f))
-        }
-    } else {
-        LazyVerticalGrid(
-            columns = GridCells.Adaptive(tile + 12.dp),
-            contentPadding = PaddingValues(24.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-            modifier = Modifier.fillMaxSize()
-        ) {
-            items(list, key = { it.pkg }) { app ->
-                GameTile(
-                    app,
-                    tile,
-                    app.pkg in store.favorites,
-                    { onPlay(app) },
-                    { onOptions(app) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
-    val items = listOf("🏠" to "Beranda", "🔍" to "Cari", "📚" to "Koleksi", "⚙️" to "Atur")
+    val tint = if (danger) Color(0xFFFF7777) else Deck.Text
     Row(
-        Modifier.fillMaxWidth().background(Color(0xFF14181F)).height(60.dp),
+        Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(Deck.Panel)
+            .clickable(onClick = onClick)
+            .padding(horizontal = 12.dp, vertical = 11.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        items.forEachIndexed { i, (icon, label) ->
-            val on = i == selected
-            Column(
-                Modifier.weight(1f).fillMaxHeight().clickable { onSelect(i) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    icon,
-                    fontSize = 20.sp,
-                    modifier = Modifier.alpha(if (on) 1f else 0.6f)
-                )
-                Text(
-                    label,
-                    fontSize = 11.sp,
-                    color = if (on) Color.White else Color.White.copy(alpha = 0.5f)
-                )
-                Spacer(Modifier.height(2.dp))
-                Box(
-                    Modifier
-                        .width(28.dp)
-                        .height(2.dp)
-                        .background(if (on) Color.White else Color.Transparent)
-                )
-            }
-        }
-    }
-}
-
-// ---------- Layar ----------
-
-@Composable
-fun HomeScreen(
-    visible: List<AppItem>,
-    store: Store,
-    onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit
-) {
-    val recent = store.recent.mapNotNull { p -> visible.find { it.pkg == p } }
-    val favs = visible.filter { it.pkg in store.favorites }
-
-    BoxWithConstraints(Modifier.fillMaxSize()) {
-        val h = maxHeight
-        val compact = h < 420.dp
-        val k = if (compact) 0.8f else 1f
-
-        Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)
+        Box(
+            Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+                .background(if (danger) Color(0xFF4A252B) else Deck.PanelLight),
+            contentAlignment = Alignment.Center
         ) {
-            SectionTitle("Terakhir Dimainkan", compact)
-            if (recent.isEmpty()) {
-                HintText("Belum ada. Mainkan game dari baris \"Semua Game\" di bawah.")
-            } else {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    itemsIndexed(recent, key = { _, a -> a.pkg }) { i, app ->
-                        if (i == 0) {
-                            BannerTile(
-                                app, 260.dp * k, 150.dp * k,
-                                { onPlay(app) }, { onOptions(app) }
-                            )
-                        } else {
-                            GameTile(
-                                app, 110.dp * k, app.pkg in store.favorites,
-                                { onPlay(app) }, { onOptions(app) }
-                            )
-                        }
-                    }
-                }
-            }
+            Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = Deck.TextDim, fontSize = 11.sp, lineHeight = 14.sp)
+        }
+        Text("›", color = Deck.TextDim, fontSize = 22.sp)
+    }
+}
 
-            SectionTitle("Favorit", compact)
-            if (favs.isEmpty()) {
-                HintText("Tahan lama sebuah game, lalu pilih \"Tambah ke favorit\".")
-            } else {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(favs, key = { it.pkg }) { app ->
-                        GameTile(
-                            app, 100.dp * k, true,
-                            { onPlay(app) }, { onOptions(app) }
-                        )
-                    }
-                }
-            }
 
-            SectionTitle("Semua Game", compact)
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                items(visible, key = { it.pkg }) { app ->
-                    GameTile(
-                        app, 100.dp * k, app.pkg in store.favorites,
-                        { onPlay(app) }, { onOptions(app) }
-                    )
-                }
-            }
+@Composable
+private fun WallpaperBackground(store: Store) {
+    val context = LocalContext.current
+    val uri = store.wallpaperUri
+    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = uri?.let { ArtworkBitmapCache.get("${it}|1440")?.asImageBitmap() },
+        key1 = uri
+    ) {
+        value = if (uri == null) null else withContext(Dispatchers.IO) {
+            ArtworkBitmapCache.load(context, uri, 1440)
         }
     }
-}
-
-@Composable
-fun SearchScreen(
-    visible: List<AppItem>,
-    store: Store,
-    onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit
-) {
-    var q by rememberSaveable { mutableStateOf("") }
-    val results =
-        if (q.isBlank()) visible else visible.filter { it.name.contains(q, ignoreCase = true) }
-    Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = q,
-            onValueChange = { q = it },
-            singleLine = true,
-            label = { Text("Cari game") },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap!!,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().alpha(store.wallpaperOpacity)
         )
-        GameGrid(results, store, onPlay, onOptions)
+        Box(Modifier.fillMaxSize().background(Deck.Bg.copy(alpha = store.wallpaperOverlay)))
     }
-}
-
-@Composable
-fun LibraryScreen(
-    visible: List<AppItem>,
-    store: Store,
-    onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit,
-    onAdd: () -> Unit
-) {
-    var onlyFav by rememberSaveable { mutableStateOf(false) }
-    val list = if (onlyFav) visible.filter { it.pkg in store.favorites } else visible
-    val on = Color.White
-    val off = Color.White.copy(alpha = 0.5f)
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 12.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text("Koleksi", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Light)
-            Spacer(Modifier.weight(1f))
-            TextButton(onClick = { onlyFav = false }) {
-                Text("Semua", color = if (!onlyFav) on else off)
-            }
-            TextButton(onClick = { onlyFav = true }) {
-                Text("★ Fav", color = if (onlyFav) on else off)
-            }
-            TextButton(onClick = onAdd) { Text("+ Tambah") }
-        }
-        GameGrid(list, store, onPlay, onOptions, tile = 110.dp)
-    }
-}
-
-@Composable
-fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
-    Column(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp)
-    ) {
-        Text(title, color = Color.White, fontSize = 18.sp)
-        Spacer(Modifier.height(2.dp))
-        Text(subtitle, color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp)
-    }
-}
-
-@Composable
-fun SettingsScreen(onAdd: () -> Unit, onReset: () -> Unit) {
-    Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
-    ) {
-        Text("Pengaturan", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Light)
-        Spacer(Modifier.height(12.dp))
-        SettingRow(
-            "+ Tambah app ke launcher",
-            "Pilih dari semua aplikasi terpasang",
-            onAdd
-        )
-        SettingRow(
-            "Kembalikan daftar otomatis",
-            "Batalkan semua tambahan dan penghapusan manual (favorit tetap)",
-            onReset
-        )
-    }
-}
-
-@Composable
-fun AddAppDialog(
-    candidates: List<AppItem>,
-    onAdd: (AppItem) -> Unit,
-    onClose: () -> Unit
-) {
-    val listMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
-    AlertDialog(
-        onDismissRequest = onClose,
-        title = { Text("Tambah app") },
-        text = {
-            if (candidates.isEmpty()) {
-                Text("Tidak ada app lain untuk ditambahkan.")
-            } else {
-                LazyColumn(Modifier.heightIn(max = listMaxHeight)) {
-                    items(candidates, key = { it.pkg }) { app ->
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .clickable { onAdd(app) }
-                                .padding(vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Image(app.icon, app.name, Modifier.size(40.dp))
-                            Spacer(Modifier.width(12.dp))
-                            Text(app.name, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = onClose) { Text("Selesai") } }
-    )
 }
 
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>) {
+fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissControllerNotice: () -> Unit) {
     val ctx = LocalContext.current
+    val configuration = LocalConfiguration.current
+    val focusManager = LocalFocusManager.current
+    val rootFocusRequester = remember { FocusRequester() }
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val store = remember { Store(ctx) }
-    var tab by rememberSaveable { mutableStateOf(0) }
-    var selected by remember { mutableStateOf<AppItem?>(null) }
-    var showPicker by remember { mutableStateOf(false) }
-    var confirmReset by remember { mutableStateOf(false) }
-
-    val visible = allApps.filter { (it.isGame || it.pkg in store.added) && it.pkg !in store.removed }
-    val visiblePkgs = visible.map { it.pkg }.toSet()
-    val candidates = allApps.filter { it.pkg !in visiblePkgs }
-    val backdrop = store.recent.firstNotNullOfOrNull { p -> visible.find { it.pkg == p } }
-        ?: visible.firstOrNull()
-
-    val play: (AppItem) -> Unit = { a ->
-        ctx.packageManager.getLaunchIntentForPackage(a.pkg)?.let {
-            ctx.startActivity(it)
-            store.markPlayed(a.pkg)
+    SideEffect {
+        runCatching {
+            Deck.Accent = Color(android.graphics.Color.parseColor(store.accentHex))
         }
     }
-    val options: (AppItem) -> Unit = { a -> selected = a }
-
-    Box(Modifier.fillMaxSize().background(Color(0xFF0B0F1A))) {
-        if (backdrop != null) {
-            Image(
-                bitmap = backdrop.icon,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.3f)
-            )
+    // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
+    var tab by rememberSaveable { mutableStateOf(0) }
+    var rotationMode by rememberSaveable { mutableIntStateOf(0) }
+    val applyRotation: (Int) -> Unit = { mode ->
+        rotationMode = mode
+        val requested = when (mode) {
+            1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            2 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            else -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
         }
-        Column(Modifier.fillMaxSize().safeDrawingPadding()) {
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                when (tab) {
-                    0 -> HomeScreen(visible, store, play, options)
-                    1 -> SearchScreen(visible, store, play, options)
-                    2 -> LibraryScreen(visible, store, play, options) { showPicker = true }
-                    else -> SettingsScreen(
-                        onAdd = { showPicker = true },
-                        onReset = { confirmReset = true }
-                    )
+        (ctx as? ComponentActivity)?.requestedOrientation = requested
+    }
+    // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
+    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var showMetadataSources by rememberSaveable { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+    var descriptionDraft by rememberSaveable { mutableStateOf("") }
+    var showPicker by rememberSaveable { mutableStateOf(false) }
+    var confirmReset by rememberSaveable { mutableStateOf(false) }
+    var showQuickMenu by rememberSaveable { mutableStateOf(false) }
+    var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
+    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching {
+                ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            store.setWallpaper(uri)
+        }
+    }
+    val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        val pkg = pendingArtworkPkg
+        val kind = pendingArtworkKind
+        if (uri != null && pkg != null && kind != null) {
+            runCatching {
+                ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            store.setArtwork(pkg, kind, uri)
+        }
+        pendingArtworkPkg = null
+        pendingArtworkKind = null
+    }
+
+    // Fokus dikembalikan ke root saat tab berubah agar D-pad selalu punya titik awal.
+    LaunchedEffect(tab) { runCatching { rootFocusRequester.requestFocus() } }
+
+    // Dari tab mana pun, Back kembali ke Beranda dulu.
+    BackHandler(enabled = tab != 0) { tab = 0 }
+
+    LaunchedEffect(allApps) { store.reloadPlayStats() }
+
+    // Semua aplikasi launcher tampil otomatis; klasifikasi mengikuti deteksi Android
+    // kecuali pengguna pernah mengubah kategori secara manual.
+    val visible = remember(allApps, store.removed) {
+        allApps.filter { it.pkg !in store.removed }
+    }
+    val games = remember(visible, store.forcedGames, store.forcedApps, store.metadataTitles) {
+        visible.filter { store.isGame(it) }.map { app -> app.copy(name = store.displayName(app.pkg, app.name)) }
+    }
+    val apps = remember(visible, store.forcedGames, store.forcedApps) {
+        visible.filterNot { store.isGame(it) }
+    }
+    val candidates = remember(allApps, store.removed) {
+        allApps.filter { it.pkg in store.removed }
+    }
+    // Package lookup avoids scanning the game list repeatedly for recent items.
+    val gamesByPackage = remember(games) { games.associateBy { it.pkg } }
+    val focused = remember(gamesByPackage, focusedPkg, store.recent, games) {
+        gamesByPackage[focusedPkg]
+            ?: store.recent.firstNotNullOfOrNull(gamesByPackage::get)
+            ?: games.firstOrNull()
+    }
+    val selected = selectedPkg?.let { p -> (games + apps).find { it.pkg == p } }
+    val metadataTarget = metadataPkg?.let { p -> (games + apps).find { it.pkg == p } }
+
+    val play: (AppItem) -> Unit = { a ->
+        ctx.packageManager.getLaunchIntentForPackage(a.pkg)?.let { launch ->
+            // Catat "terakhir dimainkan" hanya kalau app benar-benar berhasil dibuka.
+            runCatching { ctx.startActivity(launch) }
+                .onSuccess { store.markPlayed(a.pkg) }
+        }
+    }
+    val options: (AppItem) -> Unit = { a -> selectedPkg = a.pkg }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
+            // Portrait tetap menghormati status/navigation bar; landscape memakai seluruh area layar.
+            .then(if (isLandscape) Modifier else Modifier.windowInsetsPadding(WindowInsets.safeDrawing))
+            .focusRequester(rootFocusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
+                when (event.nativeKeyEvent.keyCode) {
+                    AndroidKeyEvent.KEYCODE_DPAD_UP -> focusManager.moveFocus(FocusDirection.Up)
+                    AndroidKeyEvent.KEYCODE_DPAD_DOWN -> focusManager.moveFocus(FocusDirection.Down)
+                    AndroidKeyEvent.KEYCODE_DPAD_LEFT -> focusManager.moveFocus(FocusDirection.Left)
+                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> focusManager.moveFocus(FocusDirection.Right)
+                    AndroidKeyEvent.KEYCODE_BUTTON_L1 -> {
+                        tab = (tab - 1 + 5) % 5
+                        true
+                    }
+                    AndroidKeyEvent.KEYCODE_BUTTON_R1 -> {
+                        tab = (tab + 1) % 5
+                        true
+                    }
+                    AndroidKeyEvent.KEYCODE_BUTTON_START -> {
+                        if (!showPicker && !confirmReset && selectedPkg == null) {
+                            showQuickMenu = !showQuickMenu
+                        }
+                        true
+                    }
+                    AndroidKeyEvent.KEYCODE_BUTTON_B,
+                    AndroidKeyEvent.KEYCODE_BACK -> {
+                        when {
+                            showQuickMenu -> showQuickMenu = false
+                            showMetadataSources -> showMetadataSources = false
+                            metadataPkg != null -> metadataPkg = null
+                            editingDescriptionPkg != null -> editingDescriptionPkg = null
+                            showPicker -> showPicker = false
+                            selectedPkg != null -> selectedPkg = null
+                            confirmReset -> confirmReset = false
+                            tab != 0 -> tab = 0
+                        }
+                        true
+                    }
+                    else -> false
                 }
             }
-            BottomBar(tab) { tab = it }
+    ) {
+        WallpaperBackground(store)
+        Column(Modifier.fillMaxSize()) {
+            HeaderBar(onHistory = { tab = 4 }, onRotate = { applyRotation((rotationMode + 1) % 3) }, rotationMode = rotationMode, onSettings = { tab = 3 })
+            Box(Modifier.weight(1f).fillMaxWidth()) {
+                AnimatedContent(
+                    targetState = tab,
+                    transitionSpec = {
+                        (fadeIn(tween(150)) + slideInHorizontally(tween(180)) { it / 24 }) togetherWith
+                            fadeOut(tween(90))
+                    },
+                    label = "mdiTabTransition"
+                ) { targetTab ->
+                when (targetTab) {
+                    0 -> HomeScreen(
+                        games, store, focused,
+                        { focusedPkg = it.pkg }, play, options
+                    )
+                    1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
+                    2 -> SearchScreen(visible, store, play, options)
+                    3 -> SettingsScreen(
+                        onAdd = { showPicker = true },
+                        onReset = { confirmReset = true },
+                        onWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
+                        onClearWallpaper = { store.setWallpaper(null) },
+                        onAccent = { store.setAccent(it) },
+                        currentAccent = store.accentHex,
+                        hasWallpaper = store.wallpaperUri != null,
+                        store = store,
+                        onManageMetadataSources = { showMetadataSources = true }
+                    )
+                    else -> HistoryScreen(visible, store, play, options)
+                }
+                }
+            }
+            BottomNavigation(tab) { tab = it }
         }
+        LaunchedEffect(controllerNotice) {
+            if (controllerNotice != null) {
+                delay(3200)
+                onDismissControllerNotice()
+            }
+        }
+        if (controllerNotice != null) {
+            Box(
+                Modifier.align(Alignment.TopCenter).padding(top = 60.dp, start = 20.dp, end = 20.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Deck.PanelLight.copy(alpha = 0.96f))
+                    .padding(horizontal = 18.dp, vertical = 12.dp)
+            ) {
+                Text(controllerNotice, color = Color.White, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+
+    if (showMetadataSources) {
+        MetadataSourcesDialog(onDismiss = { showMetadataSources = false })
     }
 
     if (showPicker) {
@@ -578,19 +366,146 @@ fun LauncherApp(allApps: List<AppItem>) {
     selected?.let { a ->
         val fav = a.pkg in store.favorites
         AlertDialog(
-            onDismissRequest = { selected = null },
-            title = { Text(a.name) },
-            text = {
+            onDismissRequest = { selectedPkg = null },
+            title = {
                 Column {
-                    TextButton(onClick = { store.toggleFav(a.pkg); selected = null }) {
-                        Text(if (fav) "★ Hapus dari favorit" else "☆ Tambah ke favorit")
+                    Text(a.name, color = Color.White)
+                    Text("OPSI GAME", color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                }
+            },
+            text = {
+                Column(
+                    Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    OptionAction(if (fav) "Hapus dari favorit" else "Tambahkan ke favorit", "Atur game ini sebagai favorit", if (fav) "★" else "☆") {
+                        store.toggleFav(a.pkg); selectedPkg = null
                     }
-                    TextButton(onClick = { store.removeApp(a.pkg); selected = null }) {
-                        Text("Hapus dari launcher")
+                    OptionAction(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game", "Ubah kategori di koleksi launcher", "⇄") {
+                        if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
+                        selectedPkg = null
+                    }
+                    if (store.isGame(a)) OptionAction("Cari metadata & artwork", "Cari judul, deskripsi, dan gambar dari Wikipedia", "⌕") {
+                        metadataPkg = a.pkg
+                        selectedPkg = null
+                    }
+                    OptionAction("Edit deskripsi", "Ubah informasi yang tampil di halaman utama", "✎") {
+                        descriptionDraft = store.description(a.pkg)
+                        editingDescriptionPkg = a.pkg
+                        selectedPkg = null
+                    }
+                    OptionAction(if (store.artworkUri(a.pkg, "cover") == null) "Pilih cover portrait" else "Ganti cover portrait", "Artwork untuk kartu koleksi", "▣") {
+                        pendingArtworkPkg = a.pkg
+                        pendingArtworkKind = "cover"
+                        selectedPkg = null
+                        artworkPicker.launch(arrayOf("image/*"))
+                    }
+                    if (store.artworkUri(a.pkg, "cover") != null) {
+                        OptionAction("Hapus cover portrait", "Kembali menggunakan ikon aplikasi", "⌫", danger = true) {
+                            store.clearArtwork(a.pkg, "cover")
+                        }
+                    }
+                    OptionAction(if (store.artworkUri(a.pkg, "banner") == null) "Pilih banner landscape" else "Ganti banner landscape", "Artwork untuk panel utama mode landscape", "▤") {
+                        pendingArtworkPkg = a.pkg
+                        pendingArtworkKind = "banner"
+                        selectedPkg = null
+                        artworkPicker.launch(arrayOf("image/*"))
+                    }
+                    if (store.artworkUri(a.pkg, "banner") != null) {
+                        OptionAction("Hapus banner landscape", "Kembali menggunakan artwork bawaan", "⌫", danger = true) {
+                            store.clearArtwork(a.pkg, "banner")
+                        }
+                    }
+                    OptionAction("Sembunyikan dari launcher", "Hapus game ini dari daftar tanpa menghapus aplikasinya", "−", danger = true) {
+                        store.removeApp(a.pkg)
+                        selectedPkg = null
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { selected = null }) { Text("Tutup") } }
+            confirmButton = { TextButton(onClick = { selectedPkg = null }) { Text("Tutup") } }
+        )
+    }
+
+    metadataTarget?.let { app ->
+        GameMetadataDialog(
+            app = app,
+            onDismiss = { metadataPkg = null },
+            onApply = { result ->
+                coroutineScope.launch {
+                    store.setMetadata(app.pkg, result.title, result.extract)
+                    val coverSource = result.coverUrl ?: result.thumbnailUrl?.takeIf {
+                        result.bannerUrl == null || it != result.bannerUrl
+                    }
+                    val coverUri = coverSource?.let { url ->
+                        withContext(Dispatchers.IO) {
+                            MetadataRepository.downloadArtwork(ctx, app.pkg, "cover", url)
+                        }
+                    }
+                    val bannerUri = result.bannerUrl?.let { url ->
+                        withContext(Dispatchers.IO) {
+                            MetadataRepository.downloadArtwork(ctx, app.pkg, "banner", url)
+                        }
+                    }
+                    coverUri?.let { store.setArtwork(app.pkg, "cover", it) }
+                    bannerUri?.let { store.setArtwork(app.pkg, "banner", it) }
+                    metadataPkg = null
+                }
+            }
+        )
+    }
+
+    editingDescriptionPkg?.let { pkg ->
+        val appName = allApps.firstOrNull { it.pkg == pkg }?.name ?: pkg
+        AlertDialog(
+            onDismissRequest = { editingDescriptionPkg = null },
+            title = { Text("Deskripsi game") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = descriptionDraft,
+                    onValueChange = { descriptionDraft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Tulis deskripsi untuk $appName...") },
+                    minLines = 4,
+                    maxLines = 7
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    store.setDescription(pkg, descriptionDraft)
+                    editingDescriptionPkg = null
+                }) { Text("Simpan") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingDescriptionPkg = null }) { Text("Batal") }
+            }
+        )
+    }
+
+    if (showQuickMenu) {
+        AlertDialog(
+            onDismissRequest = { showQuickMenu = false },
+            title = { Text("Menu cepat") },
+            text = {
+                Column {
+                    listOf("Beranda", "Koleksi", "Cari", "Atur").forEachIndexed { index, label ->
+                        TextButton(
+                            onClick = {
+                                tab = index
+                                showQuickMenu = false
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                label,
+                                color = if (tab == index) Deck.Accent else Deck.Text
+                            )
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showQuickMenu = false }) { Text("Tutup") }
+            }
         )
     }
 
@@ -598,7 +513,7 @@ fun LauncherApp(allApps: List<AppItem>) {
         AlertDialog(
             onDismissRequest = { confirmReset = false },
             title = { Text("Kembalikan daftar otomatis?") },
-            text = { Text("Semua app yang kamu tambah atau hapus manual akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.") },
+            text = { Text("Kategori manual dan aplikasi tersembunyi akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.") },
             confirmButton = {
                 TextButton(onClick = { store.resetList(); confirmReset = false }) { Text("Kembalikan") }
             },
@@ -608,22 +523,337 @@ fun LauncherApp(allApps: List<AppItem>) {
 }
 
 class MainActivity : ComponentActivity() {
-    override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
-        super.onCreate(savedInstanceState)
-        setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
-                val ctx = LocalContext.current
-                val apps by produceState<List<AppItem>?>(initialValue = null) {
-                    value = withContext(Dispatchers.Default) { loadAllApps(ctx) }
+    /** Naik setiap kali launcher kembali tampil, memicu pemuatan ulang daftar app. */
+    private var refreshTick by mutableIntStateOf(0)
+    private var controllerNotice by mutableStateOf<String?>(null)
+    private lateinit var inputManager: InputManager
+    private lateinit var usbManager: UsbManager
+    private var usbReceiverRegistered = false
+    private val requestedUsbDevices = mutableSetOf<String>()
+    private val usbPermissionAction by lazy { "${packageName}.USB_PERMISSION" }
+    private val connectedControllers = mutableMapOf<Int, String>()
+
+    private fun usbIdentity(device: UsbDevice): String =
+        "${device.vendorId}:${device.productId}:${device.deviceId}"
+
+    private fun matchingInputController(device: UsbDevice): InputDevice? =
+        InputDevice.getDeviceIds().asSequence()
+            .mapNotNull(InputDevice::getDevice)
+            .firstOrNull {
+                !it.isVirtual && it.vendorId == device.vendorId &&
+                    it.productId == device.productId &&
+                    (it.supportsSource(InputDevice.SOURCE_GAMEPAD) ||
+                        it.supportsSource(InputDevice.SOURCE_JOYSTICK))
+            }
+
+    private fun isLikelyGamepadUsb(device: UsbDevice): Boolean {
+        if (matchingInputController(device) != null) return true
+        // Fallback HID gamepad interface (class 3, subclass 0); avoid keyboard/mouse subclass 1.
+        return (0 until device.interfaceCount).any { index ->
+            val intf = device.getInterface(index)
+            intf.interfaceClass == UsbConstants.USB_CLASS_HID && intf.interfaceSubclass == 0
+        }
+    }
+
+    private fun requestUsbControllerPermission(device: UsbDevice) {
+        if (!isLikelyGamepadUsb(device)) return
+        val identity = usbIdentity(device)
+        if (usbManager.hasPermission(device) || identity in requestedUsbDevices) return
+        requestedUsbDevices += identity
+        val permissionIntent = PendingIntent.getBroadcast(
+            this,
+            device.deviceId,
+            Intent(usbPermissionAction).setPackage(packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+        usbManager.requestPermission(device, permissionIntent)
+        controllerNotice = "Meminta izin USB\n${device.deviceName}"
+    }
+
+    private val usbReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+            }
+            when (intent.action) {
+                usbPermissionAction -> {
+                    if (device != null) requestedUsbDevices.remove(usbIdentity(device))
+                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    if (device != null && granted) {
+                        controllerNotice = "Gamepad siap digunakan\n${matchingInputController(device)?.name ?: device.deviceName}"
+                        scanConnectedControllers()
+                    } else if (device != null) {
+                        controllerNotice = "Izin USB tidak diberikan\n${device.deviceName}"
+                    }
                 }
-                val list = apps
-                if (list == null) {
-                    Box(Modifier.fillMaxSize().background(Color(0xFF0B0F1A)))
-                } else {
-                    LauncherApp(list)
+                UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    if (device != null) requestUsbControllerPermission(device)
+                }
+                UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    if (device != null) {
+                        requestedUsbDevices.remove(usbIdentity(device))
+                        controllerNotice = "Gamepad USB terputus\n${device.deviceName}"
+                    }
                 }
             }
         }
+    }
+
+    private fun registerUsbReceiver() {
+        if (usbReceiverRegistered) return
+        val filter = IntentFilter().apply {
+            addAction(usbPermissionAction)
+            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(usbReceiver, filter)
+        }
+        usbReceiverRegistered = true
+    }
+
+    private fun handleUsbAttachIntent(intent: Intent?) {
+        if (intent?.action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return
+        val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+        }
+        if (device != null) requestUsbControllerPermission(device)
+    }
+
+    private fun scanUsbControllers() {
+        usbManager.deviceList.values.forEach(::requestUsbControllerPermission)
+    }
+    private var lastStickMoveAt = 0L
+    private var lastStickDirection = 0
+
+    private fun isGameController(device: InputDevice?): Boolean {
+        if (device == null || device.isVirtual) return false
+        return device.supportsSource(InputDevice.SOURCE_GAMEPAD) ||
+            device.supportsSource(InputDevice.SOURCE_JOYSTICK)
+    }
+
+    private fun controllerName(deviceId: Int): String? {
+        val device = InputDevice.getDevice(deviceId) ?: return null
+        if (!isGameController(device)) return null
+        return device.name.ifBlank { "Gamepad" }
+    }
+
+    private val inputListener = object : InputManager.InputDeviceListener {
+        override fun onInputDeviceAdded(deviceId: Int) {
+            val name = controllerName(deviceId) ?: return
+            connectedControllers[deviceId] = name
+            controllerNotice = "Gamepad tersambung\n$name"
+        }
+
+        override fun onInputDeviceRemoved(deviceId: Int) {
+            val name = connectedControllers.remove(deviceId) ?: return
+            controllerNotice = "Gamepad terputus\n$name"
+        }
+
+        override fun onInputDeviceChanged(deviceId: Int) {
+            val name = controllerName(deviceId)
+            if (name == null) {
+                connectedControllers.remove(deviceId)
+            } else {
+                connectedControllers[deviceId] = name
+            }
+        }
+    }
+
+    private fun scanConnectedControllers() {
+        connectedControllers.clear()
+        InputDevice.getDeviceIds().forEach { id ->
+            controllerName(id)?.let { connectedControllers[id] = it }
+        }
+        if (connectedControllers.isNotEmpty()) {
+            val names = connectedControllers.values.distinct().joinToString(", ")
+            controllerNotice = "Gamepad terdeteksi\n$names"
+        }
+    }
+
+    /**
+     * Terjemahkan gerakan analog kiri menjadi navigasi D-pad.
+     * Ambang dan interval pengulangan mencegah fokus melompat terlalu cepat.
+     */
+    override fun dispatchKeyEvent(event: AndroidKeyEvent): Boolean {
+        // Gunakan konvensi gamepad standar: A = confirm. Terjemahkan ke DPAD_CENTER
+        // agar semua komponen clickable Compose dapat diaktifkan, bukan hanya kartu game.
+        val mappedKey = when (event.keyCode) {
+            AndroidKeyEvent.KEYCODE_BUTTON_A -> AndroidKeyEvent.KEYCODE_DPAD_CENTER
+            AndroidKeyEvent.KEYCODE_BUTTON_B -> AndroidKeyEvent.KEYCODE_BACK
+            else -> event.keyCode
+        }
+        if (mappedKey != event.keyCode) {
+            val mappedEvent = AndroidKeyEvent(
+                event.downTime, event.eventTime, event.action,
+                mappedKey, event.repeatCount, event.metaState,
+                event.deviceId, event.scanCode, event.flags, event.source
+            )
+            return super.dispatchKeyEvent(mappedEvent)
+        }
+        return super.dispatchKeyEvent(event)
+    }
+
+    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
+        if (event.action == MotionEvent.ACTION_MOVE &&
+            (event.isFromSource(InputDevice.SOURCE_JOYSTICK) ||
+                event.isFromSource(InputDevice.SOURCE_GAMEPAD))) {
+            val device = event.device
+            val xRange = device?.getMotionRange(MotionEvent.AXIS_X)
+            val yRange = device?.getMotionRange(MotionEvent.AXIS_Y)
+            val hatX = event.getAxisValue(MotionEvent.AXIS_HAT_X)
+            val hatY = event.getAxisValue(MotionEvent.AXIS_HAT_Y)
+            val x = if (kotlin.math.abs(hatX) > 0.5f) hatX else event.getAxisValue(MotionEvent.AXIS_X)
+            val y = if (kotlin.math.abs(hatY) > 0.5f) hatY else event.getAxisValue(MotionEvent.AXIS_Y)
+            // D-pad/HAT diprioritaskan; jika hanya HAT tersedia, analog range tidak diwajibkan.
+            val xThreshold = if (kotlin.math.abs(hatX) > 0.5f) 0.5f else maxOf(0.55f, (xRange?.flat ?: 0.25f) * 2f)
+            val yThreshold = if (kotlin.math.abs(hatY) > 0.5f) 0.5f else maxOf(0.55f, (yRange?.flat ?: 0.25f) * 2f)
+            val direction = when {
+                kotlin.math.abs(x) > kotlin.math.abs(y) && x < -xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_LEFT
+                kotlin.math.abs(x) > kotlin.math.abs(y) && x > xThreshold -> AndroidKeyEvent.KEYCODE_DPAD_RIGHT
+                y < -yThreshold -> AndroidKeyEvent.KEYCODE_DPAD_UP
+                y > yThreshold -> AndroidKeyEvent.KEYCODE_DPAD_DOWN
+                else -> 0
+            }
+
+            if (direction == 0) {
+                lastStickDirection = 0
+                // Jangan telan gerakan netral atau input joystick lain yang bukan navigasi.
+                return super.dispatchGenericMotionEvent(event)
+            }
+
+            val now = android.os.SystemClock.uptimeMillis()
+            if (direction != lastStickDirection || now - lastStickMoveAt >= 105L) {
+                lastStickDirection = direction
+                lastStickMoveAt = now
+                // Pasangan down/up mengikuti alur input navigasi Android normal.
+                dispatchKeyEvent(AndroidKeyEvent(AndroidKeyEvent.ACTION_DOWN, direction))
+                dispatchKeyEvent(AndroidKeyEvent(AndroidKeyEvent.ACTION_UP, direction))
+            }
+            return true
+        }
+        return super.dispatchGenericMotionEvent(event)
+    }
+    override fun onStart() {
+        super.onStart()
+        registerUsbReceiver()
+        handleUsbAttachIntent(intent)
+        Handler(Looper.getMainLooper()).postDelayed({ scanUsbControllers() }, 350L)
+    }
+
+    override fun onStop() {
+        if (usbReceiverRegistered) {
+            unregisterReceiver(usbReceiver)
+            usbReceiverRegistered = false
+        }
+        super.onStop()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUsbAttachIntent(intent)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Store.finishPendingSession(this)
+        refreshTick++
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        // Edge-to-edge: portrait memberi padding aman di Compose, landscape memakai seluruh area.
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
+            window.attributes = window.attributes.apply {
+                layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+            }
+        }
+        // Minta refresh rate tinggi yang tersedia; Android tetap boleh memilih mode adaptif.
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
+            window.attributes = window.attributes.apply { preferredRefreshRate = 120f }
+        }
+        // Warna bar mengikuti tema charcoal saat portrait.
+        window.statusBarColor = android.graphics.Color.rgb(14, 20, 27)
+        window.navigationBarColor = android.graphics.Color.rgb(14, 20, 27)
+        inputManager = getSystemService(INPUT_SERVICE) as InputManager
+        usbManager = getSystemService(USB_SERVICE) as UsbManager
+        scanConnectedControllers()
+        inputManager.registerInputDeviceListener(inputListener, android.os.Handler(mainLooper))
+        applySystemBarsForOrientation()
+        setContent {
+            MaterialTheme(
+                colorScheme = darkColorScheme(
+                    primary = Deck.Accent,
+                    background = Deck.Bg,
+                    surface = Deck.Panel,
+                    onSurface = Deck.Text
+                )
+            ) {
+                val ctx = LocalContext.current
+                val tick = refreshTick
+                val apps by produceState<List<AppItem>?>(initialValue = null, tick) {
+                    value = withContext(Dispatchers.IO) { loadAllApps(ctx) }
+                }
+                val list = apps
+                if (list == null) {
+                    Box(Modifier.fillMaxSize().background(Deck.Bg))
+                } else {
+                    LauncherApp(list, controllerNotice) { controllerNotice = null }
+                }
+            }
+        }
+    }
+
+    /**
+     * Portrait: system bars tetap terlihat agar launcher nyaman sebagai HOME utama.
+     * Landscape: sembunyikan keduanya untuk ruang layar penuh; swipe tepi layar
+     * tetap dapat menampilkan bar sementara.
+     */
+    private fun applySystemBarsForOrientation() {
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applySystemBarsForOrientation()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) applySystemBarsForOrientation()
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        // Setelah bermain atau memasang game baru, muat ulang daftar.
+        refreshTick++
+        scanConnectedControllers()
+    }
+
+    override fun onDestroy() {
+        if (::inputManager.isInitialized) {
+            inputManager.unregisterInputDeviceListener(inputListener)
+        }
+        super.onDestroy()
     }
 }

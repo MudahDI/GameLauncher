@@ -4,14 +4,14 @@ plugins {
 }
 
 android {
-    namespace = "com.contoh.gamelauncher"
+    namespace = "com.mdh.gamelauncher"
     compileSdk = 34
     defaultConfig {
-        applicationId = "com.contoh.gamelauncher"
+        applicationId = "com.mdh.gamelauncher"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 221
+        versionName = "2.2.1"
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -20,6 +20,22 @@ android {
     kotlinOptions { jvmTarget = "17" }
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+
+    buildTypes {
+        debug {
+            // Keep debug builds easy to inspect and test.
+            isMinifyEnabled = false
+        }
+        release {
+            // Shrink bytecode and unused resources in distributable builds.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+    }
 }
 
 dependencies {
