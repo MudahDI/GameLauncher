@@ -2,6 +2,7 @@ package com.contoh.gamelauncher
 
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -63,6 +64,27 @@ class Store(ctx: Context) {
     var forcedGames by mutableStateOf(readSet("forced_games"))
     var forcedApps by mutableStateOf(readSet("forced_apps"))
     var recent by mutableStateOf(readList("recent"))
+    var artworks by mutableStateOf(readArtworkMap())
+
+    private fun readArtworkMap(): Map<String, String> =
+        sp.all.entries.mapNotNull { (key, value) ->
+            if (key.startsWith("artwork:") && value is String) key.removePrefix("artwork:") to value else null
+        }.toMap()
+
+    fun artworkUri(pkg: String, kind: String): Uri? =
+        artworks["$kind:$pkg"]?.let { runCatching { Uri.parse(it) }.getOrNull() }
+
+    fun setArtwork(pkg: String, kind: String, uri: Uri) {
+        val key = "$kind:$pkg"
+        artworks = artworks + (key to uri.toString())
+        sp.edit().putString("artwork:$key", uri.toString()).apply()
+    }
+
+    fun clearArtwork(pkg: String, kind: String) {
+        val key = "$kind:$pkg"
+        artworks = artworks - key
+        sp.edit().remove("artwork:$key").apply()
+    }
 
     fun isGame(app: AppItem): Boolean = when {
         app.pkg in forcedGames -> true
