@@ -339,10 +339,13 @@ fun HeroPanel(
                     fontSize = 13.sp
                 )
                 Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                    PlayButton("▶  MAINKAN") { onPlay(focused) }
-                    DeckButton(if (isFav) "★" else "☆") { store.toggleFav(focused.pkg) }
-                    DeckButton("⋯") { onOptions(focused) }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
+                    DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
+                    DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
         }
