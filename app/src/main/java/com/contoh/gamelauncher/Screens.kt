@@ -1,6 +1,7 @@
 package com.contoh.gamelauncher
 
 import android.view.KeyEvent as AndroidKeyEvent
+import android.graphics.BitmapFactory
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
@@ -26,6 +27,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,11 +42,47 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+// Artwork lokal; jika belum tersedia atau gagal dibaca, gunakan ikon aplikasi.
+@Composable
+fun ArtworkImage(
+    app: AppItem,
+    store: Store,
+    kind: String,
+    modifier: Modifier = Modifier,
+    contentScale: ContentScale = ContentScale.Crop
+) {
+    val context = LocalContext.current
+    val uri = store.artworkUri(app.pkg, kind)
+    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null,
+        key1 = uri
+    ) {
+        value = if (uri == null) null else withContext(Dispatchers.IO) {
+            runCatching {
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    val options = BitmapFactory.Options().apply { inSampleSize = 2 }
+                    BitmapFactory.decodeStream(stream, null, options)?.asImageBitmap()
+                }
+            }.getOrNull()
+        }
+    }
+    Image(
+        bitmap ?: app.icon,
+        contentDescription = app.name,
+        modifier = modifier,
+        contentScale = contentScale
+    )
+}
 
 // ---------- Komponen ----------
 
@@ -89,21 +127,26 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
             .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
-        Image(
-            app.icon,
-            null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize().blur(24.dp)
-        )
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
-        Image(
-            app.icon,
-            app.name,
-            Modifier
-                .align(Alignment.Center)
-                .size(width * 0.55f)
-                .clip(RoundedCornerShape(14.dp))
-        )
+        if (store.artworkUri(app.pkg, "cover") != null) {
+            ArtworkImage(app, store, "cover", Modifier.fillMaxSize())
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
+        } else {
+            Image(
+                app.icon,
+                null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize().blur(24.dp)
+            )
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+            Image(
+                app.icon,
+                app.name,
+                Modifier
+                    .align(Alignment.Center)
+                    .size(width * 0.55f)
+                    .clip(RoundedCornerShape(14.dp))
+            )
+        }
         Box(
             Modifier
                 .align(Alignment.BottomStart)
@@ -242,35 +285,54 @@ fun HeroPanel(
     }
     val iconSize = if (compact) 84.dp else 112.dp
     val isFav = focused.pkg in store.favorites
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.Bottom
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .height(if (compact) 156.dp else 196.dp)
+            .clip(RoundedCornerShape(14.dp))
     ) {
-        Image(
-            focused.icon,
-            focused.name,
-            Modifier.size(iconSize).clip(RoundedCornerShape(20.dp))
+        ArtworkImage(
+            focused, store, "banner",
+            Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
         )
-        Spacer(Modifier.width(20.dp))
-        Column {
-            Text(
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(
+                    listOf(Color.Black.copy(alpha = 0.86f), Color.Black.copy(alpha = 0.48f), Color.Transparent)
+                )
+            )
+        )
+        Row(
+            Modifier.fillMaxSize().padding(horizontal = 24.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            Image(
+                focused.icon,
                 focused.name,
-                color = Color.White,
-                fontSize = if (compact) 24.sp else 34.sp,
-                fontWeight = FontWeight.Light,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                Modifier.size(iconSize).clip(RoundedCornerShape(16.dp))
             )
-            Text(
-                if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
-                color = Deck.TextDim,
-                fontSize = 13.sp
-            )
-            Spacer(Modifier.height(10.dp))
-            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                PlayButton("▶  MAINKAN") { onPlay(focused) }
-                DeckButton(if (isFav) "★" else "☆") { store.toggleFav(focused.pkg) }
-                DeckButton("⋯") { onOptions(focused) }
+            Spacer(Modifier.width(18.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    focused.name,
+                    color = Color.White,
+                    fontSize = if (compact) 24.sp else 34.sp,
+                    fontWeight = FontWeight.Light,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Text(
+                    if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
+                    color = Color.White.copy(alpha = 0.75f),
+                    fontSize = 13.sp
+                )
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    PlayButton("▶  MAINKAN") { onPlay(focused) }
+                    DeckButton(if (isFav) "★" else "☆") { store.toggleFav(focused.pkg) }
+                    DeckButton("⋯") { onOptions(focused) }
+                }
             }
         }
     }
