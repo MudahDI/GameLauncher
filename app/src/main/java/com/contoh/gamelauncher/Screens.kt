@@ -525,7 +525,6 @@ fun HomeScreen(
                     "SEMUA GAME", visible, focused?.pkg, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
-                HintText("Ketuk untuk memilih · ketuk dua kali untuk bermain · tahan untuk opsi")
             }
         } else {
             Column(
@@ -546,7 +545,6 @@ fun HomeScreen(
                     "SEMUA GAME", visible, focused?.pkg, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
-                HintText("Ketuk untuk memilih · ketuk dua kali untuk bermain · tahan untuk opsi")
             }
         }
     }
