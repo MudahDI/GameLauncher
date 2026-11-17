@@ -264,10 +264,21 @@ class Store(ctx: Context) {
 
     fun clearHistory() {
         recent = emptyList()
+
+        // Riwayat mencakup daftar terakhir dimainkan, timestamp, dan total waktu bermain.
+        // Hapus berdasarkan prefiks agar data paket yang tidak lagi terpasang ikut dibersihkan.
         val edit = sp.edit().remove("recent")
-        lastPlayedAt.keys.forEach { edit.remove("last_played:$it") }
-        edit.apply()
+        sp.all.keys
+            .filter { it.startsWith("last_played:") || it.startsWith("playtime:") }
+            .forEach(edit::remove)
+
+        // Jangan biarkan sesi tertunda menambahkan waktu bermain kembali setelah riwayat dibersihkan.
+        edit.remove("pending_play_pkg")
+            .remove("pending_play_start")
+            .apply()
+
         lastPlayedAt = emptyMap()
+        playtimeMs = emptyMap()
     }
 
     fun resetList() {
