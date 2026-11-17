@@ -783,7 +783,8 @@ fun SettingsScreen(
     currentAccent: String,
     hasWallpaper: Boolean,
     store: Store,
-    onManageMetadataSources: () -> Unit
+    onManageMetadataSources: () -> Unit,
+    controllerDiagnostic: String = "Belum ada input gamepad."
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
@@ -842,8 +843,15 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
         SettingRow(
             "Kontrol standar",
-            "A: konfirmasi dan buka · B: kembali · D-pad/analog: navigasi · L1/R1: ganti tab",
+            "A: konfirmasi · B: kembali · X: opsi · Y: favorit · D-pad/analog: navigasi · L1/R1: ganti tab · Start: menu cepat",
             {}
+        )
+        Text(
+            "INPUT TERAKHIR: $controllerDiagnostic",
+            color = Deck.TextDim,
+            fontSize = 10.sp,
+            lineHeight = 14.sp,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)
         )
         Spacer(Modifier.height(24.dp))
         Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
