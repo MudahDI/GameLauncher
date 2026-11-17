@@ -47,12 +47,14 @@ import androidx.core.graphics.drawable.toBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-private val Bg = Color(0xFF080D16)
-private val Panel = Color(0xFF111B2A)
-private val Raised = Color(0xFF1A2940)
-private val PrimaryText = Color(0xFFF3F6FC)
-private val Muted = Color(0xFF91A0B7)
-private val Accent = Color(0xFF9FC2FF)
+private val Bg = Color(0xFF070B14)
+private val Panel = Color(0xFF101827)
+private val Raised = Color(0xFF1B2A42)
+private val PrimaryText = Color(0xFFF4F6FB)
+private val Muted = Color(0xFF8998AE)
+private val Accent = Color(0xFF8DB8FF)
+private val SwitchMint = Color(0xFF80E3C2)
+private val CardEdge = Color(0xFF26364D)
 
 data class AppItem(val name: String, val pkg: String, val icon: ImageBitmap, val isGame: Boolean)
 
@@ -96,12 +98,24 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
 
 @Composable private fun Navigation(page:Page, wide:Boolean, choose:(Page)->Unit) {
     if(wide) Column(Modifier.width(205.dp).fillMaxHeight().background(Color(0xF20C1421)).padding(16.dp), verticalArrangement=Arrangement.spacedBy(8.dp)) {
-        Text("GAME",color=Accent,fontSize=11.sp,fontWeight=FontWeight.Bold,letterSpacing=3.sp)
-        Text("LAUNCHER",color=PrimaryText,fontSize=23.sp,fontWeight=FontWeight.Bold)
-        Spacer(Modifier.height(20.dp))
+        Row(verticalAlignment=Alignment.CenterVertically) {
+            Box(Modifier.size(34.dp).clip(RoundedCornerShape(11.dp)).background(Brush.linearGradient(listOf(Accent,SwitchMint))),contentAlignment=Alignment.Center) {
+                Text("G",color=Bg,fontSize=20.sp,fontWeight=FontWeight.Black)
+            }
+            Spacer(Modifier.width(10.dp))
+            Column {
+                Text("GAME",color=Muted,fontSize=9.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp)
+                Text("LAUNCHER",color=PrimaryText,fontSize=19.sp,fontWeight=FontWeight.Black,letterSpacing=0.5.sp)
+            }
+        }
+        Spacer(Modifier.height(25.dp))
+        Text("MENU",color=Muted,fontSize=9.sp,fontWeight=FontWeight.Bold,letterSpacing=1.8.sp,modifier=Modifier.padding(start=8.dp,bottom=4.dp))
         Page.values().forEach { NavItem(it,it==page,true){choose(it)} }
         Spacer(Modifier.weight(1f))
-        Text("GAME LAUNCHER 2.0",color=Muted,fontSize=9.sp)
+        Column {
+            Text("GAME LAUNCHER 2.0",color=Muted,fontSize=9.sp)
+            Text("Made for play",color=SwitchMint,fontSize=9.sp)
+        }
     } else Row(Modifier.fillMaxWidth().background(Color(0xF20C1421)).navigationBarsPadding().padding(8.dp), horizontalArrangement=Arrangement.spacedBy(4.dp)) {
         Page.values().forEach { p -> Box(Modifier.weight(1f)){NavItem(p,p==page,false){choose(p)}} }
     }
@@ -110,8 +124,8 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
 @Composable private fun Heading(kicker:String,title:String,count:String?=null) {
     Row(Modifier.fillMaxWidth().padding(bottom=18.dp),verticalAlignment=Alignment.CenterVertically) {
         Column(Modifier.weight(1f)) {
-            Text(kicker.uppercase(),color=Accent,fontSize=9.sp,fontWeight=FontWeight.Bold,letterSpacing=2.sp)
-            Text(title,color=PrimaryText,fontSize=27.sp,fontWeight=FontWeight.Bold)
+            Text(kicker.uppercase(),color=SwitchMint,fontSize=9.sp,fontWeight=FontWeight.Bold,letterSpacing=2.2.sp)
+            Text(title,color=PrimaryText,fontSize=29.sp,fontWeight=FontWeight.ExtraBold,letterSpacing=(-0.6).sp)
         }
         if(count!=null) Text(count,color=Muted,fontSize=10.sp,modifier=Modifier.clip(RoundedCornerShape(50)).background(Raised).padding(horizontal=12.dp,vertical=8.dp))
     }
@@ -119,15 +133,19 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable private fun GameCard(app:AppItem, fav:Boolean, wide:Boolean, play:()->Unit, options:()->Unit) {
-    Column(Modifier.width(if(wide)145.dp else 108.dp).combinedClickable(onClick=play,onLongClick=options)) {
-        Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(Raised)) {
+    Column(Modifier.width(if(wide)158.dp else 116.dp).combinedClickable(onClick=play,onLongClick=options)) {
+        Box(Modifier.fillMaxWidth().aspectRatio(0.82f).clip(RoundedCornerShape(15.dp)).background(Panel)) {
             Image(app.icon,app.name,contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize())
-            Text("⋯",color=PrimaryText,fontSize=17.sp,fontWeight=FontWeight.Bold,modifier=Modifier.align(Alignment.TopStart).padding(6.dp).clip(RoundedCornerShape(8.dp)).background(Color(0x99080D16)).clickable{options()}.padding(horizontal=8.dp,vertical=2.dp))
-            if(fav) Text("★",color=Color(0xFFFFD36E),fontSize=16.sp,modifier=Modifier.align(Alignment.TopEnd).padding(7.dp))
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x22000000),Color(0x00000000),Color(0x99060B13)))))
+            Box(Modifier.align(Alignment.BottomStart).padding(9.dp).size(29.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xCC0A1220)),contentAlignment=Alignment.Center) {
+                Text("▶",color=SwitchMint,fontSize=12.sp,fontWeight=FontWeight.Bold)
+            }
+            Text("⋯",color=PrimaryText,fontSize=17.sp,fontWeight=FontWeight.Bold,modifier=Modifier.align(Alignment.TopStart).padding(7.dp).clip(RoundedCornerShape(8.dp)).background(Color(0xCC0A1220)).clickable{options()}.padding(horizontal=8.dp,vertical=2.dp))
+            if(fav) Text("★",color=Color(0xFFFFD36E),fontSize=16.sp,modifier=Modifier.align(Alignment.TopEnd).padding(8.dp))
         }
-        Spacer(Modifier.height(7.dp))
-        Text(app.name,color=PrimaryText,fontSize=11.sp,fontWeight=FontWeight.Medium,maxLines=1,overflow=TextOverflow.Ellipsis)
-        Text(if(app.isGame) "GAME" else "APLIKASI",color=Muted,fontSize=8.sp,letterSpacing=1.sp)
+        Spacer(Modifier.height(8.dp))
+        Text(app.name,color=PrimaryText,fontSize=12.sp,fontWeight=FontWeight.SemiBold,maxLines=1,overflow=TextOverflow.Ellipsis)
+        Text(if(app.isGame) "GAME" else "APP",color=Muted,fontSize=8.sp,letterSpacing=1.2.sp)
     }
 }
 
@@ -151,22 +169,23 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
     val recent=store.recent.mapNotNull { p -> apps.find{it.pkg==p} }
     val featured=recent.firstOrNull() ?: apps.firstOrNull()
     val favs=apps.filter{it.pkg in store.favorites}
-    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=if(wide)30.dp else 19.dp,vertical=22.dp)) {
-        Heading("YOUR GAME SPACE","Selamat datang",apps.size.toString()+" GAME")
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(horizontal=if(wide)34.dp else 20.dp,vertical=20.dp)) {
+        Heading("YOUR GAME SPACE","Mainkan sesuatu",apps.size.toString()+" GAME")
         if(featured==null) Empty("Library masih kosong","Tambahkan game untuk mulai membangun koleksimu.")
-        else Box(Modifier.fillMaxWidth().height(if(wide)245.dp else 200.dp).clip(RoundedCornerShape(23.dp))) {
-            Image(featured.icon,null,contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize().blur(32.dp))
-            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xF20A1424),Color(0xB30A1424),Color(0x550A1424)))))
+        else Box(Modifier.fillMaxWidth().height(if(wide)270.dp else 218.dp).clip(RoundedCornerShape(25.dp)).background(Panel)) {
+            Image(featured.icon,null,contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize().blur(34.dp))
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(listOf(Color(0xF5070D18),Color(0xD5070D18),Color(0x55070D18)))))
+            Box(Modifier.fillMaxSize().padding(1.dp).clip(RoundedCornerShape(24.dp)).background(Brush.verticalGradient(listOf(Color(0x22FFFFFF),Color.Transparent))))
             Row(Modifier.fillMaxSize().padding(if(wide)27.dp else 17.dp),verticalAlignment=Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
-                    Text(if(recent.isNotEmpty()) "CONTINUE PLAYING" else "PICK UP A GAME",color=Accent,fontSize=9.sp,fontWeight=FontWeight.Bold,letterSpacing=1.5.sp)
+                    Text(if(recent.isNotEmpty()) "CONTINUE PLAYING" else "FEATURED IN YOUR LIBRARY",color=SwitchMint,fontSize=9.sp,fontWeight=FontWeight.Bold,letterSpacing=1.5.sp)
                     Spacer(Modifier.height(8.dp))
                     Text(featured.name,color=PrimaryText,fontSize=if(wide)27.sp else 20.sp,fontWeight=FontWeight.Bold,maxLines=2,overflow=TextOverflow.Ellipsis)
                     Spacer(Modifier.height(15.dp))
-                    Text("▶  MAINkan",color=Bg,fontSize=11.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Accent).clickable{play(featured)}.padding(horizontal=16.dp,vertical=10.dp))
+                    Text("▶  MAINKAN",color=Bg,fontSize=11.sp,fontWeight=FontWeight.ExtraBold,letterSpacing=0.6.sp,modifier=Modifier.clip(RoundedCornerShape(10.dp)).background(Brush.horizontalGradient(listOf(SwitchMint,Accent))).clickable{play(featured)}.padding(horizontal=18.dp,vertical=12.dp))
                 }
                 Spacer(Modifier.width(12.dp))
-                Image(featured.icon,featured.name,contentScale=ContentScale.Crop,modifier=Modifier.size(if(wide)155.dp else 108.dp).clip(RoundedCornerShape(19.dp)))
+                Image(featured.icon,featured.name,contentScale=ContentScale.Crop,modifier=Modifier.size(if(wide)168.dp else 116.dp).clip(RoundedCornerShape(21.dp)).padding(1.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
@@ -232,7 +251,7 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
 
 @Composable private fun Detail(app:AppItem,fav:Boolean,play:()->Unit,toggle:()->Unit,remove:()->Unit,back:()->Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
-        Text("‹  KEMBALI",color=Accent,fontSize=11.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clickable{back()}.padding(bottom=17.dp))
+        Text("‹  KEMBALI KE KOLEKSI",color=SwitchMint,fontSize=10.sp,fontWeight=FontWeight.Bold,letterSpacing=1.sp,modifier=Modifier.clickable{back()}.padding(bottom=19.dp))
         Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(22.dp))) {
             Image(app.icon,null,contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize().blur(30.dp))
             Box(Modifier.fillMaxSize().background(Color(0xB908101D)))
@@ -279,7 +298,13 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
         val wide=maxWidth>=700.dp || maxWidth>maxHeight
         Row(Modifier.fillMaxSize().safeDrawingPadding()) {
             if(wide) Navigation(page,true){pageName=it.name}
-            Column(Modifier.weight(1f).fillMaxHeight()) {
+            Column(Modifier.weight(1f).fillMaxHeight().background(Brush.verticalGradient(listOf(Color(0xFF0B1422),Bg)))) {
+                Row(Modifier.fillMaxWidth().height(58.dp).padding(horizontal=if(wide)30.dp else 19.dp),verticalAlignment=Alignment.CenterVertically) {
+                    Text("◈",color=SwitchMint,fontSize=20.sp,fontWeight=FontWeight.Black)
+                    Spacer(Modifier.width(9.dp))
+                    Text("GAME SPACE",color=PrimaryText,fontSize=11.sp,fontWeight=FontWeight.ExtraBold,letterSpacing=1.6.sp,modifier=Modifier.weight(1f))
+                    Text("● READY",color=SwitchMint,fontSize=9.sp,fontWeight=FontWeight.Bold,letterSpacing=1.sp,modifier=Modifier.clip(RoundedCornerShape(30.dp)).background(Color(0x2227C99A)).padding(horizontal=10.dp,vertical=6.dp))
+                }
                 Box(Modifier.weight(1f).fillMaxWidth()) {
                     if(selected!=null) Detail(selected,selected.pkg in store.favorites,{play(selected);selectedPkg=null},{store.favorite(selected.pkg)},{removeTarget=selected},{selectedPkg=null})
                     else when(page) {
