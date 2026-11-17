@@ -145,7 +145,7 @@ private fun WallpaperBackground(store: Store) {
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissControllerNotice: () -> Unit) {
+fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDiagnostic: String, onDismissControllerNotice: () -> Unit) {
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
     val focusManager = LocalFocusManager.current
@@ -253,37 +253,59 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             .focusRequester(rootFocusRequester)
             .focusable()
             .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
-                when (event.nativeKeyEvent.keyCode) {
-                    AndroidKeyEvent.KEYCODE_DPAD_UP -> focusManager.moveFocus(FocusDirection.Up)
-                    AndroidKeyEvent.KEYCODE_DPAD_DOWN -> focusManager.moveFocus(FocusDirection.Down)
-                    AndroidKeyEvent.KEYCODE_DPAD_LEFT -> focusManager.moveFocus(FocusDirection.Left)
-                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> focusManager.moveFocus(FocusDirection.Right)
-                    AndroidKeyEvent.KEYCODE_BUTTON_L1 -> {
-                        tab = (tab - 1 + 5) % 5
-                        true
-                    }
-                    AndroidKeyEvent.KEYCODE_BUTTON_R1 -> {
-                        tab = (tab + 1) % 5
-                        true
-                    }
-                    AndroidKeyEvent.KEYCODE_BUTTON_START -> {
-                        if (!showPicker && !confirmReset && selectedPkg == null) {
-                            showQuickMenu = !showQuickMenu
+                val native = event.nativeKeyEvent
+                val code = native.keyCode
+                val isDown = native.action == AndroidKeyEvent.ACTION_DOWN
+                val isUp = native.action == AndroidKeyEvent.ACTION_UP
+                if (!isDown && !isUp) return@onPreviewKeyEvent false
+
+                // Navigate exactly once on key-down; consume key-up as well so
+                // Android/Compose cannot perform a second focus movement.
+                when (code) {
+                    AndroidKeyEvent.KEYCODE_DPAD_UP,
+                    AndroidKeyEvent.KEYCODE_DPAD_DOWN,
+                    AndroidKeyEvent.KEYCODE_DPAD_LEFT,
+                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
+                        if (isDown && native.repeatCount == 0) {
+                            when (code) {
+                                AndroidKeyEvent.KEYCODE_DPAD_UP -> focusManager.moveFocus(FocusDirection.Up)
+                                AndroidKeyEvent.KEYCODE_DPAD_DOWN -> focusManager.moveFocus(FocusDirection.Down)
+                                AndroidKeyEvent.KEYCODE_DPAD_LEFT -> focusManager.moveFocus(FocusDirection.Left)
+                                AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> focusManager.moveFocus(FocusDirection.Right)
+                            }
                         }
                         true
                     }
+                    AndroidKeyEvent.KEYCODE_BUTTON_L1,
+                    AndroidKeyEvent.KEYCODE_BUTTON_R1,
+                    AndroidKeyEvent.KEYCODE_BUTTON_START,
                     AndroidKeyEvent.KEYCODE_BUTTON_B,
-                    AndroidKeyEvent.KEYCODE_BACK -> {
-                        when {
-                            showQuickMenu -> showQuickMenu = false
-                            showMetadataSources -> showMetadataSources = false
-                            metadataPkg != null -> metadataPkg = null
-                            editingDescriptionPkg != null -> editingDescriptionPkg = null
-                            showPicker -> showPicker = false
-                            selectedPkg != null -> selectedPkg = null
-                            confirmReset -> confirmReset = false
-                            tab != 0 -> tab = 0
+                    AndroidKeyEvent.KEYCODE_BACK,
+                    AndroidKeyEvent.KEYCODE_BUTTON_Y -> {
+                        if (isDown && native.repeatCount == 0) {
+                            when (code) {
+                                AndroidKeyEvent.KEYCODE_BUTTON_L1 -> tab = (tab - 1 + 5) % 5
+                                AndroidKeyEvent.KEYCODE_BUTTON_R1 -> tab = (tab + 1) % 5
+                                AndroidKeyEvent.KEYCODE_BUTTON_START -> {
+                                    if (!showPicker && !confirmReset && selectedPkg == null) {
+                                        showQuickMenu = !showQuickMenu
+                                    }
+                                }
+                                AndroidKeyEvent.KEYCODE_BUTTON_Y -> {
+                                    focused?.let { store.toggleFav(it.pkg) }
+                                }
+                                AndroidKeyEvent.KEYCODE_BUTTON_B,
+                                AndroidKeyEvent.KEYCODE_BACK -> when {
+                                    showQuickMenu -> showQuickMenu = false
+                                    showMetadataSources -> showMetadataSources = false
+                                    metadataPkg != null -> metadataPkg = null
+                                    editingDescriptionPkg != null -> editingDescriptionPkg = null
+                                    showPicker -> showPicker = false
+                                    selectedPkg != null -> selectedPkg = null
+                                    confirmReset -> confirmReset = false
+                                    tab != 0 -> tab = 0
+                                }
+                            }
                         }
                         true
                     }
@@ -319,7 +341,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         currentAccent = store.accentHex,
                         hasWallpaper = store.wallpaperUri != null,
                         store = store,
-                        onManageMetadataSources = { showMetadataSources = true }
+                        onManageMetadataSources = { showMetadataSources = true },
+                        controllerDiagnostic = controllerDiagnostic
                     )
                     else -> HistoryScreen(visible, store, play, options)
                 }
@@ -516,8 +539,11 @@ class MainActivity : ComponentActivity() {
     /** Naik setiap kali launcher kembali tampil, memicu pemuatan ulang daftar app. */
     private var refreshTick by mutableIntStateOf(0)
     private var controllerNotice by mutableStateOf<String?>(null)
+    private var controllerDiagnostic by mutableStateOf("Belum ada input gamepad.")
     private val gamepadRouter by lazy {
-        GamepadInputRouter(this) { notice -> controllerNotice = notice }
+        GamepadInputRouter(this, { notice -> controllerNotice = notice }) { detail ->
+            controllerDiagnostic = detail
+        }
     }
 
     override fun dispatchKeyEvent(event: AndroidKeyEvent): Boolean {
@@ -597,7 +623,7 @@ class MainActivity : ComponentActivity() {
                 if (list == null) {
                     Box(Modifier.fillMaxSize().background(Deck.Bg))
                 } else {
-                    LauncherApp(list, controllerNotice) { controllerNotice = null }
+                    LauncherApp(list, controllerNotice, controllerDiagnostic) { controllerNotice = null }
                 }
             }
         }
