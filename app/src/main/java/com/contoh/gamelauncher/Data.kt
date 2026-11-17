@@ -133,7 +133,7 @@ class Store(ctx: Context) {
         sp.edit().putString("wallpaper_uri", uri?.toString()).apply()
     }
 
-    fun setSwapAB(enabled: Boolean) {
+    fun updateSwapAB(enabled: Boolean) {
         swapAB = enabled
         sp.edit().putBoolean("swap_ab", enabled).apply()
     }

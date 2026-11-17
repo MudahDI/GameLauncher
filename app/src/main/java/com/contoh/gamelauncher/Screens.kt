@@ -843,7 +843,7 @@ fun SettingsScreen(
                 Text("Tukar tombol A / B", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Text("Aktifkan jika tombol fisik confirm dan kembali tertukar pada gamepad.", color = Deck.TextDim, fontSize = 11.sp)
             }
-            Switch(checked = store.swapAB, onCheckedChange = { store.setSwapAB(it) })
+            Switch(checked = store.swapAB, onCheckedChange = { store.updateSwapAB(it) })
         }
         Spacer(Modifier.height(24.dp))
         Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
