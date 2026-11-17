@@ -295,7 +295,7 @@ fun HomeScreen(
             if (visible.isNotEmpty()) {
                 CardRow(
                     "SEMUA GAME", visible, focused?.pkg, store,
-                    cardWidth, compact, tap, onOptions
+                    cardWidth, compact, tap, onOptions, onFocus
                 )
             }
             HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
