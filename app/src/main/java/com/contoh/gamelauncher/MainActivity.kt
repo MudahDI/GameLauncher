@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.os.Bundle
+import android.view.InputDevice
+import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -35,6 +37,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.focus.focusable
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.draw.border
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
@@ -175,7 +185,7 @@ private enum class Page(val label: String, val glyph: String) {
 
 @Composable private fun AppCard(app: AppItem, favorite: Boolean, compact: Boolean,
     play: () -> Unit, toggle: () -> Unit, details: () -> Unit) {
-    Column(Modifier.width(if (compact) 112.dp else 136.dp)) {
+    Column(Modifier.width(if (compact) 112.dp else 136.dp).focusable()) {
         Box {
             AppIcon(app, Modifier.fillMaxWidth().clickable(onClick = play))
             if (favorite) Box(Modifier.align(Alignment.TopEnd).padding(7.dp).size(23.dp)
@@ -385,13 +395,15 @@ private enum class Page(val label: String, val glyph: String) {
     }
 }
 
-@Composable private fun SettingsPage(add: () -> Unit, reset: () -> Unit) {
+@Composable private fun SettingsPage(add: () -> Unit, reset: () -> Unit, gamepad: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(22.dp)) {
         Eyebrow("PREFERENCES")
         Heading("Pengaturan", "Sesuaikan pengalaman launcher.")
         SettingCard("Tambah aplikasi", "Pilih aplikasi yang ingin ditampilkan.", "+", add)
         Spacer(Modifier.height(10.dp))
         SettingCard("Pulihkan daftar", "Reset daftar manual; favorit dan riwayat tetap aman.", "↺", reset)
+        Spacer(Modifier.height(10.dp))
+        SettingCard("Gamepad tester", "Periksa koneksi dan tombol controller.", "⌘", gamepad)
         Spacer(Modifier.height(28.dp))
         Box(Modifier.fillMaxWidth().clip(RoundedCornerShape(19.dp))
             .background(Brush.linearGradient(listOf(Raised, Panel))).padding(18.dp)) {
@@ -460,6 +472,10 @@ private enum class Page(val label: String, val glyph: String) {
     var showAdd by remember { mutableStateOf(false) }
     var showReset by remember { mutableStateOf(false) }
     var removeTarget by remember { mutableStateOf<AppItem?>(null) }
+    var showGamepadTest by remember { mutableStateOf(false) }
+    var lastGamepadInput by remember { mutableStateOf("Belum ada input") }
+    var gamepadConnected by remember { mutableStateOf(false) }
+    val rootFocus = remember { FocusRequester() }
     val page = Page.values().firstOrNull { it.name == pageName } ?: Page.HOME
     val visible = allApps.filter { (it.isGame || it.pkg in store.added) && it.pkg !in store.removed }
     val selected = allApps.firstOrNull { it.pkg == selectedPackage }
@@ -468,7 +484,48 @@ private enum class Page(val label: String, val glyph: String) {
     }
     val details: (AppItem) -> Unit = { selectedPackage = it.pkg }
 
-    BoxWithConstraints(Modifier.fillMaxSize().background(Background)) {
+    gamepadConnected = remember {
+        InputDevice.getDeviceIds().any { id -> InputDevice.getDevice(id)?.let { device ->
+            device.supportsSource(InputDevice.SOURCE_GAMEPAD) || device.supportsSource(InputDevice.SOURCE_JOYSTICK)
+        } == true }
+    }
+    BoxWithConstraints(Modifier.fillMaxSize().background(Background)
+        .focusRequester(rootFocus).onPreviewKeyEvent { event ->
+            val native = event.nativeKeyEvent
+            if (event.type != androidx.compose.ui.input.key.KeyEventType.KeyDown) return@onPreviewKeyEvent false
+            val isController = native.source and (InputDevice.SOURCE_GAMEPAD or InputDevice.SOURCE_JOYSTICK) != 0
+            if (isController) lastGamepadInput = when (native.keyCode) {
+                AndroidKeyEvent.KEYCODE_DPAD_UP -> "D-pad ↑"
+                AndroidKeyEvent.KEYCODE_DPAD_DOWN -> "D-pad ↓"
+                AndroidKeyEvent.KEYCODE_DPAD_LEFT -> "D-pad ←"
+                AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> "D-pad →"
+                AndroidKeyEvent.KEYCODE_BUTTON_A, AndroidKeyEvent.KEYCODE_ENTER -> "A / Confirm"
+                AndroidKeyEvent.KEYCODE_BUTTON_B, AndroidKeyEvent.KEYCODE_BACK, AndroidKeyEvent.KEYCODE_ESCAPE -> "B / Back"
+                AndroidKeyEvent.KEYCODE_BUTTON_X -> "X"
+                AndroidKeyEvent.KEYCODE_BUTTON_Y -> "Y"
+                AndroidKeyEvent.KEYCODE_BUTTON_L1 -> "L1"
+                AndroidKeyEvent.KEYCODE_BUTTON_R1 -> "R1"
+                AndroidKeyEvent.KEYCODE_BUTTON_START -> "Start"
+                else -> "Key ${native.keyCode}"
+            }
+            when (native.keyCode) {
+                AndroidKeyEvent.KEYCODE_BUTTON_B, AndroidKeyEvent.KEYCODE_BACK, AndroidKeyEvent.KEYCODE_ESCAPE -> {
+                    if (selectedPackage != null) selectedPackage = null
+                    else if (page != Page.HOME) pageName = Page.HOME.name
+                    else return@onPreviewKeyEvent false
+                    true
+                }
+                AndroidKeyEvent.KEYCODE_BUTTON_L1 -> { pageName = Page.values()[((page.ordinal - 1 + Page.values().size) % Page.values().size)].name; true }
+                AndroidKeyEvent.KEYCODE_BUTTON_R1 -> { pageName = Page.values()[(page.ordinal + 1) % Page.values().size].name; true }
+                AndroidKeyEvent.KEYCODE_BUTTON_A, AndroidKeyEvent.KEYCODE_BUTTON_X -> {
+                    if (selectedPackage != null) selected?.let { launch(it) }
+                    else if (page == Page.HOME) visible.firstOrNull()?.let { launch(it) }
+                    else false
+                    true
+                }
+                else -> false
+            }
+        }.focusable()) {
         val landscape = maxWidth > maxHeight && maxWidth >= 600.dp
         val compact = !landscape && maxWidth < 600.dp
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
@@ -480,12 +537,22 @@ private enum class Page(val label: String, val glyph: String) {
                     Page.HOME -> HomePage(visible, store, compact, launch, details) { pageName = Page.LIBRARY.name }
                     Page.LIBRARY -> LibraryPage(visible, store, compact, launch, details) { showAdd = true }
                     Page.SEARCH -> SearchPage(visible, store, compact, launch, details)
-                    Page.SETTINGS -> SettingsPage({ showAdd = true }, { showReset = true })
+                    Page.SETTINGS -> SettingsPage({ showAdd = true }, { showReset = true }) { showGamepadTest = true }
                 }
             }
             if (!landscape) BottomBar(page) { pageName = it.name }
         }
     }
+    if (showGamepadTest) AlertDialog(onDismissRequest = { showGamepadTest = false },
+        title = { Text("Gamepad tester") },
+        text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(if (gamepadConnected) "Controller terdeteksi" else "Controller belum terdeteksi",
+                color = if (gamepadConnected) Accent else Muted, fontWeight = FontWeight.Bold)
+            Text("Tekan tombol pada gamepad untuk melihat input di bawah.", color = Muted, fontSize = 11.sp)
+            Text(lastGamepadInput, color = Foreground, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+            Text("D-pad: navigasi • A: pilih • B: kembali • L1/R1: pindah tab",
+                color = Muted, fontSize = 10.sp)
+        } }, confirmButton = { TextButton(onClick = { showGamepadTest = false }) { Text("Selesai") } })
     if (showAdd) AddAppsDialog(allApps.filter { a -> visible.none { it.pkg == a.pkg } },
         { store.add(it.pkg) }, { showAdd = false })
     if (showReset) AlertDialog(onDismissRequest = { showReset = false },
