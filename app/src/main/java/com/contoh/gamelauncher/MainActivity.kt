@@ -134,8 +134,8 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
 @OptIn(ExperimentalFoundationApi::class)
 @Composable private fun GameCard(app:AppItem, fav:Boolean, wide:Boolean, play:()->Unit, options:()->Unit) {
     Column(Modifier.width(if(wide)158.dp else 116.dp).combinedClickable(onClick=play,onLongClick=options)) {
-        Box(Modifier.fillMaxWidth().aspectRatio(0.82f).clip(RoundedCornerShape(15.dp)).background(Panel)) {
-            Image(app.icon,app.name,contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize())
+        Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(15.dp)).background(Panel)) {
+            Image(app.icon,app.name,contentScale=ContentScale.Fit,modifier=Modifier.fillMaxSize().padding(7.dp))
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0x22000000),Color(0x00000000),Color(0x99060B13)))))
             Box(Modifier.align(Alignment.BottomStart).padding(9.dp).size(29.dp).clip(RoundedCornerShape(9.dp)).background(Color(0xCC0A1220)),contentAlignment=Alignment.Center) {
                 Text("▶",color=SwitchMint,fontSize=12.sp,fontWeight=FontWeight.Bold)
@@ -185,7 +185,7 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
                     Text("▶  MAINKAN",color=Bg,fontSize=11.sp,fontWeight=FontWeight.ExtraBold,letterSpacing=0.6.sp,modifier=Modifier.clip(RoundedCornerShape(10.dp)).background(Brush.horizontalGradient(listOf(SwitchMint,Accent))).clickable{play(featured)}.padding(horizontal=18.dp,vertical=12.dp))
                 }
                 Spacer(Modifier.width(12.dp))
-                Image(featured.icon,featured.name,contentScale=ContentScale.Crop,modifier=Modifier.size(if(wide)168.dp else 116.dp).clip(RoundedCornerShape(21.dp)).padding(1.dp))
+                Image(featured.icon,featured.name,contentScale=ContentScale.Fit,modifier=Modifier.size(if(wide)168.dp else 116.dp).clip(RoundedCornerShape(21.dp)).background(Panel).padding(7.dp))
             }
         }
         Spacer(Modifier.height(24.dp))
