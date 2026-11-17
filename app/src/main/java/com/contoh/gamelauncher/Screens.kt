@@ -188,7 +188,7 @@ fun SectionTitle(text: String, compact: Boolean) {
         fontSize = if (compact) 12.sp else 13.sp,
         fontWeight = FontWeight.SemiBold,
         letterSpacing = 1.5.sp,
-        modifier = Modifier.padding(start = 32.dp, top = 14.dp)
+        modifier = Modifier.padding(start = 16.dp, top = 14.dp)
     )
 }
 
@@ -198,7 +198,7 @@ fun HintText(text: String) {
         text,
         color = Deck.TextDim,
         fontSize = 13.sp,
-        modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
     )
 }
 
@@ -217,7 +217,7 @@ fun CardRow(
     SectionTitle(title, compact)
     LazyRow(
         modifier = Modifier.focusGroup(),
-        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
+        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         items(list, key = { it.pkg }) { app ->
@@ -293,7 +293,7 @@ fun HeroPanel(
     Box(
         Modifier
             .fillMaxWidth()
-            .height(if (compact) 156.dp else 196.dp)
+            .height(if (compact) 148.dp else 196.dp)
             .clip(RoundedCornerShape(14.dp))
     ) {
         ArtworkImage(
@@ -364,9 +364,16 @@ fun HomeScreen(
         }
 
         Column(
-            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)
+            Modifier.fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp, vertical = 16.dp)
         ) {
-            HeroPanel(focused, store, compact, onPlay, onOptions)
+            // Banner diberi batas lebar di landscape agar tidak menjadi terlalu panoramik.
+            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                Box(Modifier.fillMaxWidth().widthIn(max = 960.dp)) {
+                    HeroPanel(focused, store, compact, onPlay, onOptions)
+                }
+            }
 
             if (recent.isNotEmpty()) {
                 CardRow(
