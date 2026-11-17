@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
@@ -305,22 +306,36 @@ private enum class Page(val label: String, val glyph: String) {
         "Favorit" -> it.pkg in store.favorites
         else -> true
     } }.let { if (descending) it.sortedByDescending { a -> a.name.lowercase() } else it.sortedBy { a -> a.name.lowercase() } }
-    Column(Modifier.fillMaxSize().padding(horizontal = if (compact) 18.dp else 30.dp, vertical = 18.dp)) {
-        Eyebrow("YOUR COLLECTION")
-        Heading("Koleksi", "${filtered.size} item tersedia") {
-            Text("+ TAMBAH", color = Background, fontSize = 9.sp, fontWeight = FontWeight.Black,
-                modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Accent).clickable(onClick = add)
-                    .padding(horizontal = 13.dp, vertical = 10.dp))
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(if (compact) 100.dp else 126.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp,
+            end = if (compact) 18.dp else 30.dp, top = 18.dp, bottom = 28.dp),
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column {
+                Eyebrow("YOUR COLLECTION")
+                Heading("Koleksi", "${filtered.size} item tersedia") {
+                    Text("+ TAMBAH", color = Background, fontSize = 9.sp, fontWeight = FontWeight.Black,
+                        modifier = Modifier.clip(RoundedCornerShape(12.dp)).background(Accent)
+                            .clickable(onClick = add).padding(horizontal = 13.dp, vertical = 10.dp))
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
+                    listOf("Semua", "Game", "Aplikasi", "Favorit").forEach { FilterChip(it, filter == it) { filter = it } }
+                    Spacer(Modifier.weight(1f))
+                    Text(if (descending) "Z–A" else "A–Z", color = Muted, fontSize = 9.sp,
+                        modifier = Modifier.clickable { descending = !descending }.padding(7.dp))
+                }
+            }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(7.dp), verticalAlignment = Alignment.CenterVertically) {
-            listOf("Semua", "Game", "Aplikasi", "Favorit").forEach { FilterChip(it, filter == it) { filter = it } }
-            Spacer(Modifier.weight(1f))
-            Text(if (descending) "Z–A" else "A–Z", color = Muted, fontSize = 9.sp,
-                modifier = Modifier.clickable { descending = !descending }.padding(7.dp))
+        if (filtered.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+            EmptyState("Belum ada item", "Coba filter lain atau tambahkan aplikasi.", "Tambah aplikasi", add)
+        } else items(filtered, key = { it.pkg }) { app ->
+            AppCard(app, app.pkg in store.favorites, compact,
+                { play(app) }, { store.favorite(app.pkg) }, { details(app) })
         }
-        Spacer(Modifier.height(18.dp))
-        if (filtered.isEmpty()) EmptyState("Belum ada item", "Coba filter lain atau tambahkan aplikasi.", "Tambah aplikasi", add)
-        else AppGrid(filtered, store, compact, play, details)
     }
 }
 
@@ -328,15 +343,30 @@ private enum class Page(val label: String, val glyph: String) {
     play: (AppItem) -> Unit, details: (AppItem) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
     val results = apps.filter { it.name.contains(query, true) || it.pkg.contains(query, true) }
-    Column(Modifier.fillMaxSize().padding(horizontal = if (compact) 18.dp else 30.dp, vertical = 18.dp)) {
-        Eyebrow("FIND YOUR NEXT PLAY")
-        Heading("Pencarian", "Cari game dan aplikasi dengan cepat.")
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
-            placeholder = { Text("Ketik nama aplikasi…", color = Muted) }, shape = RoundedCornerShape(16.dp))
-        Spacer(Modifier.height(17.dp))
-        if (results.isEmpty()) EmptyState(if (query.isBlank()) "Mulai pencarian" else "Tidak ditemukan",
-            "Hasil yang cocok akan muncul di sini.")
-        else AppGrid(results, store, compact, play, details)
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(if (compact) 100.dp else 126.dp),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(start = if (compact) 18.dp else 30.dp,
+            end = if (compact) 18.dp else 30.dp, top = 18.dp, bottom = 28.dp),
+        horizontalArrangement = Arrangement.spacedBy(13.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Column {
+                Eyebrow("FIND YOUR NEXT PLAY")
+                Heading("Pencarian", "Cari game dan aplikasi dengan cepat.")
+                OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth(), singleLine = true,
+                    placeholder = { Text("Ketik nama aplikasi…", color = Muted) },
+                    shape = RoundedCornerShape(16.dp))
+            }
+        }
+        if (results.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
+            EmptyState(if (query.isBlank()) "Mulai pencarian" else "Tidak ditemukan",
+                "Hasil yang cocok akan muncul di sini.")
+        } else items(results, key = { it.pkg }) { app ->
+            AppCard(app, app.pkg in store.favorites, compact,
+                { play(app) }, { store.favorite(app.pkg) }, { details(app) })
+        }
     }
 }
 
