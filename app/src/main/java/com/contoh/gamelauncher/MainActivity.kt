@@ -57,11 +57,9 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
-import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -148,7 +146,6 @@ private fun WallpaperBackground(store: Store) {
 fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDiagnostic: String, onDismissControllerNotice: () -> Unit) {
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
-    val focusManager = LocalFocusManager.current
     val rootFocusRequester = remember { FocusRequester() }
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val store = remember { Store(ctx) }
@@ -259,28 +256,16 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
                 val isUp = native.action == AndroidKeyEvent.ACTION_UP
                 if (!isDown && !isUp) return@onPreviewKeyEvent false
 
-                // Navigate exactly once on key-down; consume key-up as well so
-                // Android/Compose cannot perform a second focus movement.
+                // Directional navigation is intentionally not intercepted here.
+                // Compose's native focus search must handle D-pad movement so lazy
+                // rows/grids can scroll and choose the nearest focus target naturally.
                 when (code) {
-                    AndroidKeyEvent.KEYCODE_DPAD_UP,
-                    AndroidKeyEvent.KEYCODE_DPAD_DOWN,
-                    AndroidKeyEvent.KEYCODE_DPAD_LEFT,
-                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> {
-                        if (isDown && native.repeatCount == 0) {
-                            when (code) {
-                                AndroidKeyEvent.KEYCODE_DPAD_UP -> focusManager.moveFocus(FocusDirection.Up)
-                                AndroidKeyEvent.KEYCODE_DPAD_DOWN -> focusManager.moveFocus(FocusDirection.Down)
-                                AndroidKeyEvent.KEYCODE_DPAD_LEFT -> focusManager.moveFocus(FocusDirection.Left)
-                                AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> focusManager.moveFocus(FocusDirection.Right)
-                            }
-                        }
-                        true
-                    }
                     AndroidKeyEvent.KEYCODE_BUTTON_L1,
                     AndroidKeyEvent.KEYCODE_BUTTON_R1,
                     AndroidKeyEvent.KEYCODE_BUTTON_START,
                     AndroidKeyEvent.KEYCODE_BUTTON_B,
                     AndroidKeyEvent.KEYCODE_BACK,
+                    AndroidKeyEvent.KEYCODE_BUTTON_X,
                     AndroidKeyEvent.KEYCODE_BUTTON_Y -> {
                         if (isDown && native.repeatCount == 0) {
                             when (code) {
@@ -290,6 +275,9 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
                                     if (!showPicker && !confirmReset && selectedPkg == null) {
                                         showQuickMenu = !showQuickMenu
                                     }
+                                }
+                                AndroidKeyEvent.KEYCODE_BUTTON_X -> {
+                                    focused?.let(options)
                                 }
                                 AndroidKeyEvent.KEYCODE_BUTTON_Y -> {
                                     focused?.let { store.toggleFav(it.pkg) }
