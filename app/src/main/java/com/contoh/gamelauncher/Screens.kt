@@ -628,11 +628,56 @@ fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
 }
 
 @Composable
-fun SettingsScreen(onAdd: () -> Unit, onReset: () -> Unit) {
+fun SettingsScreen(
+    onAdd: () -> Unit,
+    onReset: () -> Unit,
+    onWallpaper: () -> Unit,
+    onClearWallpaper: () -> Unit,
+    onAccent: (String) -> Unit,
+    currentAccent: String,
+    hasWallpaper: Boolean
+) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
     ) {
-        Text("PENGATURAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text("TAMPILAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        Text("Warna aksen", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text("Ubah warna tombol, fokus, dan elemen aktif launcher.", color = Deck.TextDim, fontSize = 12.sp)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            listOf(
+                "#1A9FFF" to "Biru",
+                "#8B5CF6" to "Ungu",
+                "#20C997" to "Mint",
+                "#F59E0B" to "Amber",
+                "#EF5DA8" to "Pink",
+                "#E5E7EB" to "Putih"
+            ).forEach { (hex, label) ->
+                val selected = currentAccent.equals(hex, ignoreCase = true)
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier.size(34.dp).clip(RoundedCornerShape(50))
+                            .background(Color(android.graphics.Color.parseColor(hex)))
+                            .then(if (selected) Modifier.border(2.dp, Color.White, RoundedCornerShape(50)) else Modifier)
+                            .clickable { onAccent(hex) }
+                    )
+                    Text(label, color = Deck.TextDim, fontSize = 10.sp)
+                }
+            }
+        }
+        Spacer(Modifier.height(22.dp))
+        SettingRow(
+            "Ganti wallpaper",
+            "Pilih gambar dari perangkat sebagai latar launcher",
+            onWallpaper
+        )
+        if (hasWallpaper) {
+            Spacer(Modifier.height(8.dp))
+            SettingRow("Hapus wallpaper", "Kembali ke latar charcoal bawaan", onClearWallpaper)
+        }
+        Spacer(Modifier.height(24.dp))
+        Text("APLIKASI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         SettingRow(
             "Pulihkan aplikasi tersembunyi",
