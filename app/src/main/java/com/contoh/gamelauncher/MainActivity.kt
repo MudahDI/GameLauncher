@@ -174,6 +174,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var showMetadataSources by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var descriptionDraft by rememberSaveable { mutableStateOf("") }
     var showPicker by rememberSaveable { mutableStateOf(false) }
@@ -314,7 +315,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         onAccent = { store.setAccent(it) },
                         currentAccent = store.accentHex,
                         hasWallpaper = store.wallpaperUri != null,
-                        store = store
+                        store = store,
+                        onManageMetadataSources = { showMetadataSources = true }
                     )
                     else -> HistoryScreen(visible, store, play, options)
                 }
@@ -338,6 +340,10 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                 Text(controllerNotice, color = Color.White, style = MaterialTheme.typography.bodyMedium)
             }
         }
+    }
+
+    if (showMetadataSources) {
+        MetadataSourcesDialog(onDismiss = { showMetadataSources = false })
     }
 
     if (showPicker) {

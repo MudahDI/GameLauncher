@@ -779,7 +779,8 @@ fun SettingsScreen(
     onAccent: (String) -> Unit,
     currentAccent: String,
     hasWallpaper: Boolean,
-    store: Store
+    store: Store,
+    onManageMetadataSources: () -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
@@ -833,6 +834,10 @@ fun SettingsScreen(
         SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
         SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna aksen, dan efek wallpaper", { store.resetAppearance() })
+        Spacer(Modifier.height(24.dp))
+        Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        SettingRow("Sumber metadata game", "Kelola provider bawaan dan endpoint database kustom", onManageMetadataSources)
         Spacer(Modifier.height(24.dp))
         Text("APLIKASI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
