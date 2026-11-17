@@ -40,6 +40,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.focusable
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.input.key.type
@@ -65,6 +70,8 @@ import kotlinx.coroutines.delay
 fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissControllerNotice: () -> Unit) {
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
+    val focusManager = LocalFocusManager.current
+    val rootFocusRequester = remember { FocusRequester() }
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val store = remember { Store(ctx) }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur
@@ -89,6 +96,9 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
         pendingArtworkPkg = null
         pendingArtworkKind = null
     }
+
+    // Fokus dikembalikan ke root saat tab berubah agar D-pad selalu punya titik awal.
+    LaunchedEffect(tab) { runCatching { rootFocusRequester.requestFocus() } }
 
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
@@ -120,9 +130,15 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
             // Portrait tetap menghormati status/navigation bar; landscape memakai seluruh area layar.
             .then(if (isLandscape) Modifier else Modifier.windowInsetsPadding(WindowInsets.safeDrawing))
+            .focusRequester(rootFocusRequester)
+            .focusable()
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
                 when (event.nativeKeyEvent.keyCode) {
+                    AndroidKeyEvent.KEYCODE_DPAD_UP -> focusManager.moveFocus(FocusDirection.Up)
+                    AndroidKeyEvent.KEYCODE_DPAD_DOWN -> focusManager.moveFocus(FocusDirection.Down)
+                    AndroidKeyEvent.KEYCODE_DPAD_LEFT -> focusManager.moveFocus(FocusDirection.Left)
+                    AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> focusManager.moveFocus(FocusDirection.Right)
                     AndroidKeyEvent.KEYCODE_BUTTON_L1 -> {
                         tab = (tab - 1 + 4) % 4
                         true
