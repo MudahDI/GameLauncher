@@ -46,9 +46,12 @@ internal class GamepadInputRouter(
 
     fun refresh() {
         if (closed) return
-        val names = InputDevice.getDeviceIds().mapNotNull { id ->
-            InputDevice.getDevice(id)?.takeIf(::isController)?.name?.ifBlank { "Gamepad" }
-        }.distinct()
+        val names = InputDevice.getDeviceIds()
+            .map { id -> InputDevice.getDevice(id) }
+            .filterNotNull()
+            .filter(::isController)
+            .map { device -> device.name.ifBlank { "Gamepad" } }
+            .distinct()
         val previous = mutableControllers.value
         if (names != previous) {
             mutableControllers.value = names
