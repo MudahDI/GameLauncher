@@ -1,6 +1,5 @@
 package com.mdh.gamelauncher
 
-import android.view.KeyEvent as AndroidKeyEvent
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import java.io.FileInputStream
@@ -41,9 +40,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -168,21 +164,6 @@ fun GameCard(
             // Jadikan setiap kartu target fokus Compose agar D-pad/analog bisa mencapainya.
             .focusable()
             // combinedClickable menyediakan aksi sentuh dan aktivasi tombol utama gamepad.
-            .onPreviewKeyEvent { event ->
-                if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
-                when (event.nativeKeyEvent.keyCode) {
-                    AndroidKeyEvent.KEYCODE_DPAD_CENTER,
-                    AndroidKeyEvent.KEYCODE_ENTER -> {
-                        if (focused) onDoubleClick() else onClick()
-                        true
-                    }
-                    AndroidKeyEvent.KEYCODE_BUTTON_X -> {
-                        onLongClick()
-                        true
-                    }
-                    else -> false
-                }
-            }
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
             .onFocusChanged { if (it.isFocused) onFocus() }
     ) {
@@ -783,8 +764,7 @@ fun SettingsScreen(
     currentAccent: String,
     hasWallpaper: Boolean,
     store: Store,
-    onManageMetadataSources: () -> Unit,
-    controllerDiagnostic: String = "Belum ada input gamepad."
+    onManageMetadataSources: () -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
@@ -838,21 +818,6 @@ fun SettingsScreen(
         SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
         SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna aksen, dan efek wallpaper", { store.resetAppearance() })
-        Spacer(Modifier.height(24.dp))
-        Text("GAMEPAD", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
-        Spacer(Modifier.height(12.dp))
-        SettingRow(
-            "Kontrol standar",
-            "A: konfirmasi · B: kembali · X: opsi · Y: favorit · D-pad/analog: navigasi · L1/R1: ganti tab · Start: menu cepat",
-            {}
-        )
-        Text(
-            "INPUT TERAKHIR: $controllerDiagnostic",
-            color = Deck.TextDim,
-            fontSize = 10.sp,
-            lineHeight = 14.sp,
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp)
-        )
         Spacer(Modifier.height(24.dp))
         Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))

@@ -5,9 +5,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
-import android.view.InputDevice
-import android.view.MotionEvent
-import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
@@ -57,12 +54,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.foundation.focusable
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -143,10 +134,9 @@ private fun WallpaperBackground(store: Store) {
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDiagnostic: String, onDismissControllerNotice: () -> Unit) {
+fun LauncherApp(allApps: List<AppItem>) {
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
-    val rootFocusRequester = remember { FocusRequester() }
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val store = remember { Store(ctx) }
     SideEffect {
@@ -176,7 +166,6 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
     var descriptionDraft by rememberSaveable { mutableStateOf("") }
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
-    var showQuickMenu by rememberSaveable { mutableStateOf(false) }
     var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
     val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
@@ -199,9 +188,6 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
         pendingArtworkPkg = null
         pendingArtworkKind = null
     }
-
-    // Fokus dikembalikan ke root saat tab berubah agar D-pad selalu punya titik awal.
-    LaunchedEffect(tab) { runCatching { rootFocusRequester.requestFocus() } }
 
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
@@ -247,59 +233,6 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
             .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
             // Portrait tetap menghormati status/navigation bar; landscape memakai seluruh area layar.
             .then(if (isLandscape) Modifier else Modifier.windowInsetsPadding(WindowInsets.safeDrawing))
-            .focusRequester(rootFocusRequester)
-            .focusable()
-            .onPreviewKeyEvent { event ->
-                val native = event.nativeKeyEvent
-                val code = native.keyCode
-                val isDown = native.action == AndroidKeyEvent.ACTION_DOWN
-                val isUp = native.action == AndroidKeyEvent.ACTION_UP
-                if (!isDown && !isUp) return@onPreviewKeyEvent false
-
-                // Directional navigation is intentionally not intercepted here.
-                // Compose's native focus search must handle D-pad movement so lazy
-                // rows/grids can scroll and choose the nearest focus target naturally.
-                when (code) {
-                    AndroidKeyEvent.KEYCODE_BUTTON_L1,
-                    AndroidKeyEvent.KEYCODE_BUTTON_R1,
-                    AndroidKeyEvent.KEYCODE_BUTTON_START,
-                    AndroidKeyEvent.KEYCODE_BUTTON_B,
-                    AndroidKeyEvent.KEYCODE_BACK,
-                    AndroidKeyEvent.KEYCODE_BUTTON_X,
-                    AndroidKeyEvent.KEYCODE_BUTTON_Y -> {
-                        if (isDown && native.repeatCount == 0) {
-                            when (code) {
-                                AndroidKeyEvent.KEYCODE_BUTTON_L1 -> tab = (tab - 1 + 5) % 5
-                                AndroidKeyEvent.KEYCODE_BUTTON_R1 -> tab = (tab + 1) % 5
-                                AndroidKeyEvent.KEYCODE_BUTTON_START -> {
-                                    if (!showPicker && !confirmReset && selectedPkg == null) {
-                                        showQuickMenu = !showQuickMenu
-                                    }
-                                }
-                                AndroidKeyEvent.KEYCODE_BUTTON_X -> {
-                                    focused?.let(options)
-                                }
-                                AndroidKeyEvent.KEYCODE_BUTTON_Y -> {
-                                    focused?.let { store.toggleFav(it.pkg) }
-                                }
-                                AndroidKeyEvent.KEYCODE_BUTTON_B,
-                                AndroidKeyEvent.KEYCODE_BACK -> when {
-                                    showQuickMenu -> showQuickMenu = false
-                                    showMetadataSources -> showMetadataSources = false
-                                    metadataPkg != null -> metadataPkg = null
-                                    editingDescriptionPkg != null -> editingDescriptionPkg = null
-                                    showPicker -> showPicker = false
-                                    selectedPkg != null -> selectedPkg = null
-                                    confirmReset -> confirmReset = false
-                                    tab != 0 -> tab = 0
-                                }
-                            }
-                        }
-                        true
-                    }
-                    else -> false
-                }
-            }
     ) {
         WallpaperBackground(store)
         Column(Modifier.fillMaxSize()) {
@@ -329,8 +262,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
                         currentAccent = store.accentHex,
                         hasWallpaper = store.wallpaperUri != null,
                         store = store,
-                        onManageMetadataSources = { showMetadataSources = true },
-                        controllerDiagnostic = controllerDiagnostic
+                        onManageMetadataSources = { showMetadataSources = true }
                     )
                     else -> HistoryScreen(visible, store, play, options)
                 }
@@ -338,22 +270,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
             }
             BottomNavigation(tab) { tab = it }
         }
-        LaunchedEffect(controllerNotice) {
-            if (controllerNotice != null) {
-                delay(3200)
-                onDismissControllerNotice()
-            }
-        }
-        if (controllerNotice != null) {
-            Box(
-                Modifier.align(Alignment.TopCenter).padding(top = 60.dp, start = 20.dp, end = 20.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Deck.PanelLight.copy(alpha = 0.96f))
-                    .padding(horizontal = 18.dp, vertical = 12.dp)
-            ) {
-                Text(controllerNotice, color = Color.White, style = MaterialTheme.typography.bodyMedium)
-            }
-        }
+
     }
 
     if (showMetadataSources) {
@@ -482,33 +399,6 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
         )
     }
 
-    if (showQuickMenu) {
-        AlertDialog(
-            onDismissRequest = { showQuickMenu = false },
-            title = { Text("Menu cepat") },
-            text = {
-                Column {
-                    listOf("Beranda", "Koleksi", "Cari", "Atur").forEachIndexed { index, label ->
-                        TextButton(
-                            onClick = {
-                                tab = index
-                                showQuickMenu = false
-                            },
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Text(
-                                label,
-                                color = if (tab == index) Deck.Accent else Deck.Text
-                            )
-                        }
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showQuickMenu = false }) { Text("Tutup") }
-            }
-        )
-    }
 
     if (confirmReset) {
         AlertDialog(
@@ -524,49 +414,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, controllerDia
 }
 
 class MainActivity : ComponentActivity() {
-    /** Naik setiap kali launcher kembali tampil, memicu pemuatan ulang daftar app. */
     private var refreshTick by mutableIntStateOf(0)
-    private var controllerNotice by mutableStateOf<String?>(null)
-    private var controllerDiagnostic by mutableStateOf("Belum ada input gamepad.")
-    private val gamepadRouter by lazy {
-        GamepadInputRouter(this, { notice -> controllerNotice = notice }) { detail ->
-            controllerDiagnostic = detail
-        }
-    }
-
-    override fun dispatchKeyEvent(event: AndroidKeyEvent): Boolean {
-        val mapped = gamepadRouter.mapKeyEvent(event) ?: event
-        return super.dispatchKeyEvent(mapped)
-    }
-
-    override fun dispatchGenericMotionEvent(event: MotionEvent): Boolean {
-        if (gamepadRouter.handleMotionEvent(event, ::dispatchSyntheticGamepadKey)) return true
-        return super.dispatchGenericMotionEvent(event)
-    }
-
-    private fun dispatchSyntheticGamepadKey(keyCode: Int, deviceId: Int) {
-        val now = android.os.SystemClock.uptimeMillis()
-        val down = AndroidKeyEvent(
-            now, now, AndroidKeyEvent.ACTION_DOWN, keyCode, 0, 0,
-            deviceId, 0, 0, InputDevice.SOURCE_DPAD
-        )
-        val up = AndroidKeyEvent(
-            now, now, AndroidKeyEvent.ACTION_UP, keyCode, 0, 0,
-            deviceId, 0, 0, InputDevice.SOURCE_DPAD
-        )
-        super.dispatchKeyEvent(down)
-        super.dispatchKeyEvent(up)
-    }
-
-    override fun onStart() {
-        super.onStart()
-        gamepadRouter.refresh()
-    }
-
-    override fun onStop() {
-        gamepadRouter.onStop()
-        super.onStop()
-    }
 
     override fun onResume() {
         super.onResume()
@@ -574,24 +422,25 @@ class MainActivity : ComponentActivity() {
         refreshTick++
     }
 
+    override fun onRestart() {
+        super.onRestart()
+        refreshTick++
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        // Edge-to-edge: portrait memberi padding aman di Compose, landscape memakai seluruh area.
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
                 layoutInDisplayCutoutMode = android.view.WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
             }
         }
-        // Minta refresh rate tinggi yang tersedia; Android tetap boleh memilih mode adaptif.
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
             window.attributes = window.attributes.apply { preferredRefreshRate = 120f }
         }
-        // Warna bar mengikuti tema charcoal saat portrait.
         window.statusBarColor = android.graphics.Color.rgb(14, 20, 27)
         window.navigationBarColor = android.graphics.Color.rgb(14, 20, 27)
-        gamepadRouter.refresh()
         applySystemBarsForOrientation()
         setContent {
             MaterialTheme(
@@ -608,25 +457,15 @@ class MainActivity : ComponentActivity() {
                     value = withContext(Dispatchers.IO) { loadAllApps(ctx) }
                 }
                 val list = apps
-                if (list == null) {
-                    Box(Modifier.fillMaxSize().background(Deck.Bg))
-                } else {
-                    LauncherApp(list, controllerNotice, controllerDiagnostic) { controllerNotice = null }
-                }
+                if (list == null) Box(Modifier.fillMaxSize().background(Deck.Bg))
+                else LauncherApp(list)
             }
         }
     }
 
-    /**
-     * Portrait: system bars tetap terlihat agar launcher nyaman sebagai HOME utama.
-     * Landscape: sembunyikan keduanya untuk ruang layar penuh; swipe tepi layar
-     * tetap dapat menampilkan bar sementara.
-     */
     private fun applySystemBarsForOrientation() {
         val controller = WindowInsetsControllerCompat(window, window.decorView)
-        controller.systemBarsBehavior =
-            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-
+        controller.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
             controller.hide(WindowInsetsCompat.Type.systemBars())
         } else {
@@ -642,17 +481,5 @@ class MainActivity : ComponentActivity() {
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
         if (hasFocus) applySystemBarsForOrientation()
-    }
-
-    override fun onRestart() {
-        super.onRestart()
-        // Setelah bermain atau memasang game baru, muat ulang daftar.
-        refreshTick++
-        gamepadRouter.refresh()
-    }
-
-    override fun onDestroy() {
-        gamepadRouter.close()
-        super.onDestroy()
     }
 }
