@@ -1,4 +1,4 @@
-package com.contoh.gamelauncher
+package com.mdh.gamelauncher
 
 import android.content.Intent
 import android.content.IntentFilter
@@ -80,7 +80,7 @@ fun TopBar(selected: Int, onSelect: (Int) -> Unit) {
         ) {
             if (wide) {
                 Text(
-                    "GAME LAUNCHER",
+                    "MDI LAUNCHER",
                     color = Deck.Accent,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
