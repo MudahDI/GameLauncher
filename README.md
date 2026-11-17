@@ -1,15 +1,19 @@
 # GameLauncher
 
-Launcher Android bertema game, dibangun dengan Jetpack Compose dan Material 3.
+Launcher Android bertema game dengan tampilan ala Steam Deck, dibangun dengan Jetpack Compose dan Material 3.
 
 ## Fitur
 
+- **Tampilan ala Steam Deck**: latar biru gelap, bar atas dengan tab, jam, dan baterai, kartu game potret yang membesar saat dipilih, serta tombol hijau **MAINKAN**
 - Mendeteksi game terpasang secara otomatis (kategori game atau flag game)
 - Beranda dengan baris **Terakhir Dimainkan**, **Favorit**, dan **Semua Game**
-- Pencarian cepat dan tab Koleksi dengan filter favorit
+- Ketuk sekali untuk memilih game, ketuk lagi (atau tombol MAINKAN) untuk bermain, tahan untuk opsi
+- Koleksi dengan filter favorit, pencarian cepat
 - Tambah atau hapus app secara manual; daftar otomatis bisa dikembalikan kapan saja
 - Daftar app dimuat ulang otomatis saat kembali ke launcher (game baru langsung muncul)
 - Tombol Back dari tab mana pun kembali ke Beranda
+
+Paling nyaman dipakai dalam mode landscape.
 
 ## Kebutuhan
 
@@ -29,7 +33,8 @@ APK ada di `app/build/outputs/apk/debug/`. Setiap push juga membangun APK lewat 
 | File | Isi |
 |------|-----|
 | `Data.kt` | Model `AppItem`, pemuat daftar app, dan penyimpanan `Store` |
-| `Screens.kt` | Komponen UI dan layar (Beranda, Cari, Koleksi, Atur) |
+| `DeckUi.kt` | Palet warna `Deck`, bar atas, jam, baterai, dan tombol |
+| `Screens.kt` | Kartu game dan layar (Beranda, Koleksi, Cari, Atur) |
 | `MainActivity.kt` | Root `LauncherApp` dan activity |
 
 ## Catatan

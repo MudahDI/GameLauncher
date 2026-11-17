@@ -1,8 +1,10 @@
 package com.contoh.gamelauncher
 
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
@@ -12,7 +14,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -27,9 +28,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -42,59 +43,26 @@ import androidx.compose.ui.unit.sp
 
 // ---------- Komponen ----------
 
+/** Kartu game potret ala Steam Deck. Kartu yang sedang fokus membesar dan diberi garis putih. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun GameTile(
-    app: AppItem,
-    size: Dp,
-    isFav: Boolean,
-    onClick: () -> Unit,
-    onLongClick: () -> Unit
-) {
-    Column(
-        Modifier
-            .width(size)
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-    ) {
-        Box {
-            Image(
-                app.icon,
-                app.name,
-                Modifier.size(size).clip(RoundedCornerShape(16.dp))
-            )
-            if (isFav) {
-                Text(
-                    "★",
-                    color = Color(0xFFFFD54F),
-                    fontSize = 16.sp,
-                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
-                )
-            }
-        }
-        Spacer(Modifier.height(4.dp))
-        Text(
-            app.name,
-            color = Color.White.copy(alpha = 0.85f),
-            fontSize = 12.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-fun BannerTile(
+fun GameCard(
     app: AppItem,
     width: Dp,
-    height: Dp,
+    isFav: Boolean,
+    focused: Boolean,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
+    val scale by animateFloatAsState(if (focused) 1.08f else 1f, label = "cardScale")
+    val shape = RoundedCornerShape(10.dp)
     Box(
         Modifier
-            .size(width, height)
-            .clip(RoundedCornerShape(16.dp))
+            .size(width, width * 4 / 3)
+            .scale(scale)
+            .clip(shape)
+            .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
+            .background(Deck.Panel)
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
     ) {
         Image(
@@ -103,13 +71,13 @@ fun BannerTile(
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize().blur(24.dp)
         )
-        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
+        Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
         Image(
             app.icon,
             app.name,
             Modifier
                 .align(Alignment.Center)
-                .size(height * 0.6f)
+                .size(width * 0.55f)
                 .clip(RoundedCornerShape(14.dp))
         )
         Box(
@@ -118,18 +86,26 @@ fun BannerTile(
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f))
+                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
                     )
                 )
-                .padding(12.dp)
+                .padding(horizontal = 8.dp, vertical = 8.dp)
         ) {
             Text(
                 app.name,
                 color = Color.White,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Medium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
+            )
+        }
+        if (isFav) {
+            Text(
+                "★",
+                color = Color(0xFFFFD54F),
+                fontSize = 16.sp,
+                modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
             )
         }
     }
@@ -139,10 +115,11 @@ fun BannerTile(
 fun SectionTitle(text: String, compact: Boolean) {
     Text(
         text,
-        color = Color.White,
-        fontSize = if (compact) 20.sp else 26.sp,
-        fontWeight = FontWeight.Light,
-        modifier = Modifier.padding(start = 24.dp, top = 16.dp, bottom = 8.dp)
+        color = Deck.TextDim,
+        fontSize = if (compact) 12.sp else 13.sp,
+        fontWeight = FontWeight.SemiBold,
+        letterSpacing = 1.5.sp,
+        modifier = Modifier.padding(start = 32.dp, top = 14.dp)
     )
 }
 
@@ -150,10 +127,39 @@ fun SectionTitle(text: String, compact: Boolean) {
 fun HintText(text: String) {
     Text(
         text,
-        color = Color.White.copy(alpha = 0.5f),
+        color = Deck.TextDim,
         fontSize = 13.sp,
-        modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
+        modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
     )
+}
+
+@Composable
+fun CardRow(
+    title: String,
+    list: List<AppItem>,
+    focusedPkg: String?,
+    store: Store,
+    cardWidth: Dp,
+    compact: Boolean,
+    onTap: (AppItem) -> Unit,
+    onOptions: (AppItem) -> Unit
+) {
+    SectionTitle(title, compact)
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 32.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        items(list, key = { it.pkg }) { app ->
+            GameCard(
+                app,
+                cardWidth,
+                app.pkg in store.favorites,
+                app.pkg == focusedPkg,
+                { onTap(app) },
+                { onOptions(app) }
+            )
+        }
+    }
 }
 
 @Composable
@@ -162,63 +168,28 @@ fun GameGrid(
     store: Store,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    tile: Dp = 100.dp
+    tile: Dp = 110.dp
 ) {
     if (list.isEmpty()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Tidak ada game.", color = Color.White.copy(alpha = 0.6f))
+            Text("Tidak ada game.", color = Deck.TextDim)
         }
     } else {
         LazyVerticalGrid(
             columns = GridCells.Adaptive(tile + 12.dp),
             contentPadding = PaddingValues(24.dp),
-            horizontalArrangement = Arrangement.spacedBy(14.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp),
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize()
         ) {
             items(list, key = { it.pkg }) { app ->
-                GameTile(
+                GameCard(
                     app,
                     tile,
                     app.pkg in store.favorites,
+                    false,
                     { onPlay(app) },
                     { onOptions(app) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
-    val items = listOf("🏠" to "Beranda", "🔍" to "Cari", "📚" to "Koleksi", "⚙️" to "Atur")
-    Row(
-        Modifier.fillMaxWidth().background(Color(0xFF14181F)).height(60.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        items.forEachIndexed { i, (icon, label) ->
-            val on = i == selected
-            Column(
-                Modifier.weight(1f).fillMaxHeight().clickable { onSelect(i) },
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    icon,
-                    fontSize = 20.sp,
-                    modifier = Modifier.alpha(if (on) 1f else 0.6f)
-                )
-                Text(
-                    label,
-                    fontSize = 11.sp,
-                    color = if (on) Color.White else Color.White.copy(alpha = 0.5f)
-                )
-                Spacer(Modifier.height(2.dp))
-                Box(
-                    Modifier
-                        .width(28.dp)
-                        .height(2.dp)
-                        .background(if (on) Color.White else Color.Transparent)
                 )
             }
         }
@@ -228,9 +199,59 @@ fun BottomBar(selected: Int, onSelect: (Int) -> Unit) {
 // ---------- Layar ----------
 
 @Composable
+fun HeroPanel(
+    focused: AppItem?,
+    store: Store,
+    compact: Boolean,
+    onPlay: (AppItem) -> Unit,
+    onOptions: (AppItem) -> Unit
+) {
+    if (focused == null) {
+        HintText("Belum ada game terdeteksi. Tambahkan app lewat tab ATUR.")
+        return
+    }
+    val iconSize = if (compact) 84.dp else 112.dp
+    val isFav = focused.pkg in store.favorites
+    Row(
+        Modifier.fillMaxWidth().padding(horizontal = 32.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.Bottom
+    ) {
+        Image(
+            focused.icon,
+            focused.name,
+            Modifier.size(iconSize).clip(RoundedCornerShape(20.dp))
+        )
+        Spacer(Modifier.width(20.dp))
+        Column {
+            Text(
+                focused.name,
+                color = Color.White,
+                fontSize = if (compact) 24.sp else 34.sp,
+                fontWeight = FontWeight.Light,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
+                color = Deck.TextDim,
+                fontSize = 13.sp
+            )
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                PlayButton("▶  MAINKAN") { onPlay(focused) }
+                DeckButton(if (isFav) "★" else "☆") { store.toggleFav(focused.pkg) }
+                DeckButton("⋯") { onOptions(focused) }
+            }
+        }
+    }
+}
+
+@Composable
 fun HomeScreen(
     visible: List<AppItem>,
     store: Store,
+    focused: AppItem?,
+    onFocus: (AppItem) -> Unit,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit
 ) {
@@ -238,71 +259,37 @@ fun HomeScreen(
     val favs = visible.filter { it.pkg in store.favorites }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val h = maxHeight
-        val compact = h < 420.dp
-        val k = if (compact) 0.8f else 1f
+        val compact = maxHeight < 420.dp
+        val cardWidth = if (compact) 104.dp else 132.dp
+        // Ketuk sekali untuk memilih, ketuk kartu yang sama (atau tombol MAINKAN) untuk bermain.
+        val tap: (AppItem) -> Unit = { a ->
+            if (a.pkg == focused?.pkg) onPlay(a) else onFocus(a)
+        }
 
         Column(
             Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(bottom = 16.dp)
         ) {
-            SectionTitle("Terakhir Dimainkan", compact)
-            if (recent.isEmpty()) {
-                HintText("Belum ada. Mainkan game dari baris \"Semua Game\" di bawah.")
-            } else {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    itemsIndexed(recent, key = { _, a -> a.pkg }) { i, app ->
-                        if (i == 0) {
-                            BannerTile(
-                                app, 260.dp * k, 150.dp * k,
-                                { onPlay(app) }, { onOptions(app) }
-                            )
-                        } else {
-                            GameTile(
-                                app, 110.dp * k, app.pkg in store.favorites,
-                                { onPlay(app) }, { onOptions(app) }
-                            )
-                        }
-                    }
-                }
-            }
+            HeroPanel(focused, store, compact, onPlay, onOptions)
 
-            SectionTitle("Favorit", compact)
-            if (favs.isEmpty()) {
-                HintText("Tahan lama sebuah game, lalu pilih \"Tambah ke favorit\".")
-            } else {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(favs, key = { it.pkg }) { app ->
-                        GameTile(
-                            app, 100.dp * k, true,
-                            { onPlay(app) }, { onOptions(app) }
-                        )
-                    }
-                }
+            if (recent.isNotEmpty()) {
+                CardRow(
+                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
+                    cardWidth, compact, tap, onOptions
+                )
             }
-
-            SectionTitle("Semua Game", compact)
-            if (visible.isEmpty()) {
-                HintText("Belum ada game terdeteksi. Tambahkan app lewat tab Atur.")
-            } else {
-                LazyRow(
-                    contentPadding = PaddingValues(horizontal = 24.dp),
-                    horizontalArrangement = Arrangement.spacedBy(14.dp)
-                ) {
-                    items(visible, key = { it.pkg }) { app ->
-                        GameTile(
-                            app, 100.dp * k, app.pkg in store.favorites,
-                            { onPlay(app) }, { onOptions(app) }
-                        )
-                    }
-                }
+            if (favs.isNotEmpty()) {
+                CardRow(
+                    "FAVORIT", favs, focused?.pkg, store,
+                    cardWidth, compact, tap, onOptions
+                )
             }
+            if (visible.isNotEmpty()) {
+                CardRow(
+                    "SEMUA GAME", visible, focused?.pkg, store,
+                    cardWidth, compact, tap, onOptions
+                )
+            }
+            HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
         }
     }
 }
@@ -340,13 +327,13 @@ fun LibraryScreen(
     var onlyFav by rememberSaveable { mutableStateOf(false) }
     val list = if (onlyFav) visible.filter { it.pkg in store.favorites } else visible
     val on = Color.White
-    val off = Color.White.copy(alpha = 0.5f)
+    val off = Deck.TextDim
     Column(Modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(start = 24.dp, end = 12.dp, top = 12.dp),
+            Modifier.fillMaxWidth().padding(start = 32.dp, end = 12.dp, top = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text("Koleksi", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Light)
+            Text("KOLEKSI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
             Spacer(Modifier.weight(1f))
             TextButton(onClick = { onlyFav = false }) {
                 Text("Semua", color = if (!onlyFav) on else off)
@@ -354,20 +341,25 @@ fun LibraryScreen(
             TextButton(onClick = { onlyFav = true }) {
                 Text("★ Fav", color = if (onlyFav) on else off)
             }
-            TextButton(onClick = onAdd) { Text("+ Tambah") }
+            TextButton(onClick = onAdd) { Text("+ Tambah", color = Deck.Accent) }
         }
-        GameGrid(list, store, onPlay, onOptions, tile = 110.dp)
+        GameGrid(list, store, onPlay, onOptions)
     }
 }
 
 @Composable
 fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
     Column(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 14.dp)
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(Deck.Panel)
+            .clickable(onClick = onClick)
+            .padding(16.dp)
     ) {
-        Text(title, color = Color.White, fontSize = 18.sp)
+        Text(title, color = Color.White, fontSize = 17.sp)
         Spacer(Modifier.height(2.dp))
-        Text(subtitle, color = Color.White.copy(alpha = 0.55f), fontSize = 13.sp)
+        Text(subtitle, color = Deck.TextDim, fontSize = 13.sp)
     }
 }
 
@@ -376,13 +368,14 @@ fun SettingsScreen(onAdd: () -> Unit, onReset: () -> Unit) {
     Column(
         Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
     ) {
-        Text("Pengaturan", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.Light)
+        Text("PENGATURAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         SettingRow(
             "+ Tambah app ke launcher",
             "Pilih dari semua aplikasi terpasang",
             onAdd
         )
+        Spacer(Modifier.height(10.dp))
         SettingRow(
             "Kembalikan daftar otomatis",
             "Batalkan semua tambahan dan penghapusan manual (favorit tetap)",

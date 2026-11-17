@@ -28,7 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -41,8 +41,10 @@ import kotlinx.coroutines.withContext
 fun LauncherApp(allApps: List<AppItem>) {
     val ctx = LocalContext.current
     val store = remember { Store(ctx) }
+    // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur
     var tab by rememberSaveable { mutableStateOf(0) }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
+    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
@@ -53,7 +55,9 @@ fun LauncherApp(allApps: List<AppItem>) {
     val visible = allApps.filter { (it.isGame || it.pkg in store.added) && it.pkg !in store.removed }
     val visiblePkgs = visible.map { it.pkg }.toSet()
     val candidates = allApps.filter { it.pkg !in visiblePkgs }
-    val backdrop = store.recent.firstNotNullOfOrNull { p -> visible.find { it.pkg == p } }
+    // Game yang sedang dipilih; kalau belum ada, pakai yang terakhir dimainkan lalu game pertama.
+    val focused = visible.find { it.pkg == focusedPkg }
+        ?: store.recent.firstNotNullOfOrNull { p -> visible.find { it.pkg == p } }
         ?: visible.firstOrNull()
     val selected = selectedPkg?.let { p -> allApps.find { it.pkg == p } }
 
@@ -66,28 +70,35 @@ fun LauncherApp(allApps: List<AppItem>) {
     }
     val options: (AppItem) -> Unit = { a -> selectedPkg = a.pkg }
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF0B0F1A))) {
-        if (backdrop != null) {
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
+    ) {
+        if (focused != null) {
             Image(
-                bitmap = backdrop.icon,
+                bitmap = focused.icon,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.3f)
+                modifier = Modifier.fillMaxSize().blur(70.dp).alpha(0.35f)
             )
         }
         Column(Modifier.fillMaxSize().safeDrawingPadding()) {
+            TopBar(tab) { tab = it }
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
-                    0 -> HomeScreen(visible, store, play, options)
-                    1 -> SearchScreen(visible, store, play, options)
-                    2 -> LibraryScreen(visible, store, play, options) { showPicker = true }
+                    0 -> HomeScreen(
+                        visible, store, focused,
+                        { focusedPkg = it.pkg }, play, options
+                    )
+                    1 -> LibraryScreen(visible, store, play, options) { showPicker = true }
+                    2 -> SearchScreen(visible, store, play, options)
                     else -> SettingsScreen(
                         onAdd = { showPicker = true },
                         onReset = { confirmReset = true }
                     )
                 }
             }
-            BottomBar(tab) { tab = it }
         }
     }
 
@@ -135,7 +146,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         super.onCreate(savedInstanceState)
         setContent {
-            MaterialTheme(colorScheme = darkColorScheme()) {
+            MaterialTheme(
+                colorScheme = darkColorScheme(
+                    primary = Deck.Accent,
+                    background = Deck.Bg,
+                    surface = Deck.Panel,
+                    onSurface = Deck.Text
+                )
+            ) {
                 val ctx = LocalContext.current
                 val tick = refreshTick
                 val apps by produceState<List<AppItem>?>(initialValue = null, tick) {
@@ -143,7 +161,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val list = apps
                 if (list == null) {
-                    Box(Modifier.fillMaxSize().background(Color(0xFF0B0F1A)))
+                    Box(Modifier.fillMaxSize().background(Deck.Bg))
                 } else {
                     LauncherApp(list)
                 }
