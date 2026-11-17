@@ -370,31 +370,30 @@ fun HomeScreen(
         }
 
         if (landscape) {
-            // Landscape memakai komposisi dua kolom agar banner tidak menjadi terlalu panjang.
-            Row(
-                Modifier.fillMaxSize().padding(horizontal = 18.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(18.dp),
-                verticalAlignment = Alignment.Top
+            // Kembalikan susunan landscape sebelumnya: banner di atas, deretan game di bawah.
+            Column(
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
             ) {
-                Box(Modifier.weight(1.08f).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
-                    HeroPanel(focused, store, true, onPlay, onOptions)
+                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                    Box(Modifier.fillMaxWidth().widthIn(max = 960.dp)) {
+                        HeroPanel(focused, store, compact, onPlay, onOptions)
+                    }
                 }
-                Column(
-                    Modifier.weight(0.92f).fillMaxHeight().verticalScroll(rememberScrollState())
-                ) {
-                    if (recent.isNotEmpty()) CardRow(
-                        "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
-                        cardWidth, true, tap, onOptions, onFocus
-                    )
-                    if (favs.isNotEmpty()) CardRow(
-                        "FAVORIT", favs, focused?.pkg, store,
-                        cardWidth, true, tap, onOptions, onFocus
-                    )
-                    if (visible.isNotEmpty()) CardRow(
-                        "SEMUA GAME", visible, focused?.pkg, store,
-                        cardWidth, true, tap, onOptions, onFocus
-                    )
-                }
+                if (recent.isNotEmpty()) CardRow(
+                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
+                    cardWidth, compact, tap, onOptions, onFocus
+                )
+                if (favs.isNotEmpty()) CardRow(
+                    "FAVORIT", favs, focused?.pkg, store,
+                    cardWidth, compact, tap, onOptions, onFocus
+                )
+                if (visible.isNotEmpty()) CardRow(
+                    "SEMUA GAME", visible, focused?.pkg, store,
+                    cardWidth, compact, tap, onOptions, onFocus
+                )
+                HintText("Ketuk untuk memilih · ketuk lagi untuk bermain · tahan untuk opsi")
             }
         } else {
             Column(
