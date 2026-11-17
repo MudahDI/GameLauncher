@@ -1,7 +1,17 @@
 package com.mdh.gamelauncher
 
 import android.os.Bundle
+import android.content.BroadcastReceiver
+import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
+import android.app.PendingIntent
+import android.hardware.usb.UsbDevice
+import android.hardware.usb.UsbManager
+import android.hardware.usb.UsbConstants
+import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.hardware.input.InputManager
@@ -517,7 +527,111 @@ class MainActivity : ComponentActivity() {
     private var refreshTick by mutableIntStateOf(0)
     private var controllerNotice by mutableStateOf<String?>(null)
     private lateinit var inputManager: InputManager
+    private lateinit var usbManager: UsbManager
+    private var usbReceiverRegistered = false
+    private val requestedUsbDevices = mutableSetOf<String>()
+    private val usbPermissionAction by lazy { "${packageName}.USB_PERMISSION" }
     private val connectedControllers = mutableMapOf<Int, String>()
+
+    private fun usbIdentity(device: UsbDevice): String =
+        "${device.vendorId}:${device.productId}:${device.deviceId}"
+
+    private fun matchingInputController(device: UsbDevice): InputDevice? =
+        InputDevice.getDeviceIds().asSequence()
+            .mapNotNull(InputDevice::getDevice)
+            .firstOrNull {
+                !it.isVirtual && it.vendorId == device.vendorId &&
+                    it.productId == device.productId &&
+                    (it.supportsSource(InputDevice.SOURCE_GAMEPAD) ||
+                        it.supportsSource(InputDevice.SOURCE_JOYSTICK))
+            }
+
+    private fun isLikelyGamepadUsb(device: UsbDevice): Boolean {
+        if (matchingInputController(device) != null) return true
+        // Fallback HID gamepad interface (class 3, subclass 0); avoid keyboard/mouse subclass 1.
+        return (0 until device.interfaceCount).any { index ->
+            val intf = device.getInterface(index)
+            intf.interfaceClass == UsbConstants.USB_CLASS_HID && intf.interfaceSubclass == 0
+        }
+    }
+
+    private fun requestUsbControllerPermission(device: UsbDevice) {
+        if (!isLikelyGamepadUsb(device)) return
+        val identity = usbIdentity(device)
+        if (usbManager.hasPermission(device) || identity in requestedUsbDevices) return
+        requestedUsbDevices += identity
+        val permissionIntent = PendingIntent.getBroadcast(
+            this,
+            device.deviceId,
+            Intent(usbPermissionAction).setPackage(packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        )
+        usbManager.requestPermission(device, permissionIntent)
+        controllerNotice = "Meminta izin USB\n${device.deviceName}"
+    }
+
+    private val usbReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context, intent: Intent) {
+            val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+            }
+            when (intent.action) {
+                usbPermissionAction -> {
+                    if (device != null) requestedUsbDevices.remove(usbIdentity(device))
+                    val granted = intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)
+                    if (device != null && granted) {
+                        controllerNotice = "Gamepad siap digunakan\n${matchingInputController(device)?.name ?: device.deviceName}"
+                        scanConnectedControllers()
+                    } else if (device != null) {
+                        controllerNotice = "Izin USB tidak diberikan\n${device.deviceName}"
+                    }
+                }
+                UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
+                    if (device != null) requestUsbControllerPermission(device)
+                }
+                UsbManager.ACTION_USB_DEVICE_DETACHED -> {
+                    if (device != null) {
+                        requestedUsbDevices.remove(usbIdentity(device))
+                        controllerNotice = "Gamepad USB terputus\n${device.deviceName}"
+                    }
+                }
+            }
+        }
+    }
+
+    private fun registerUsbReceiver() {
+        if (usbReceiverRegistered) return
+        val filter = IntentFilter().apply {
+            addAction(usbPermissionAction)
+            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
+            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(usbReceiver, filter)
+        }
+        usbReceiverRegistered = true
+    }
+
+    private fun handleUsbAttachIntent(intent: Intent?) {
+        if (intent?.action != UsbManager.ACTION_USB_DEVICE_ATTACHED) return
+        val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
+        }
+        if (device != null) requestUsbControllerPermission(device)
+    }
+
+    private fun scanUsbControllers() {
+        usbManager.deviceList.values.forEach(::requestUsbControllerPermission)
+    }
     private var lastStickMoveAt = 0L
     private var lastStickDirection = 0
 
@@ -610,6 +724,27 @@ class MainActivity : ComponentActivity() {
         }
         return super.dispatchGenericMotionEvent(event)
     }
+    override fun onStart() {
+        super.onStart()
+        registerUsbReceiver()
+        handleUsbAttachIntent(intent)
+        Handler(Looper.getMainLooper()).postDelayed({ scanUsbControllers() }, 350L)
+    }
+
+    override fun onStop() {
+        if (usbReceiverRegistered) {
+            unregisterReceiver(usbReceiver)
+            usbReceiverRegistered = false
+        }
+        super.onStop()
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleUsbAttachIntent(intent)
+    }
+
     override fun onResume() {
         super.onResume()
         Store.finishPendingSession(this)
@@ -634,6 +769,7 @@ class MainActivity : ComponentActivity() {
         window.statusBarColor = android.graphics.Color.rgb(14, 20, 27)
         window.navigationBarColor = android.graphics.Color.rgb(14, 20, 27)
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
+        usbManager = getSystemService(USB_SERVICE) as UsbManager
         scanConnectedControllers()
         inputManager.registerInputDeviceListener(inputListener, android.os.Handler(mainLooper))
         applySystemBarsForOrientation()
