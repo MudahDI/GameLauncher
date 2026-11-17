@@ -38,6 +38,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -54,6 +55,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
@@ -65,6 +67,33 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.delay
 
+@Composable
+private fun WallpaperBackground(store: Store) {
+    val context = LocalContext.current
+    val uri = store.wallpaperUri
+    val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
+        initialValue = null,
+        key1 = uri
+    ) {
+        value = if (uri == null) null else withContext(Dispatchers.IO) {
+            runCatching {
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    android.graphics.BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                }
+            }.getOrNull()
+        }
+    }
+    if (bitmap != null) {
+        Image(
+            bitmap = bitmap!!,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize().alpha(0.28f)
+        )
+        Box(Modifier.fillMaxSize().background(Deck.Bg.copy(alpha = 0.48f)))
+    }
+}
+
 // ---------- Root ----------
 
 @Composable
@@ -75,6 +104,11 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     val rootFocusRequester = remember { FocusRequester() }
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val store = remember { Store(ctx) }
+    SideEffect {
+        runCatching {
+            Deck.Accent = Color(android.graphics.Color.parseColor(store.accentHex))
+        }
+    }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur
     var tab by rememberSaveable { mutableStateOf(0) }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
@@ -85,6 +119,14 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     var showQuickMenu by rememberSaveable { mutableStateOf(false) }
     var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
+    val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            runCatching {
+                ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            }
+            store.setWallpaper(uri)
+        }
+    }
     val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val pkg = pendingArtworkPkg
         val kind = pendingArtworkKind
@@ -180,6 +222,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                 }
             }
     ) {
+        WallpaperBackground(store)
         if (focused != null) {
             Image(
                 bitmap = focused.icon,
@@ -189,7 +232,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             )
         }
         Column(Modifier.fillMaxSize()) {
-            HeaderBar()
+            HeaderBar(onSettings = { tab = 3 })
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 when (tab) {
                     0 -> HomeScreen(
@@ -200,7 +243,12 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     2 -> SearchScreen(visible, store, play, options)
                     else -> SettingsScreen(
                         onAdd = { showPicker = true },
-                        onReset = { confirmReset = true }
+                        onReset = { confirmReset = true },
+                        onWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
+                        onClearWallpaper = { store.setWallpaper(null) },
+                        onAccent = { store.setAccent(it) },
+                        currentAccent = store.accentHex,
+                        hasWallpaper = store.wallpaperUri != null
                     )
                 }
             }
