@@ -3,6 +3,7 @@ package com.mdh.gamelauncher
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import androidx.compose.ui.graphics.Color
 import android.content.pm.ApplicationInfo
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -65,6 +66,19 @@ class Store(ctx: Context) {
     var forcedApps by mutableStateOf(readSet("forced_apps"))
     var recent by mutableStateOf(readList("recent"))
     var artworks by mutableStateOf(readArtworkMap())
+    var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
+    var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
+
+    fun setWallpaper(uri: Uri?) {
+        wallpaperUri = uri
+        sp.edit().putString("wallpaper_uri", uri?.toString()).apply()
+    }
+
+    fun setAccent(hex: String) {
+        accentHex = hex
+        sp.edit().putString("accent_hex", hex).apply()
+        runCatching { Deck.Accent = Color(android.graphics.Color.parseColor(hex)) }
+    }
 
     private fun readArtworkMap(): Map<String, String> =
         sp.all.entries.mapNotNull { (key, value) ->
