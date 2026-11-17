@@ -61,9 +61,12 @@ import kotlinx.coroutines.withContext
 
 // Cache bitmap bersama agar artwork tidak didekode ulang setiap kali tab dibuat kembali.
 internal object ArtworkBitmapCache {
-    private val cache = LruCache<String, Bitmap>(
+    private val cache = object : LruCache<String, Bitmap>(
         (Runtime.getRuntime().maxMemory() / 1024L / 8L).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-    )
+    ) {
+        override fun sizeOf(key: String, value: Bitmap): Int =
+            (value.byteCount / 1024).coerceAtLeast(1)
+    }
 
     @Synchronized
     fun get(key: String): Bitmap? = cache.get(key)
