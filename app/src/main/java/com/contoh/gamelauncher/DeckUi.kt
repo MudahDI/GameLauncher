@@ -128,6 +128,39 @@ fun TopBar(selected: Int, onSelect: (Int) -> Unit) {
     }
 }
 
+/** Ikon baterai vektor agar tampil konsisten tanpa emoji. */
+@Composable
+private fun BatteryGlyph(percent: Int) {
+    Canvas(Modifier.size(width = 20.dp, height = 12.dp)) {
+        val stroke = 1.35.dp.toPx()
+        val radius = 2.dp.toPx()
+        val bodyWidth = size.width * 0.84f
+        val inset = stroke * 1.7f
+        drawRoundRect(
+            color = Deck.Text,
+            topLeft = Offset(0f, stroke),
+            size = Size(bodyWidth, size.height - stroke * 2),
+            cornerRadius = CornerRadius(radius),
+            style = Stroke(width = stroke)
+        )
+        drawRoundRect(
+            color = Deck.Text,
+            topLeft = Offset(bodyWidth + stroke * 0.7f, size.height * 0.31f),
+            size = Size(size.width - bodyWidth - stroke * 0.7f, size.height * 0.38f),
+            cornerRadius = CornerRadius(radius * 0.5f)
+        )
+        val fillWidth = (bodyWidth - inset * 2) * percent.coerceIn(0, 100) / 100f
+        if (fillWidth > 0f) {
+            drawRoundRect(
+                color = if (percent <= 15) Color(0xFFFF6B6B) else Deck.Accent,
+                topLeft = Offset(inset, inset),
+                size = Size(fillWidth, size.height - inset * 2),
+                cornerRadius = CornerRadius(radius * 0.45f)
+            )
+        }
+    }
+}
+
 @Composable
 fun PlayButton(text: String, onClick: () -> Unit) {
     Box(
