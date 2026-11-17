@@ -54,6 +54,12 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.nativeKeyEvent
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -216,6 +222,9 @@ fun LauncherApp(allApps: List<AppItem>) {
             ?: games.firstOrNull()
     }
     val selected = selectedPkg?.let { p -> (games + apps).find { it.pkg == p } }
+
+    val gamepadFocusRequester = remember { FocusRequester() }
+    LaunchedEffect(Unit) { gamepadFocusRequester.requestFocus() }
     val metadataTarget = metadataPkg?.let { p -> (games + apps).find { it.pkg == p } }
 
     val play: (AppItem) -> Unit = { a ->
@@ -230,6 +239,42 @@ fun LauncherApp(allApps: List<AppItem>) {
     Box(
         Modifier
             .fillMaxSize()
+            .focusRequester(gamepadFocusRequester)
+            .focusable()
+            .onPreviewKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) {
+                    false
+                } else {
+                    val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
+                    when (event.nativeKeyEvent.keyCode) {
+                        android.view.KeyEvent.KEYCODE_DPAD_RIGHT,
+                        android.view.KeyEvent.KEYCODE_DPAD_DOWN -> {
+                            if (tab == 0 && games.isNotEmpty()) {
+                                focusedPkg = games[(currentIndex + 1) % games.size].pkg
+                                true
+                            } else false
+                        }
+                        android.view.KeyEvent.KEYCODE_DPAD_LEFT,
+                        android.view.KeyEvent.KEYCODE_DPAD_UP -> {
+                            if (tab == 0 && games.isNotEmpty()) {
+                                focusedPkg = games[(currentIndex - 1 + games.size) % games.size].pkg
+                                true
+                            } else false
+                        }
+                        android.view.KeyEvent.KEYCODE_BUTTON_A -> {
+                            if (tab == 0 && focused != null) {
+                                play(focused)
+                                true
+                            } else false
+                        }
+                        android.view.KeyEvent.KEYCODE_BUTTON_B -> {
+                            tab = 0
+                            true
+                        }
+                        else -> false
+                    }
+                }
+            }
             .background(Brush.verticalGradient(listOf(Deck.Bg, Deck.Panel)))
             // Portrait tetap menghormati status/navigation bar; landscape memakai seluruh area layar.
             .then(if (isLandscape) Modifier else Modifier.windowInsetsPadding(WindowInsets.safeDrawing))

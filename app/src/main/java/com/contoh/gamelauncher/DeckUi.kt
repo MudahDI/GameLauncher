@@ -33,6 +33,38 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+/** Navigasi tab utama. */
+@Composable
+fun TopBar(selected: Int, onSelect: (Int) -> Unit) {
+    val tabs = listOf("BERANDA", "KOLEKSI", "CARI", "ATUR")
+    Row(
+        Modifier.fillMaxWidth()
+            .height(48.dp)
+            .background(Color.Black.copy(alpha = 0.30f))
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        tabs.forEachIndexed { index, label ->
+            val active = index == selected
+            Box(
+                Modifier.weight(1f).fillMaxHeight()
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (active) Deck.Panel else Color.Transparent)
+                    .clickable { onSelect(index) },
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    label,
+                    color = if (active) Color.White else Deck.TextDim,
+                    fontSize = 10.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                    letterSpacing = 0.5.sp
+                )
+            }
+        }
+    }
+}
+
 /** Palet warna bergaya antarmuka Steam Deck. */
 object Deck {
     val Bg = Color(0xFF0E141B)
