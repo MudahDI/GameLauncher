@@ -273,10 +273,13 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         }
                         true
                     }
-                    AndroidKeyEvent.KEYCODE_BUTTON_B,
+                    (if (store.swapAB) AndroidKeyEvent.KEYCODE_BUTTON_A else AndroidKeyEvent.KEYCODE_BUTTON_B),
                     AndroidKeyEvent.KEYCODE_BACK -> {
                         when {
                             showQuickMenu -> showQuickMenu = false
+                            showMetadataSources -> showMetadataSources = false
+                            metadataPkg != null -> metadataPkg = null
+                            editingDescriptionPkg != null -> editingDescriptionPkg = null
                             showPicker -> showPicker = false
                             selectedPkg != null -> selectedPkg = null
                             confirmReset -> confirmReset = false
@@ -420,13 +423,21 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             onApply = { result ->
                 coroutineScope.launch {
                     store.setMetadata(app.pkg, result.title, result.extract)
-                    val artworkUri = result.thumbnailUrl?.let { url ->
-                        withContext(Dispatchers.IO) { MetadataRepository.downloadThumbnail(ctx, app.pkg, url) }
+                    val coverSource = result.coverUrl ?: result.thumbnailUrl?.takeIf {
+                        result.bannerUrl == null || it != result.bannerUrl
                     }
-                    if (artworkUri != null) {
-                        store.setArtwork(app.pkg, "cover", artworkUri)
-                        store.setArtwork(app.pkg, "banner", artworkUri)
+                    val coverUri = coverSource?.let { url ->
+                        withContext(Dispatchers.IO) {
+                            MetadataRepository.downloadArtwork(ctx, app.pkg, "cover", url)
+                        }
                     }
+                    val bannerUri = result.bannerUrl?.let { url ->
+                        withContext(Dispatchers.IO) {
+                            MetadataRepository.downloadArtwork(ctx, app.pkg, "banner", url)
+                        }
+                    }
+                    coverUri?.let { store.setArtwork(app.pkg, "cover", it) }
+                    bannerUri?.let { store.setArtwork(app.pkg, "banner", it) }
                     metadataPkg = null
                 }
             }

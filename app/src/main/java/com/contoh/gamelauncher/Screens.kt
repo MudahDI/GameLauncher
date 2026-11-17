@@ -29,6 +29,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -167,7 +168,7 @@ fun GameCard(
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyUp) return@onPreviewKeyEvent false
                 when (event.nativeKeyEvent.keyCode) {
-                    AndroidKeyEvent.KEYCODE_BUTTON_A,
+                    (if (store.swapAB) AndroidKeyEvent.KEYCODE_BUTTON_B else AndroidKeyEvent.KEYCODE_BUTTON_A),
                     AndroidKeyEvent.KEYCODE_DPAD_CENTER,
                     AndroidKeyEvent.KEYCODE_ENTER -> {
                         if (focused) onDoubleClick() else onClick()
@@ -834,6 +835,16 @@ fun SettingsScreen(
         SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
         SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna aksen, dan efek wallpaper", { store.resetAppearance() })
+        Spacer(Modifier.height(24.dp))
+        Text("GAMEPAD", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text("Tukar tombol A / B", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text("Aktifkan jika tombol fisik confirm dan kembali tertukar pada gamepad.", color = Deck.TextDim, fontSize = 11.sp)
+            }
+            Switch(checked = store.swapAB, onCheckedChange = { store.setSwapAB(it) })
+        }
         Spacer(Modifier.height(24.dp))
         Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))

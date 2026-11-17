@@ -48,7 +48,9 @@ data class GameMetadataResult(
     val extract: String,
     val thumbnailUrl: String?,
     val pageUrl: String,
-    val sourceName: String = ""
+    val sourceName: String = "",
+    val coverUrl: String? = null,
+    val bannerUrl: String? = null
 )
 
 data class MetadataSourceConfig(
@@ -138,6 +140,20 @@ object MetadataRepository {
             setRequestProperty("User-Agent", "MDILauncher/2.1 (Android game metadata)")
         }
 
+    private fun readBody(conn: HttpURLConnection): String {
+        val status = conn.responseCode
+        val stream = if (status in 200..299) conn.inputStream else conn.errorStream
+        val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
+        if (status !in 200..299) {
+            val detail = runCatching {
+                val json = JSONObject(body)
+                json.optString("message").ifBlank { json.optString("error") }
+            }.getOrDefault("")
+            throw IllegalStateException(detail.takeIf { it.isNotBlank() }?.take(220) ?: "HTTP $status")
+        }
+        return body
+    }
+
     private fun searchWikipedia(query: String): List<GameMetadataResult> {
         val encoded = URLEncoder.encode(query.trim(), "UTF-8")
         val url = "https://en.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=$encoded" +
@@ -145,7 +161,7 @@ object MetadataRepository {
             "&exintro=1&explaintext=1&format=json&utf8=1"
         val conn = connection(url)
         try {
-            val body = conn.inputStream.bufferedReader().use { it.readText() }
+            val body = readBody(conn)
             val pages = JSONObject(body).optJSONObject("query")?.optJSONObject("pages") ?: return emptyList()
             val results = mutableListOf<Pair<Int, GameMetadataResult>>()
             val keys = pages.keys()
@@ -178,7 +194,7 @@ object MetadataRepository {
             val searchUrl = "https://play.google.com/store/search?q=$encoded&c=apps&hl=en&gl=US"
             val conn = connection(searchUrl, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
             try {
-                val html = conn.inputStream.bufferedReader().use { it.readText() }
+                val html = readBody(conn)
                 val pattern = Regex("""(?:/store/apps/details\?id=|https://play\.google\.com/store/apps/details\?id=)([A-Za-z0-9._]+)""")
                 pattern.findAll(html).take(8).forEach { match ->
                     val id = match.groupValues[1].trimEnd('.', ',')
@@ -192,7 +208,7 @@ object MetadataRepository {
                 val url = "https://play.google.com/store/apps/details?id=${URLEncoder.encode(id, "UTF-8")}&hl=en&gl=US"
                 val conn = connection(url, headers = mapOf("Accept-Language" to "en-US,en;q=0.9"))
                 try {
-                    val html = conn.inputStream.bufferedReader().use { it.readText() }
+                    val html = readBody(conn)
                     fun meta(key: String): String? {
                         val tag = Regex("""<meta\b[^>]*(?:property|name)=["']${Regex.escape(key)}["'][^>]*>""", RegexOption.IGNORE_CASE)
                             .findAll(html).firstOrNull()?.value ?: return null
@@ -204,7 +220,7 @@ object MetadataRepository {
                         ?: return@runCatching null
                     val description = meta("og:description") ?: meta("description").orEmpty()
                     val image = meta("og:image")?.takeIf { it.startsWith("https://") }
-                    GameMetadataResult(title, description, image, url, "Google Play")
+                    GameMetadataResult(title, description, image, url, "Google Play", coverUrl = image)
                 } finally { conn.disconnect() }
             }.getOrNull()
         }
@@ -215,14 +231,15 @@ object MetadataRepository {
         val encoded = URLEncoder.encode(query.trim(), "UTF-8")
         val conn = connection("https://api.rawg.io/api/games?key=${URLEncoder.encode(apiKey, "UTF-8")}&search=$encoded&page_size=8")
         try {
-            val body = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+            val body = JSONObject(readBody(conn))
             val array = body.optJSONArray("results") ?: JSONArray()
             return (0 until array.length()).mapNotNull { i ->
                 val item = array.optJSONObject(i) ?: return@mapNotNull null
                 val title = item.optString("name").trim()
                 if (title.isBlank()) return@mapNotNull null
-                GameMetadataResult(title, item.optString("description_raw"), item.optString("background_image").takeIf { it.startsWith("https://") },
-                    "https://rawg.io/games/${item.optString("slug")}", "RAWG")
+                val background = item.optString("background_image").takeIf { it.startsWith("https://") }
+                GameMetadataResult(title, item.optString("description_raw"), background,
+                    "https://rawg.io/games/${item.optString("slug")}", "RAWG", bannerUrl = background)
             }
         } finally { conn.disconnect() }
     }
@@ -243,7 +260,7 @@ object MetadataRepository {
             conn.outputStream.bufferedWriter().use {
                 it.write("search \"$term\"; fields name,summary,cover.url,url; limit 8;")
             }
-            val array = JSONArray(conn.inputStream.bufferedReader().use { it.readText() })
+            val array = JSONArray(readBody(conn))
             return (0 until array.length()).mapNotNull { i ->
                 val item = array.optJSONObject(i) ?: return@mapNotNull null
                 val title = item.optString("name").trim()
@@ -251,8 +268,20 @@ object MetadataRepository {
                 val cover = item.optJSONObject("cover")?.optString("url")?.let {
                     if (it.startsWith("//")) "https:$it" else it
                 }?.replace("t_thumb", "t_cover_big")
-                GameMetadataResult(title, item.optString("summary"), cover, item.optString("url"), "IGDB")
+                GameMetadataResult(title, item.optString("summary"), cover, item.optString("url"), "IGDB", coverUrl = cover)
             }
+        } finally { conn.disconnect() }
+    }
+
+    private fun steamGridArtwork(apiKey: String, gameId: String, kind: String): String? {
+        val conn = connection(
+            "https://www.steamgriddb.com/api/v2/$kind/game/$gameId?limit=1",
+            headers = mapOf("Authorization" to "Bearer $apiKey")
+        )
+        try {
+            val root = JSONObject(readBody(conn))
+            val item = root.optJSONArray("data")?.optJSONObject(0) ?: return null
+            return item.optString("url").takeIf { it.startsWith("https://") }
         } finally { conn.disconnect() }
     }
 
@@ -262,14 +291,25 @@ object MetadataRepository {
         val conn = connection("https://www.steamgriddb.com/api/v2/search/autocomplete/$encoded",
             headers = mapOf("Authorization" to "Bearer $apiKey"))
         try {
-            val root = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+            val root = JSONObject(readBody(conn))
             val array = root.optJSONArray("data") ?: JSONArray()
-            return (0 until array.length()).mapNotNull { i ->
+            return (0 until minOf(array.length(), 5)).mapNotNull { i ->
                 val item = array.optJSONObject(i) ?: return@mapNotNull null
                 val title = item.optString("name").trim()
+                val id = item.optString("id").takeIf { it.matches(Regex("[0-9]+")) }
+                    ?: return@mapNotNull null
                 if (title.isBlank()) return@mapNotNull null
-                GameMetadataResult(title, "Hasil pencarian SteamGridDB. Artwork dapat dicari dari halaman game.", null,
-                    "https://www.steamgriddb.com/game/${item.optString("id")}", "SteamGridDB")
+                val cover = runCatching { steamGridArtwork(apiKey, id, "grids") }.getOrNull()
+                val banner = runCatching { steamGridArtwork(apiKey, id, "heroes") }.getOrNull()
+                GameMetadataResult(
+                    title,
+                    "Artwork SteamGridDB dengan rasio cover dan banner terpisah.",
+                    cover ?: banner,
+                    "https://www.steamgriddb.com/game/$id",
+                    "SteamGridDB",
+                    coverUrl = cover,
+                    bannerUrl = banner
+                )
             }
         } finally { conn.disconnect() }
     }
@@ -282,7 +322,7 @@ object MetadataRepository {
         val headers = if (source.apiKey.isBlank()) emptyMap() else mapOf("Authorization" to "Bearer ${source.apiKey}")
         val conn = connection(endpoint, headers = headers)
         try {
-            val root = JSONObject(conn.inputStream.bufferedReader().use { it.readText() })
+            val root = JSONObject(readBody(conn))
             val array = root.optJSONArray("results") ?: root.optJSONArray("data") ?: JSONArray().put(root)
             return (0 until array.length()).mapNotNull { i ->
                 val item = array.optJSONObject(i) ?: return@mapNotNull null
@@ -292,23 +332,56 @@ object MetadataRepository {
                 val image = item.optString("background_image").takeIf { it.isBlank().not() }
                     ?: item.optString("cover").takeIf { it.isBlank().not() }
                     ?: item.optString("image").takeIf { it.isBlank().not() }
+                val safeImage = image?.takeIf { it.startsWith("https://") }
                 GameMetadataResult(title, item.optString("description").ifBlank { item.optString("summary") },
-                    image?.takeIf { it.startsWith("https://") }, item.optString("url").ifBlank { source.endpoint }, source.name)
+                    safeImage, item.optString("url").ifBlank { source.endpoint }, source.name, coverUrl = safeImage)
             }
         } finally { conn.disconnect() }
     }
 
-    fun downloadThumbnail(context: Context, packageName: String, imageUrl: String): Uri? = runCatching {
+    fun downloadArtwork(context: Context, packageName: String, kind: String, imageUrl: String): Uri? = runCatching {
+        require(imageUrl.startsWith("https://")) { "Artwork harus menggunakan HTTPS." }
         val conn = connection(imageUrl)
+        var temporaryFile: File? = null
         try {
+            val status = conn.responseCode
+            require(status in 200..299) { "Gagal mengunduh artwork (HTTP $status)." }
+            val contentType = conn.contentType.orEmpty()
+            require(contentType.isBlank() || contentType.startsWith("image/", ignoreCase = true)) {
+                "Sumber tidak mengirim file gambar."
+            }
             val directory = File(context.filesDir, "metadata_artwork").apply { mkdirs() }
-            val target = File(directory, "${packageName.hashCode()}_metadata.img")
-            conn.inputStream.use { input -> target.outputStream().use { output -> input.copyTo(output) } }
+            val safeKind = kind.filter { it.isLetterOrDigit() }.take(20).ifBlank { "artwork" }
+            val target = File(directory, "${packageName.hashCode()}_$safeKind.img")
+            val temp = File(directory, "${target.name}.tmp")
+            temporaryFile = temp
+            var total = 0L
+            conn.inputStream.use { input ->
+                temp.outputStream().buffered().use { output ->
+                    val buffer = ByteArray(16 * 1024)
+                    while (true) {
+                        val count = input.read(buffer)
+                        if (count < 0) break
+                        total += count
+                        require(total <= 12L * 1024L * 1024L) { "Ukuran artwork melebihi 12 MB." }
+                        output.write(buffer, 0, count)
+                    }
+                }
+            }
             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-            target.inputStream().use { BitmapFactory.decodeStream(it, null, bounds) }
-            if (bounds.outWidth <= 0 || bounds.outHeight <= 0) { target.delete(); null } else Uri.fromFile(target)
-        } finally { conn.disconnect() }
+            temp.inputStream().use { BitmapFactory.decodeStream(it, null, bounds) }
+            require(bounds.outWidth in 1..16000 && bounds.outHeight in 1..16000) { "File artwork tidak valid." }
+            temp.copyTo(target, overwrite = true)
+            temp.delete()
+            Uri.fromFile(target)
+        } finally {
+            conn.disconnect()
+            temporaryFile?.delete()
+        }
     }.getOrNull()
+
+    fun downloadThumbnail(context: Context, packageName: String, imageUrl: String): Uri? =
+        downloadArtwork(context, packageName, "metadata", imageUrl)
 }
 
 @Composable
