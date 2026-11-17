@@ -91,6 +91,7 @@ fun ArtworkImage(
 @Composable
 fun GameCard(
     app: AppItem,
+    store: Store,
     width: Dp,
     isFav: Boolean,
     focused: Boolean,
@@ -220,6 +221,7 @@ fun CardRow(
         items(list, key = { it.pkg }) { app ->
             GameCard(
                 app,
+                store,
                 cardWidth,
                 app.pkg in store.favorites,
                 app.pkg == focusedPkg,
@@ -257,6 +259,7 @@ fun GameGrid(
             items(list, key = { it.pkg }) { app ->
                 GameCard(
                     app,
+                    store,
                     tile,
                     app.pkg in store.favorites,
                     app.pkg == focusedPkg,
