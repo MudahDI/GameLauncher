@@ -197,6 +197,24 @@ class Store(ctx: Context) {\n    private val appContext = ctx.applicationContext
         }
     }
 
+    fun setArtwork(pkg: String, kind: String, uri: Uri) {
+        val key = "$kind:$pkg"
+        val previous = artworks[key]
+        val updated = artworks + (key to uri.toString())
+        artworks = updated
+        sp.edit().putString("artwork:$key", uri.toString()).apply()
+        if (previous != uri.toString()) deleteManagedArtworkIfUnreferenced(previous, updated)
+    }
+
+    fun clearArtwork(pkg: String, kind: String) {
+        val key = "$kind:$pkg"
+        val previous = artworks[key]
+        val updated = artworks - key
+        artworks = updated
+        sp.edit().remove("artwork:$key").apply()
+        deleteManagedArtworkIfUnreferenced(previous, updated)
+    }
+
 
 
     fun isGame(app: AppItem): Boolean = when {
