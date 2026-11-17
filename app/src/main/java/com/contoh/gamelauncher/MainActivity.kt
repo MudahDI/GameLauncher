@@ -122,6 +122,7 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
     Column(Modifier.width(if(wide)145.dp else 108.dp).combinedClickable(onClick=play,onLongClick=options)) {
         Box(Modifier.fillMaxWidth().aspectRatio(1f).clip(RoundedCornerShape(16.dp)).background(Raised)) {
             Image(app.icon,app.name,contentScale=ContentScale.Crop,modifier=Modifier.fillMaxSize())
+            Text("⋯",color=PrimaryText,fontSize=17.sp,fontWeight=FontWeight.Bold,modifier=Modifier.align(Alignment.TopStart).padding(6.dp).clip(RoundedCornerShape(8.dp)).background(Color(0x99080D16)).clickable{options()}.padding(horizontal=8.dp,vertical=2.dp))
             if(fav) Text("★",color=Color(0xFFFFD36E),fontSize=16.sp,modifier=Modifier.align(Alignment.TopEnd).padding(7.dp))
         }
         Spacer(Modifier.height(7.dp))
@@ -229,7 +230,7 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
     }
 }
 
-@Composable private fun Detail(app:AppItem,fav:Boolean,play:()->Unit,toggle:()->Unit,back:()->Unit) {
+@Composable private fun Detail(app:AppItem,fav:Boolean,play:()->Unit,toggle:()->Unit,remove:()->Unit,back:()->Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
         Text("‹  KEMBALI",color=Accent,fontSize=11.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clickable{back()}.padding(bottom=17.dp))
         Box(Modifier.fillMaxWidth().height(220.dp).clip(RoundedCornerShape(22.dp))) {
@@ -245,6 +246,9 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
             Text("▶  MAINkan",color=Bg,fontSize=11.sp,fontWeight=FontWeight.Bold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Accent).clickable{play()}.padding(14.dp))
             Text(if(fav)"★ FAVORIT" else "☆ FAVORIT",color=PrimaryText,fontSize=11.sp,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Raised).clickable{toggle()}.padding(14.dp))
         }
+        Spacer(Modifier.height(12.dp))
+        Text("HAPUS DARI LAUNCHER",color=Color(0xFFFF9B9B),fontSize=11.sp,fontWeight=FontWeight.SemiBold,modifier=Modifier.clip(RoundedCornerShape(9.dp)).background(Color(0xFF3A2028)).clickable{remove()}.padding(horizontal=14.dp,vertical=12.dp))
+        Text("Game tetap terpasang di perangkat. Tindakan ini hanya menghapusnya dari daftar GameLauncher.",color=Muted,fontSize=10.sp,modifier=Modifier.padding(top=7.dp))
         Spacer(Modifier.height(18.dp))
         Text("PACKAGE NAME",color=Muted,fontSize=9.sp)
         Text(app.pkg,color=PrimaryText,fontSize=12.sp)
@@ -266,6 +270,7 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
     var selectedPkg by rememberSaveable{mutableStateOf<String?>(null)}
     var picker by remember{mutableStateOf(false)}
     var reset by remember{mutableStateOf(false)}
+    var removeTarget by remember{mutableStateOf<AppItem?>(null)}
     val visible=all.filter{(it.isGame||it.pkg in store.added)&&it.pkg !in store.removed}
     val selected=all.firstOrNull{it.pkg==selectedPkg}
     val play:(AppItem)->Unit={a->ctx.packageManager.getLaunchIntentForPackage(a.pkg)?.let{store.played(a.pkg);ctx.startActivity(it)}}
@@ -276,7 +281,7 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
             if(wide) Navigation(page,true){pageName=it.name}
             Column(Modifier.weight(1f).fillMaxHeight()) {
                 Box(Modifier.weight(1f).fillMaxWidth()) {
-                    if(selected!=null) Detail(selected,selected.pkg in store.favorites,{play(selected);selectedPkg=null},{store.favorite(selected.pkg)},{selectedPkg=null})
+                    if(selected!=null) Detail(selected,selected.pkg in store.favorites,{play(selected);selectedPkg=null},{store.favorite(selected.pkg)},{removeTarget=selected},{selectedPkg=null})
                     else when(page) {
                         Page.HOME->Home(visible,store,wide,play,options){pageName=Page.LIBRARY.name}
                         Page.LIBRARY->Library(visible,store,wide,play,options){picker=true}
@@ -290,6 +295,15 @@ private enum class Page(val title:String,val icon:String) { HOME("Beranda","⌂"
     }
     if(picker) AddDialog(all.filter{a->visible.none{it.pkg==a.pkg}},{store.add(it.pkg)},{picker=false})
     if(reset) AlertDialog(onDismissRequest={reset=false},title={Text("Pulihkan daftar otomatis?")},text={Text("Daftar tambah/hapus manual akan direset. Favorit dan riwayat tetap disimpan.")},confirmButton={TextButton(onClick={store.reset();reset=false}){Text("Pulihkan")}},dismissButton={TextButton(onClick={reset=false}){Text("Batal")}})
+    removeTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest={removeTarget=null},
+            title={Text("Hapus dari GameLauncher?")},
+            text={Text("${target.name} akan dihilangkan dari daftar launcher. Aplikasi tetap terpasang dan datanya tidak dihapus.")},
+            confirmButton={TextButton(onClick={store.remove(target.pkg);removeTarget=null;selectedPkg=null}){Text("Hapus dari daftar",color=Color(0xFFFF9B9B))}},
+            dismissButton={TextButton(onClick={removeTarget=null}){Text("Batal")}}
+        )
+    }
 }
 
 class MainActivity:ComponentActivity() {
