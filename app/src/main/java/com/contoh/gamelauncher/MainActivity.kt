@@ -154,7 +154,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
             Deck.Accent = Color(android.graphics.Color.parseColor(store.accentHex))
         }
     }
-    // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur
+    // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
@@ -192,6 +192,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
 
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
+
+    LaunchedEffect(allApps) { store.reloadPlayStats() }
 
     // Semua aplikasi launcher tampil otomatis; klasifikasi mengikuti deteksi Android
     // kecuali pengguna pernah mengubah kategori secara manual.
@@ -241,11 +243,11 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     AndroidKeyEvent.KEYCODE_DPAD_LEFT -> focusManager.moveFocus(FocusDirection.Left)
                     AndroidKeyEvent.KEYCODE_DPAD_RIGHT -> focusManager.moveFocus(FocusDirection.Right)
                     AndroidKeyEvent.KEYCODE_BUTTON_L1 -> {
-                        tab = (tab - 1 + 4) % 4
+                        tab = (tab - 1 + 5) % 5
                         true
                     }
                     AndroidKeyEvent.KEYCODE_BUTTON_R1 -> {
-                        tab = (tab + 1) % 4
+                        tab = (tab + 1) % 5
                         true
                     }
                     AndroidKeyEvent.KEYCODE_BUTTON_START -> {
@@ -271,7 +273,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     ) {
         WallpaperBackground(store)
         Column(Modifier.fillMaxSize()) {
-            HeaderBar(onSettings = { tab = 3 })
+            HeaderBar(onHistory = { tab = 4 }, onSettings = { tab = 3 })
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 AnimatedContent(
                     targetState = tab,
@@ -288,7 +290,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                     )
                     1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
                     2 -> SearchScreen(visible, store, play, options)
-                    else -> SettingsScreen(
+                    3 -> SettingsScreen(
                         onAdd = { showPicker = true },
                         onReset = { confirmReset = true },
                         onWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
@@ -298,6 +300,7 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         hasWallpaper = store.wallpaperUri != null,
                         store = store
                     )
+                    else -> HistoryScreen(visible, store, play, options)
                 }
                 }
             }
@@ -550,6 +553,12 @@ class MainActivity : ComponentActivity() {
         }
         return super.dispatchGenericMotionEvent(event)
     }
+    override fun onResume() {
+        super.onResume()
+        Store.finishPendingSession(this)
+        refreshTick++
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         // Edge-to-edge: portrait memberi padding aman di Compose, landscape memakai seluruh area.

@@ -66,6 +66,15 @@ class Store(ctx: Context) {
     var forcedGames by mutableStateOf(readSet("forced_games"))
     var forcedApps by mutableStateOf(readSet("forced_apps"))
     var recent by mutableStateOf(readList("recent"))
+    var lastPlayedAt by mutableStateOf(readLongMap("last_played:"))
+    var playtimeMs by mutableStateOf(readLongMap("playtime:"))
+    private fun readLongMap(prefix: String): Map<String, Long> = sp.all.entries.mapNotNull { (key, value) ->
+        if (key.startsWith(prefix) && value is Long) key.removePrefix(prefix) to value else null
+    }.toMap()
+    fun reloadPlayStats() {
+        lastPlayedAt = readLongMap("last_played:")
+        playtimeMs = readLongMap("playtime:")
+    }
     var artworks by mutableStateOf(readArtworkMap())
     var descriptions by mutableStateOf(readDescriptionMap())
     var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
@@ -213,8 +222,33 @@ class Store(ctx: Context) {
     }
 
     fun markPlayed(pkg: String) {
-        recent = (listOf(pkg) + recent.filter { it != pkg }).take(12)
-        persist()
+        val now = System.currentTimeMillis()
+        recent = (listOf(pkg) + recent.filter { it != pkg }).take(50)
+        lastPlayedAt = lastPlayedAt + (pkg to now)
+        sp.edit().putString("recent", recent.joinToString(",")).putLong("last_played:$pkg", now)
+            .putString("pending_play_pkg", pkg).putLong("pending_play_start", now).apply()
+    }
+
+    companion object {
+        fun finishPendingSession(ctx: Context) {
+            val prefs = ctx.applicationContext.getSharedPreferences("launcher", Context.MODE_PRIVATE)
+            val pkg = prefs.getString("pending_play_pkg", null) ?: return
+            val started = prefs.getLong("pending_play_start", 0L)
+            val elapsed = (System.currentTimeMillis() - started).coerceIn(0L, 43_200_000L)
+            if (started > 0L && elapsed >= 5_000L) {
+                val key = "playtime:$pkg"
+                prefs.edit().putLong(key, prefs.getLong(key, 0L) + elapsed).apply()
+            }
+            prefs.edit().remove("pending_play_pkg").remove("pending_play_start").apply()
+        }
+    }
+
+    fun clearHistory() {
+        recent = emptyList()
+        val edit = sp.edit().remove("recent")
+        lastPlayedAt.keys.forEach { edit.remove("last_played:$it") }
+        edit.apply()
+        lastPlayedAt = emptyMap()
     }
 
     fun resetList() {
