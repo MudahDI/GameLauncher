@@ -114,6 +114,8 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var descriptionDraft by rememberSaveable { mutableStateOf("") }
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     var showQuickMenu by rememberSaveable { mutableStateOf(false) }
@@ -295,6 +297,11 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                         Text(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game")
                     }
                     TextButton(onClick = {
+                        descriptionDraft = store.description(a.pkg)
+                        editingDescriptionPkg = a.pkg
+                        selectedPkg = null
+                    }) { Text("Edit deskripsi game") }
+                    TextButton(onClick = {
                         pendingArtworkPkg = a.pkg
                         pendingArtworkKind = "cover"
                         selectedPkg = null
@@ -318,6 +325,33 @@ fun LauncherApp(allApps: List<AppItem>, controllerNotice: String?, onDismissCont
                 }
             },
             confirmButton = { TextButton(onClick = { selectedPkg = null }) { Text("Tutup") } }
+        )
+    }
+
+    editingDescriptionPkg?.let { pkg ->
+        val appName = allApps.firstOrNull { it.pkg == pkg }?.name ?: pkg
+        AlertDialog(
+            onDismissRequest = { editingDescriptionPkg = null },
+            title = { Text("Deskripsi game") },
+            text = {
+                androidx.compose.material3.OutlinedTextField(
+                    value = descriptionDraft,
+                    onValueChange = { descriptionDraft = it },
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Tulis deskripsi untuk $appName...") },
+                    minLines = 4,
+                    maxLines = 7
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    store.setDescription(pkg, descriptionDraft)
+                    editingDescriptionPkg = null
+                }) { Text("Simpan") }
+            },
+            dismissButton = {
+                TextButton(onClick = { editingDescriptionPkg = null }) { Text("Batal") }
+            }
         )
     }
 
