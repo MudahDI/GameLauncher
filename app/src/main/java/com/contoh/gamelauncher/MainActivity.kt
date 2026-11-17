@@ -1,13 +1,13 @@
 package com.contoh.gamelauncher
 
 import android.os.Bundle
+import android.content.res.Configuration
 import android.hardware.input.InputManager
 import android.view.InputDevice
 import android.view.KeyEvent as AndroidKeyEvent
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.compose.foundation.Image
@@ -33,6 +33,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.padding
@@ -234,14 +235,14 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        enableEdgeToEdge()
         super.onCreate(savedInstanceState)
+        // Warna bar mengikuti tema charcoal saat portrait.
+        window.statusBarColor = android.graphics.Color.rgb(14, 20, 27)
+        window.navigationBarColor = android.graphics.Color.rgb(14, 20, 27)
         inputManager = getSystemService(INPUT_SERVICE) as InputManager
         scanConnectedControllers()
         inputManager.registerInputDeviceListener(inputListener, android.os.Handler(mainLooper))
-        // Immersive sticky: status bar dan navigation bar tersembunyi,
-        // tetapi bisa dimunculkan sementara dengan swipe dari tepi layar.
-        hideSystemBars()
+        applySystemBarsForOrientation()
         setContent {
             MaterialTheme(
                 colorScheme = darkColorScheme(
@@ -266,17 +267,31 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun hideSystemBars() {
-        WindowInsetsControllerCompat(window, window.decorView).apply {
-            systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-            hide(WindowInsetsCompat.Type.systemBars())
+    /**
+     * Portrait: system bars tetap terlihat agar launcher nyaman sebagai HOME utama.
+     * Landscape: sembunyikan keduanya untuk ruang layar penuh; swipe tepi layar
+     * tetap dapat menampilkan bar sementara.
+     */
+    private fun applySystemBarsForOrientation() {
+        val controller = WindowInsetsControllerCompat(window, window.decorView)
+        controller.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            controller.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            controller.show(WindowInsetsCompat.Type.systemBars())
         }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applySystemBarsForOrientation()
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
         super.onWindowFocusChanged(hasFocus)
-        if (hasFocus) hideSystemBars()
+        if (hasFocus) applySystemBarsForOrientation()
     }
 
     override fun onRestart() {
