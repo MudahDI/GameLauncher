@@ -270,14 +270,24 @@ fun GameCard(
 
 @Composable
 fun SectionTitle(text: String, compact: Boolean) {
-    Text(
-        text,
-        color = Deck.TextDim,
-        fontSize = if (compact) 12.sp else 13.sp,
-        fontWeight = FontWeight.SemiBold,
-        letterSpacing = 1.5.sp,
-        modifier = Modifier.padding(start = 16.dp, top = 14.dp)
-    )
+    Row(
+        Modifier.padding(start = 16.dp, top = 16.dp, bottom = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(
+            Modifier.width(4.dp).height(if (compact) 17.dp else 21.dp)
+                .clip(RoundedCornerShape(3.dp))
+                .background(Deck.Accent)
+        )
+        Spacer(Modifier.width(10.dp))
+        Text(
+            text,
+            color = Deck.Text,
+            fontSize = if (compact) 14.sp else 17.sp,
+            fontWeight = FontWeight.Medium,
+            letterSpacing = 0.1.sp
+        )
+    }
 }
 
 @Composable
