@@ -3,6 +3,9 @@ package com.mdh.gamelauncher
 import android.os.Bundle
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.app.Activity
+import android.widget.Toast
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity
@@ -176,6 +179,19 @@ fun LauncherApp(allApps: List<AppItem>) {
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingBackupImport by remember { mutableStateOf<Uri?>(null) }
+    val exportBackupPicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/zip")
+    ) { uri ->
+        if (uri != null) {
+            runCatching { LauncherBackup.export(ctx, uri) }
+                .onSuccess { Toast.makeText(ctx, "Backup berhasil disimpan.", Toast.LENGTH_LONG).show() }
+                .onFailure { Toast.makeText(ctx, "Backup gagal: ${it.message}", Toast.LENGTH_LONG).show() }
+        }
+    }
+    val importBackupPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        pendingBackupImport = uri
+    }
     val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             runCatching {
@@ -306,7 +322,9 @@ fun LauncherApp(allApps: List<AppItem>) {
                         currentAccent = store.accentHex,
                         hasWallpaper = store.wallpaperUri != null,
                         store = store,
-                        onManageMetadataSources = { showMetadataSources = true }
+                        onManageMetadataSources = { showMetadataSources = true },
+                        onExportBackup = { exportBackupPicker.launch("MDI-Launcher-Backup.zip") },
+                        onImportBackup = { importBackupPicker.launch(arrayOf("application/zip", "application/octet-stream")) }
                     )
                     else -> HistoryScreen(visible, store, play, options)
                 }
@@ -443,6 +461,29 @@ fun LauncherApp(allApps: List<AppItem>) {
         )
     }
 
+
+    pendingBackupImport?.let { backupUri ->
+        AlertDialog(
+            onDismissRequest = { pendingBackupImport = null },
+            title = { Text("Pulihkan backup?") },
+            text = { Text("Data launcher saat ini akan diganti dengan isi backup, termasuk pengaturan, favorit, riwayat, wallpaper, dan artwork. Aplikasi yang terpasang tidak akan diubah.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    val result = runCatching { LauncherBackup.import(ctx, backupUri) }
+                    pendingBackupImport = null
+                    result.onSuccess {
+                        Toast.makeText(ctx, "Backup berhasil dipulihkan.", Toast.LENGTH_LONG).show()
+                        (ctx as? Activity)?.recreate()
+                    }.onFailure {
+                        Toast.makeText(ctx, "Import gagal: ${it.message}", Toast.LENGTH_LONG).show()
+                    }
+                }) { Text("Pulihkan") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingBackupImport = null }) { Text("Batal") }
+            }
+        )
+    }
 
     if (confirmReset) {
         AlertDialog(
