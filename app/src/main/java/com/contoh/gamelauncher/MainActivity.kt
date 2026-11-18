@@ -44,6 +44,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -144,16 +145,11 @@ private fun WallpaperBackground(store: Store) {
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int) {
+fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    val store = remember { Store(ctx) }
-    SideEffect {
-        runCatching {
-            Deck.Accent = Color(android.graphics.Color.parseColor(store.accentHex))
-        }
-    }
+    SideEffect { Deck.Accent = MaterialTheme.colorScheme.primary }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
@@ -305,6 +301,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int) {
                         onClearWallpaper = { store.setWallpaper(null) },
                         onAccent = { store.setAccent(it) },
                         currentAccent = store.accentHex,
+                        onMaterialYou = { store.setMaterialYou(it) },
                         hasWallpaper = store.wallpaperUri != null,
                         store = store,
                         onManageMetadataSources = { showMetadataSources = true }
@@ -504,15 +501,25 @@ class MainActivity : ComponentActivity() {
         window.navigationBarColor = android.graphics.Color.rgb(14, 20, 27)
         applySystemBarsForOrientation()
         setContent {
+            val ctx = LocalContext.current
+            val store = remember { Store(ctx) }
+            val dynamicScheme = if (store.useMaterialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                dynamicDarkColorScheme(ctx)
+            } else {
+                darkColorScheme(primary = Color(android.graphics.Color.parseColor(store.accentHex)))
+            }
             MaterialTheme(
                 colorScheme = darkColorScheme(
-                    primary = Deck.Accent,
+                    primary = if (store.useMaterialYou) dynamicScheme.primary else Color(android.graphics.Color.parseColor(store.accentHex)),
+                    secondary = dynamicScheme.secondary,
+                    tertiary = dynamicScheme.tertiary,
+                    primaryContainer = dynamicScheme.primaryContainer,
+                    onPrimary = dynamicScheme.onPrimary,
                     background = Deck.Bg,
                     surface = Deck.Panel,
                     onSurface = Deck.Text
                 )
             ) {
-                val ctx = LocalContext.current
                 val tick = refreshTick
                 val sessionTick = sessionRefresh
                 val apps by produceState<List<AppItem>?>(initialValue = null, tick) {
@@ -520,7 +527,7 @@ class MainActivity : ComponentActivity() {
                 }
                 val list = apps
                 if (list == null) Box(Modifier.fillMaxSize().background(Deck.Bg))
-                else LauncherApp(list, sessionTick)
+                else LauncherApp(list, sessionTick, store)
             }
         }
     }
