@@ -15,7 +15,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.onPreviewKeyEvent
-import androidx.compose.ui.draw.border
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -298,7 +298,6 @@ private fun BatteryGlyph(percent: Int) {
     }
 }
 
-@Composable
 private fun Modifier.gamepadAction(onClick: () -> Unit): Modifier = composed {
     var focused by remember { mutableStateOf(false) }
     this
