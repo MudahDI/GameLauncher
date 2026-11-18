@@ -595,12 +595,23 @@ fun HomeScreen(
                         HeroPanel(focused, store, compact, onPlay, onOptions, landscape = true, onDetails = onDetails)
                     }
                 }
+                if (recent.isNotEmpty()) CardRow(
+                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, activeRow == 0, 0, store,
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus,
+                    landscapeCards = true
+                )
                 if (favs.isNotEmpty()) CardRow(
                     "GAME FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
                     landscapeCards = true
                 )
-                AppStrip(installedApps, onPlay)
+                if (visible.isNotEmpty()) CardRow(
+                    if (favs.isEmpty()) "GAME" else "SEMUA GAME",
+                    visible, focused?.pkg, activeRow == 2, 2, store,
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus,
+                    landscapeCards = true
+                )
+                if (installedApps.isNotEmpty()) AppStrip(installedApps, onPlay)
             }
         } else {
             Column(
