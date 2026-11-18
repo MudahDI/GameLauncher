@@ -249,7 +249,6 @@ fun HintText(text: String) {
 }
 
 @OptIn(ExperimentalFoundationApi::class)
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun CardRow(
     title: String,
