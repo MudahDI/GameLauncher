@@ -57,9 +57,12 @@ import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Stroke
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -211,13 +214,39 @@ fun GameCard(
                     .background(Deck.Panel)
             )
             .scale(scale)
-            .then(
-                if (focused) Modifier.border(2.dp, Deck.Accent, shape)
-                else Modifier
-            )
             // Home gamepad navigation is centralized in LauncherApp.
             // Keep cards touch-clickable without creating competing Compose focus targets.
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
+            // Draw after the complete card content. This avoids artwork, gradients,
+            // or title overlays covering the selected-card indicator.
+            .drawWithContent {
+                drawContent()
+                if (focused && !plainIcon) {
+                    val inset = 3.dp.toPx()
+                    val radius = store.cardCornerDp.dp.toPx()
+                    drawRoundRect(
+                        color = Color.Black.copy(alpha = 0.95f),
+                        topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                        size = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2),
+                        cornerRadius = CornerRadius(radius, radius),
+                        style = Stroke(width = 11.dp.toPx())
+                    )
+                    drawRoundRect(
+                        color = Color.White,
+                        topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                        size = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2),
+                        cornerRadius = CornerRadius(radius, radius),
+                        style = Stroke(width = 5.dp.toPx())
+                    )
+                    drawRoundRect(
+                        color = Deck.Accent,
+                        topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
+                        size = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2),
+                        cornerRadius = CornerRadius(radius, radius),
+                        style = Stroke(width = 2.5.dp.toPx())
+                    )
+                }
+            }
     ) {
         if (plainIcon) {
             Image(
@@ -278,17 +307,6 @@ fun GameCard(
                     modifier = Modifier.fillMaxWidth()
                 )
             }
-        }
-        // Draw the focus frame LAST, above the artwork/title, so it cannot be
-        // hidden behind the cover image. The dark inner stroke keeps it readable
-        // even when the artwork itself uses a similar accent color.
-        if (focused) {
-            Box(
-                Modifier.fillMaxSize()
-                    .border(4.dp, Color.Black.copy(alpha = 0.9f), shape)
-                    .padding(2.dp)
-                    .border(2.dp, Deck.Accent, shape)
-            )
         }
     }
 }
