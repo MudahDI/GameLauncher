@@ -418,10 +418,19 @@ fun HeroPanel(
                 .clip(heroShape)
                 .background(Deck.Panel)
         ) {
-            ArtworkImage(focused, store, "banner", Modifier.fillMaxSize(), ContentScale.Crop)
             Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
-                0f to Color.Black.copy(alpha = 0.92f),
-                0.52f to Color.Black.copy(alpha = 0.48f),
+                0f to Deck.Panel,
+                0.62f to Deck.Panel,
+                1f to Deck.Bg
+            )))
+            ArtworkImage(
+                focused, store, "cover",
+                Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.34f).padding(12.dp),
+                ContentScale.Fit
+            )
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+                0f to Color.Black.copy(alpha = 0.10f),
+                0.58f to Color.Transparent,
                 1f to Color.Transparent
             )))
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
@@ -448,8 +457,7 @@ fun HeroPanel(
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
-        }
-
+    } else {
         Box(
             Modifier
                 .fillMaxWidth()
