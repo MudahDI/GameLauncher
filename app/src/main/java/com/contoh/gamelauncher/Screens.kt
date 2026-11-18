@@ -201,11 +201,13 @@ fun GameCard(
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, if (plainIcon) width + 30.dp else width * 4f / 3f) // Kartu Beranda atau ikon standar Library/Search
+            .then(
+                if (plainIcon) Modifier.width(width).height(82.dp)
+                else Modifier.size(width, width * 4f / 3f).clip(shape)
+                    .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
+                    .background(Deck.Panel)
+            )
             .scale(scale)
-            .clip(shape)
-            .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
-            .background(Deck.Panel)
             // combinedClickable handles activation; focusable exposes the card
             // as a DPAD focus target on Android devices.
             .focusable()
@@ -219,9 +221,10 @@ fun GameCard(
             Image(
                 displayIcon,
                 app.name,
-                Modifier.align(Alignment.TopCenter).padding(top = 4.dp)
-                    .size(width * 0.72f)
-                    .clip(RoundedCornerShape(14.dp))
+                Modifier.align(Alignment.TopCenter)
+                    .size(54.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .then(if (focused) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(13.dp)) else Modifier)
             )
         } else if (cardArtworkUri != null) {
             ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), ContentScale.Crop)
@@ -258,18 +261,20 @@ fun GameCard(
                 Modifier
                     .align(if (plainIcon) Alignment.BottomCenter else Alignment.BottomStart)
                     .fillMaxWidth()
-                    .then(if (plainIcon) Modifier.background(Deck.Panel) else Modifier.background(
+                    .then(if (plainIcon) Modifier else Modifier.background(
                         Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))
                     ))
-                    .padding(horizontal = 8.dp, vertical = 8.dp)
+                    .padding(horizontal = if (plainIcon) 1.dp else 8.dp, vertical = if (plainIcon) 2.dp else 8.dp)
             ) {
                 Text(
                     app.name,
-                    color = Color.White,
-                    fontSize = 12.sp,
+                    color = if (plainIcon) Deck.Text else Color.White,
+                    fontSize = if (plainIcon) 10.sp else 12.sp,
                     fontWeight = FontWeight.Medium,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    textAlign = TextAlign.Center,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
         }
@@ -700,16 +705,16 @@ fun SearchScreen(
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val landscape = maxWidth > maxHeight
-    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 92.dp else 136.dp)
-    val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
+    val tile = if (landscape) 68.dp else 76.dp
+    val spacing = 10.dp
 
     // Search field is a full-width item in the same lazy grid as the results,
     // so it scrolls away naturally instead of occupying a fixed header row.
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(tile + if (landscape) 10.dp else 12.dp),
+        columns = GridCells.Adaptive(tile + 12.dp),
         contentPadding = PaddingValues(
-            horizontal = if (landscape) 18.dp else spacing + 8.dp,
-            vertical = if (landscape) 6.dp else 10.dp
+            horizontal = 12.dp,
+            vertical = 6.dp
         ),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
@@ -771,7 +776,7 @@ fun LibraryScreen(
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val landscape = maxWidth > maxHeight
-    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 88.dp else 112.dp)
+    val tile = if (landscape) 68.dp else 76.dp
     val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Header, category selector, and app cards share one lazy grid so every
