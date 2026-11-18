@@ -157,6 +157,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     var tab by rememberSaveable { mutableStateOf(0) }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
@@ -221,13 +222,26 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     }
     val selected = selectedPkg?.let { p -> (games + apps).find { it.pkg == p } }
     // Beranda memiliki tiga baris navigasi vertikal: terakhir dimainkan, favorit, semua game.
+    // Stable row IDs: 0 = recent, 1 = favorites, 2 = all games.
     val homeSections = remember(games, store.recent, store.favorites) {
         val byPackage = games.associateBy { it.pkg }
         listOf(
             store.recent.mapNotNull(byPackage::get),
             games.filter { it.pkg in store.favorites },
             games
-        ).filter { it.isNotEmpty() }
+        )
+    }
+    val effectiveHomeRow = if (homeSections.getOrNull(activeHomeRow)?.isNotEmpty() == true) {
+        activeHomeRow
+    } else {
+        homeSections.indexOfFirst { it.isNotEmpty() }.coerceAtLeast(0)
+    }
+    LaunchedEffect(effectiveHomeRow, homeSections, focusedPkg) {
+        if (homeSections.getOrNull(effectiveHomeRow)?.isNotEmpty() == true) {
+            activeHomeRow = effectiveHomeRow
+            val row = homeSections[effectiveHomeRow]
+            if (row.none { it.pkg == focusedPkg }) focusedPkg = row.first().pkg
+        }
     }
 
     val gamepadFocusRequester = remember { FocusRequester() }
@@ -262,10 +276,9 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                             true
                         }
                         Key.DirectionRight, Key.DirectionLeft -> {
-                            if (tab == 0 && homeSections.isNotEmpty()) {
-                                val rowIndex = homeSections.indexOfFirst { row -> row.any { it.pkg == focused?.pkg } }.coerceAtLeast(0)
-                                val row = homeSections[rowIndex]
-                                val itemIndex = row.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
+                            val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
+                            if (tab == 0 && row.isNotEmpty()) {
+                                val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
                                 val nextIndex = if (event.key == Key.DirectionRight) {
                                     (itemIndex + 1) % row.size
                                 } else {
@@ -276,17 +289,19 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                             } else false
                         }
                         Key.DirectionDown, Key.DirectionUp -> {
-                            if (tab == 0 && homeSections.isNotEmpty()) {
-                                val rowIndex = homeSections.indexOfFirst { row -> row.any { it.pkg == focused?.pkg } }.coerceAtLeast(0)
-                                val nextRowIndex = if (event.key == Key.DirectionDown) {
-                                    (rowIndex + 1).coerceAtMost(homeSections.lastIndex)
-                                } else {
-                                    (rowIndex - 1).coerceAtLeast(0)
+                            if (tab == 0 && homeSections.any { it.isNotEmpty() }) {
+                                val direction = if (event.key == Key.DirectionDown) 1 else -1
+                                var targetRowIndex = effectiveHomeRow + direction
+                                while (targetRowIndex in homeSections.indices && homeSections[targetRowIndex].isEmpty()) {
+                                    targetRowIndex += direction
                                 }
-                                val currentRow = homeSections[rowIndex]
-                                val currentItemIndex = currentRow.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
-                                val targetRow = homeSections[nextRowIndex]
-                                focusedPkg = targetRow[currentItemIndex.coerceAtMost(targetRow.lastIndex)].pkg
+                                if (targetRowIndex in homeSections.indices) {
+                                    val currentRow = homeSections[effectiveHomeRow]
+                                    val targetRow = homeSections[targetRowIndex]
+                                    val itemIndex = currentRow.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
+                                    activeHomeRow = targetRowIndex
+                                    focusedPkg = targetRow[itemIndex.coerceAtMost(targetRow.lastIndex)].pkg
+                                }
                                 true
                             } else false
                         }
@@ -345,8 +360,12 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                 ) { targetTab ->
                 when (targetTab) {
                     0 -> HomeScreen(
-                        games, store, focused,
-                        { focusedPkg = it.pkg }, play, options
+                        games, store, focused, effectiveHomeRow,
+                        { app, rowIndex ->
+                            activeHomeRow = rowIndex
+                            focusedPkg = app.pkg
+                        },
+                        play, options
                     )
                     1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
                     2 -> SearchScreen(visible, store, play, options)
