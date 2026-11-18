@@ -44,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -186,6 +187,7 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
             .background(Deck.Panel)
+            .onFocusChanged { if (it.isFocused) onFocus() }
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && (event.key == Key.ButtonA || event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)) { onClick(); true } else false
             }
@@ -934,7 +936,7 @@ fun SettingsScreen(
                         Modifier.size(34.dp).clip(RoundedCornerShape(50))
                             .background(Color(android.graphics.Color.parseColor(hex)))
                             .then(if (selected) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(50)) else Modifier)
-                            .clickable { onAccent(hex) }
+                            .gamepadClickable { onAccent(hex) }
                     )
                     Text(label, color = Deck.TextDim, fontSize = 10.sp)
                 }
