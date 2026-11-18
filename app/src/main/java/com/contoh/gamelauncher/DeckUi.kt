@@ -114,14 +114,14 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
     val battery by rememberBatteryPercent()
     Row(
         Modifier.fillMaxWidth()
-            .height(60.dp)
+            .height(48.dp)
             .background(Deck.Panel.copy(alpha = 0.96f))
-            .padding(horizontal = 18.dp),
+            .padding(horizontal = 16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("MDI", color = Deck.Accent, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp)
+        Text("MDI", color = Deck.Accent, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp)
         Spacer(Modifier.width(8.dp))
-        Text("Launcher", color = Deck.Text, fontSize = 17.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.1.sp)
+        Text("Launcher", color = Deck.Text, fontSize = 15.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.1.sp)
         Spacer(Modifier.weight(1f))
         if (battery >= 0) {
             Text("$battery%", color = Deck.TextDim, fontSize = 12.sp)
@@ -129,7 +129,7 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
         }
         Text(clock, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.width(9.dp))
-        Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onHistory), contentAlignment = Alignment.Center) {
+        Box(Modifier.size(32.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onHistory), contentAlignment = Alignment.Center) {
             HeaderGlyph("history", Deck.Accent)
         }
         Spacer(Modifier.width(8.dp))
@@ -191,24 +191,25 @@ fun SideNavigation(selected: Int, onSelect: (Int) -> Unit) {
         Triple(2, "search", "Cari")
     )
     Column(
-        Modifier.width(176.dp).fillMaxHeight()
+        Modifier.width(88.dp).fillMaxHeight()
             .background(Deck.Bg.copy(alpha = 0.98f))
-            .padding(horizontal = 14.dp, vertical = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp)
+            .padding(horizontal = 8.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items.forEach { (index, symbol, label) ->
             val active = selected == index
-            Row(
-                Modifier.fillMaxWidth().height(60.dp)
-                    .clip(RoundedCornerShape(30.dp))
+            Column(
+                Modifier.fillMaxWidth().height(62.dp)
+                    .clip(RoundedCornerShape(18.dp))
                     .background(if (active) Deck.Accent.copy(alpha = 0.24f) else Color.Transparent)
                     .clickable { onSelect(index) }
-                    .padding(horizontal = 18.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(vertical = 8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
                 SideNavGlyph(symbol, if (active) Deck.Accent else Deck.TextDim)
-                Spacer(Modifier.width(16.dp))
-                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 15.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
+                Spacer(Modifier.height(5.dp))
+                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
             }
         }
     }
