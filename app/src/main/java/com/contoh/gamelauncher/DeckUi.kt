@@ -191,25 +191,25 @@ fun SideNavigation(selected: Int, onSelect: (Int) -> Unit) {
         Triple(2, "search", "Cari")
     )
     Column(
-        Modifier.width(88.dp).fillMaxHeight()
-            .background(Deck.Bg.copy(alpha = 0.98f))
-            .padding(horizontal = 8.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        Modifier.width(88.dp).fillMaxHeight(0.5f)
+            .background(Deck.Bg.copy(alpha = 0.98f), RoundedCornerShape(topEnd = 18.dp, bottomEnd = 18.dp))
+            .padding(horizontal = 8.dp, vertical = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterVertically)
     ) {
         items.forEach { (index, symbol, label) ->
             val active = selected == index
             Column(
-                Modifier.fillMaxWidth().height(62.dp)
-                    .clip(RoundedCornerShape(18.dp))
+                Modifier.fillMaxWidth().height(48.dp)
+                    .clip(RoundedCornerShape(14.dp))
                     .background(if (active) Deck.Accent.copy(alpha = 0.24f) else Color.Transparent)
                     .clickable { onSelect(index) }
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
                 SideNavGlyph(symbol, if (active) Deck.Accent else Deck.TextDim)
-                Spacer(Modifier.height(5.dp))
-                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
+                Spacer(Modifier.height(3.dp))
+                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 8.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
             }
         }
     }
