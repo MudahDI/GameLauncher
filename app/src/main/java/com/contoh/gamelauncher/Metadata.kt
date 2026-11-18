@@ -155,7 +155,39 @@ object MetadataRepository {
         if (results.isEmpty() && errors.isNotEmpty()) {
             throw IllegalStateException(errors.joinToString("\n"))
         }
-        results.distinctBy { it.title.lowercase() to it.sourceName }.take(30)
+        // Gabungkan provider berdasarkan judul yang dinormalisasi agar artwork dan
+        // deskripsi dari sumber berbeda menjadi satu hasil yang bisa diterapkan.
+        val descriptionPriority = listOf("RAWG", "IGDB", "Google Play", "Wikipedia")
+        val grouped = results.groupBy { result ->
+            result.title.lowercase()
+                .replace(Regex("[^\\p{L}\\p{N}]"), "")
+        }
+        grouped.values.mapNotNull { matches ->
+            val base = matches.firstOrNull() ?: return@mapNotNull null
+            val artwork = matches.firstOrNull { it.sourceName == "SteamGridDB" }
+            val described = descriptionPriority.firstNotNullOfOrNull { provider ->
+                matches.firstOrNull { it.sourceName == provider && it.extract.isNotBlank() }
+            } ?: matches.firstOrNull { it.extract.isNotBlank() && it.sourceName != "SteamGridDB" }
+            val cover = artwork?.coverUrl
+                ?: matches.firstNotNullOfOrNull { it.coverUrl }
+                ?: matches.firstNotNullOfOrNull { it.thumbnailUrl }
+            val banner = artwork?.bannerUrl
+                ?: matches.firstNotNullOfOrNull { it.bannerUrl }
+            val titleSource = described ?: base
+            val sourceLabel = buildList {
+                if (artwork != null && (cover != null || banner != null)) add("Artwork: SteamGridDB")
+                if (described != null) add("Deskripsi: ${described.sourceName}")
+                if (isEmpty()) add(base.sourceName)
+            }.joinToString(" · ")
+            titleSource.copy(
+                extract = described?.extract.orEmpty(),
+                thumbnailUrl = cover ?: banner ?: titleSource.thumbnailUrl,
+                pageUrl = described?.pageUrl ?: artwork?.pageUrl ?: base.pageUrl,
+                sourceName = sourceLabel,
+                coverUrl = cover,
+                bannerUrl = banner
+            )
+        }.take(30)
     }
 
     private fun connection(url: String, method: String = "GET", headers: Map<String, String> = emptyMap()): HttpURLConnection =
@@ -330,7 +362,7 @@ object MetadataRepository {
                 val banner = runCatchingPreservingCancellation { steamGridArtwork(apiKey, id, "heroes") }.getOrNull()
                 GameMetadataResult(
                     title,
-                    "Artwork SteamGridDB dengan rasio cover dan banner terpisah.",
+                    "",
                     cover ?: banner,
                     "https://www.steamgriddb.com/game/$id",
                     "SteamGridDB",
@@ -436,7 +468,7 @@ fun GameMetadataDialog(app: AppItem, onDismiss: () -> Unit, onApply: (GameMetada
                 OutlinedTextField(value = query, onValueChange = { query = it; selected = null },
                     modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text("Nama game / judul porting") })
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Sumber aktif: ${activeNames.ifBlank { "tidak ada" }}", color = Deck.TextDim, fontSize = 10.sp,
+                    Text("Sumber aktif: ${activeNames.ifBlank { "tidak ada" }} · hasil digabung otomatis", color = Deck.TextDim, fontSize = 10.sp,
                         modifier = Modifier.weight(1f))
                     TextButton(enabled = query.isNotBlank() && !loading, onClick = {
                         scope.launch {
