@@ -163,6 +163,12 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
     }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
+    // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
+    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
+    // Home focus area: hero actions first, then the game rows.
+    var homeFocusArea by rememberSaveable { mutableStateOf("hero") }
+    var heroActionIndex by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(homeResetTick) {
         if (homeResetTick > 0) {
             tab = 0
@@ -174,12 +180,6 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
             heroActionIndex = 0
         }
     }
-    // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
-    var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
-    // Home focus area: hero actions first, then the game rows.
-    var homeFocusArea by rememberSaveable { mutableStateOf("hero") }
-    var heroActionIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedFromHome by rememberSaveable { mutableStateOf(false) }
     var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
