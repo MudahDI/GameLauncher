@@ -1,5 +1,7 @@
 package com.mdh.gamelauncher
 
+import android.os.Build
+
 import android.graphics.BitmapFactory
 import android.graphics.Bitmap
 import java.io.FileInputStream
@@ -755,11 +757,30 @@ fun SettingsScreen(
         Text("Warna elemen", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Text("Atur warna tombol, indikator fokus, ikon aktif, dan elemen interaktif.", color = Deck.TextDim, fontSize = 12.sp)
         Spacer(Modifier.height(10.dp))
-        SettingRow(
-            "Material You",
-            if (store.useMaterialYou) "Aktif · mengikuti palet warna wallpaper Android" else "Nonaktif · gunakan warna elemen pilihan",
-            { onMaterialYou(!store.useMaterialYou) }
-        )
+        Row(
+            Modifier.fillMaxWidth()
+                .clip(RoundedCornerShape(10.dp))
+                .background(Deck.Panel)
+                .padding(start = 14.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(Modifier.weight(1f)) {
+                Text("Material You", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
+                        "Gunakan warna dinamis dari wallpaper perangkat"
+                    else
+                        "Memerlukan Android 12 atau lebih baru",
+                    color = Deck.TextDim,
+                    fontSize = 11.sp
+                )
+            }
+            Switch(
+                checked = store.useMaterialYou,
+                onCheckedChange = onMaterialYou,
+                enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+            )
+        }
         Spacer(Modifier.height(12.dp))
         if (!store.useMaterialYou) Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             listOf(
