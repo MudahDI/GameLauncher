@@ -223,7 +223,7 @@ fun GameCard(
             )
         }
         if (showMdiBranding) {
-            MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(6.dp))
+            MdiBrandingBadge(Modifier.align(Alignment.TopStart).padding(6.dp))
         }
         if (isFav) {
             Text(
