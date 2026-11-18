@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -116,9 +118,15 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
             .padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("MDI", color = Deck.Accent, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.5.sp)
+        Image(
+            painter = painterResource(R.drawable.ic_launcher_monochrome),
+            contentDescription = "Logo MDI",
+            modifier = Modifier.size(27.dp)
+        )
         Spacer(Modifier.width(9.dp))
-        Text("LAUNCHER", color = Deck.Text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
+        Text("MDI", color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.1.sp)
+        Spacer(Modifier.width(6.dp))
+        Text("LAUNCHER", color = Deck.TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.7.sp)
         Spacer(Modifier.weight(1f))
         if (battery >= 0) {
             Text("$battery%", color = Deck.TextDim, fontSize = 12.sp)
