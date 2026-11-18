@@ -755,7 +755,7 @@ fun LibraryScreen(
                 Column(Modifier.weight(1f)) {
                     Text(
                         "PERPUSTAKAAN",
-                        color = Color.White,
+                        color = Deck.Text,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.7.sp
@@ -865,7 +865,7 @@ fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
             .gamepadClickable(onClick)
             .padding(16.dp)
     ) {
-        Text(title, color = Color.White, fontSize = 17.sp)
+        Text(title, color = Deck.Text, fontSize = 17.sp)
         Spacer(Modifier.height(2.dp))
         Text(subtitle, color = Deck.TextDim, fontSize = 13.sp)
     }
@@ -882,7 +882,7 @@ private fun SettingSlider(
 ) {
     Column(Modifier.fillMaxWidth().padding(vertical = 5.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(title, color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+            Text(title, color = Deck.Text, fontSize = 14.sp, fontWeight = FontWeight.Medium)
             Spacer(Modifier.weight(1f))
             Text(valueLabel, color = Deck.Accent, fontSize = 12.sp)
         }
@@ -1083,7 +1083,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
     Column(Modifier.fillMaxSize().focusGroup().padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("RIWAYAT BERMAIN", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("RIWAYAT BERMAIN", color = Deck.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Text("${history.size} game pernah dibuka", color = Deck.TextDim, fontSize = 11.sp)
             }
             TextButton(onClick = { store.clearHistory() }) { Text("BERSIHKAN", color = Deck.Accent, fontSize = 10.sp) }
@@ -1092,7 +1092,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("◷", color = Deck.TextDim, fontSize = 36.sp)
-                    Text("Belum ada riwayat bermain", color = Color.White, fontSize = 14.sp)
+                    Text("Belum ada riwayat bermain", color = Deck.Text, fontSize = 14.sp)
                     Text("Game yang kamu buka akan muncul di sini.", color = Deck.TextDim, fontSize = 11.sp)
                 }
             }
@@ -1105,7 +1105,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
                         Image(app.icon, app.name, Modifier.size(if (landscape) 48.dp else 54.dp).clip(RoundedCornerShape(9.dp)))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
-                            Text(app.name, color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(app.name, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text("Terakhir: " + if (playedAt > 0L) android.text.format.DateUtils.getRelativeTimeSpanString(playedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS) else "—", color = Deck.TextDim, fontSize = 10.sp)
                             Text("Total bermain: " + formatPlaytime(duration), color = Deck.Accent, fontSize = 10.sp)
                         }
