@@ -213,7 +213,7 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (coverUri != null) {
-            ArtworkImage(app, store, if (landscapeArtwork) "banner" else "cover", Modifier.fillMaxSize())
+            ArtworkImage(app, store, "cover", Modifier.fillMaxSize(), ContentScale.Crop)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
         } else {
             if (blurIconBackground) {
@@ -418,21 +418,20 @@ fun HeroPanel(
                 .clip(heroShape)
                 .background(Deck.Panel)
         ) {
-            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
-                0f to Deck.Panel,
-                0.62f to Deck.Panel,
-                1f to Deck.Bg
-            )))
+            // Hero memakai artwork/banner landscape; cover portrait dipakai pada kartu game.
             ArtworkImage(
-                focused, store, "cover",
-                Modifier.align(Alignment.CenterEnd).fillMaxHeight().fillMaxWidth(0.34f).padding(12.dp),
-                ContentScale.Fit
+                focused, store, "banner",
+                Modifier.fillMaxSize(),
+                ContentScale.Crop
             )
-            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
-                0f to Color.Black.copy(alpha = 0.10f),
-                0.58f to Color.Transparent,
-                1f to Color.Transparent
-            )))
+            Box(Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(
+                    0f to Color.Black.copy(alpha = 0.88f),
+                    0.48f to Color.Black.copy(alpha = 0.54f),
+                    0.78f to Color.Black.copy(alpha = 0.12f),
+                    1f to Color.Transparent
+                )
+            ))
             Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
                 listOf(Color.Transparent, Color.Black.copy(alpha = 0.24f))
             )))
