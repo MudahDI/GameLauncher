@@ -17,6 +17,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -33,6 +36,7 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -259,25 +263,43 @@ fun CardRow(
     onOptions: (AppItem) -> Unit,
     onFocus: (AppItem, Int) -> Unit
 ) {
-    SectionTitle(title, compact)
-    LazyRow(
-        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(store.gridSpacingDp.dp)
-    ) {
-        items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
-            GameCard(
-                app,
-                store,
-                cardWidth,
-                app.pkg in store.favorites,
-                rowActive && app.pkg == focusedPkg,
-                { onTap(app, rowIndex) },
-                null,
-                { onOptions(app) },
-                { onFocus(app, rowIndex) },
-                showMdiBranding = true,
-                showTitle = false
-            )
+    val listState = rememberLazyListState()
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
+    val focusedIndex = remember(list, focusedPkg) {
+        if (rowActive) list.indexOfFirst { it.pkg == focusedPkg } else -1
+    }
+
+    // Keep the selected card visible horizontally, including when focus changes
+    // through the gamepad or by tapping a card.
+    LaunchedEffect(rowActive, focusedIndex) {
+        if (rowActive && focusedIndex >= 0) {
+            listState.animateScrollToItem(focusedIndex)
+            bringIntoViewRequester.bringIntoView()
+        }
+    }
+
+    Column(Modifier.bringIntoViewRequester(bringIntoViewRequester)) {
+        SectionTitle(title, compact)
+        LazyRow(
+            state = listState,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+            horizontalArrangement = Arrangement.spacedBy(store.gridSpacingDp.dp)
+        ) {
+            items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
+                GameCard(
+                    app,
+                    store,
+                    cardWidth,
+                    app.pkg in store.favorites,
+                    rowActive && app.pkg == focusedPkg,
+                    { onTap(app, rowIndex) },
+                    null,
+                    { onOptions(app) },
+                    { onFocus(app, rowIndex) },
+                    showMdiBranding = true,
+                    showTitle = false
+                )
+            }
         }
     }
 }
