@@ -451,7 +451,7 @@ fun HeroPanel(
                 Spacer(Modifier.height(9.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
-                    DeckButton(if (isFav) "★" else "♡", compact = true) { store.toggleFav(focused.pkg) }
+                    DeckButton(if (isFav) "♥" else "♡", compact = true) { store.toggleFav(focused.pkg) }
                     DeckButton("ⓘ", compact = true) { onDetails(focused) }
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
@@ -496,7 +496,7 @@ fun HeroPanel(
                         letterSpacing = 1.5.sp
                     )
                     Spacer(Modifier.weight(1f))
-                    if (isFav) Text("★ FAVORIT", color = Color(0xFFFFD54F), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    if (isFav) Text("♥ FAVORIT", color = Color(0xFFFF6B8A), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(5.dp))
                 Text(
