@@ -620,9 +620,12 @@ fun HomeScreen(
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
                     landscapeCards = landscape
                 )
-            } else if (visible.isNotEmpty()) {
+            }
+            val otherGames = visible.filterNot { it.pkg in store.favorites }
+            if (otherGames.isNotEmpty()) {
                 CardRow(
-                    "GAME", visible, focused?.pkg, activeRow == 2, 2, store,
+                    if (favs.isNotEmpty()) "GAME LAINNYA" else "SEMUA GAME",
+                    otherGames, focused?.pkg, activeRow == 2, 2, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
                     landscapeCards = landscape
                 )
