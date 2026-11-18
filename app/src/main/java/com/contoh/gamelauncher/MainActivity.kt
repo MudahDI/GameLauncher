@@ -166,6 +166,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var showMetadataSources by rememberSaveable { mutableStateOf(false) }
@@ -202,7 +203,9 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     }
 
     // Dari tab mana pun, Back kembali ke Beranda dulu.
-    BackHandler(enabled = tab != 0) { tab = 0 }
+    BackHandler(enabled = detailPkg != null || tab != 0) {
+        if (detailPkg != null) detailPkg = null else tab = 0
+    }
 
     LaunchedEffect(sessionRefresh) { store.reloadPlayStats() }
 
@@ -324,6 +327,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         }
                         Key.ButtonB, Key.Escape, Key.Back -> {
                             when {
+                                detailPkg != null -> detailPkg = null
                                 selectedPkg != null -> selectedPkg = null
                                 metadataPkg != null -> metadataPkg = null
                                 editingDescriptionPkg != null -> editingDescriptionPkg = null
@@ -363,14 +367,28 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                     },
                     label = "mdiTabTransition"
                 ) { targetTab ->
-                when (targetTab) {
+                if (detailPkg != null) {
+                    val detailApp = (games + apps).firstOrNull { it.pkg == detailPkg }
+                    if (detailApp != null) {
+                        GameDetailScreen(
+                            app = detailApp,
+                            store = store,
+                            onBack = { detailPkg = null },
+                            onPlay = play,
+                            onOptions = options
+                        )
+                    } else {
+                        detailPkg = null
+                    }
+                } else when (targetTab) {
                     0 -> HomeScreen(
                         games, store, focused, effectiveHomeRow,
                         { app, rowIndex ->
                             activeHomeRow = rowIndex
                             focusedPkg = app.pkg
                         },
-                        play, options
+                        play, options,
+                        onDetails = { detailPkg = it.pkg }
                     )
                     1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
                     2 -> SearchScreen(visible, store, play, options)
