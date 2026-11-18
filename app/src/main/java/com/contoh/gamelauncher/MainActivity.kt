@@ -358,68 +358,70 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                 isLandscape = isLandscape,
                 onSettings = { tab = 3 }
             )
-            Box(Modifier.weight(1f).fillMaxWidth()) {
-                AnimatedContent(
-                    targetState = tab,
-                    transitionSpec = {
-                        (fadeIn(tween(150)) + slideInHorizontally(tween(180)) { it / 24 }) togetherWith
-                            fadeOut(tween(90))
-                    },
-                    label = "mdiTabTransition"
-                ) { targetTab ->
-                if (detailPkg != null) {
-                    val detailApp = (games + apps).firstOrNull { it.pkg == detailPkg }
-                    if (detailApp != null) {
-                        GameDetailScreen(
-                            app = detailApp,
-                            store = store,
-                            onBack = { detailPkg = null },
-                            onPlay = play,
-                            onOptions = options
-                        )
-                    } else {
-                        detailPkg = null
+            Row(Modifier.weight(1f).fillMaxWidth()) {
+                if (isLandscape) SideNavigation(tab) { tab = it }
+                Box(Modifier.weight(1f).fillMaxHeight()) {
+                    AnimatedContent(
+                        targetState = tab,
+                        transitionSpec = {
+                            (fadeIn(tween(150)) + slideInHorizontally(tween(180)) { it / 24 }) togetherWith
+                                fadeOut(tween(90))
+                        },
+                        label = "mdiTabTransition"
+                    ) { targetTab ->
+                        if (detailPkg != null) {
+                            val detailApp = (games + apps).firstOrNull { it.pkg == detailPkg }
+                            if (detailApp != null) {
+                                GameDetailScreen(
+                                    app = detailApp,
+                                    store = store,
+                                    onBack = { detailPkg = null },
+                                    onPlay = play,
+                                    onOptions = options
+                                )
+                            }
+                        } else when (targetTab) {
+                            0 -> HomeScreen(
+                                games, store, focused, effectiveHomeRow,
+                                { app, rowIndex ->
+                                    activeHomeRow = rowIndex
+                                    focusedPkg = app.pkg
+                                },
+                                play, options,
+                                onDetails = { detailPkg = it.pkg },
+                                installedApps = apps
+                            )
+                            1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
+                            2 -> SearchScreen(visible, store, play, options)
+                            3 -> SettingsScreen(
+                                onAdd = { showPicker = true },
+                                onReset = { confirmReset = true },
+                                onPortraitWallpaper = {
+                                    pendingWallpaperOrientation = "portrait"
+                                    wallpaperPicker.launch(arrayOf("image/*"))
+                                },
+                                onLandscapeWallpaper = {
+                                    pendingWallpaperOrientation = "landscape"
+                                    wallpaperPicker.launch(arrayOf("image/*"))
+                                },
+                                onClearPortraitWallpaper = { store.setPortraitWallpaper(null) },
+                                onClearLandscapeWallpaper = { store.setLandscapeWallpaper(null) },
+                                onAccent = { store.setAccent(it) },
+                                currentAccent = store.accentHex,
+                                onMaterialYou = { store.setMaterialYou(it) },
+                                isLightTheme = store.isLightTheme,
+                                onThemeChange = { store.updateLightTheme(it) },
+                                hasPortraitWallpaper = store.portraitWallpaperUri != null,
+                                hasLandscapeWallpaper = store.landscapeWallpaperUri != null,
+                                store = store,
+                                onManageMetadataSources = { showMetadataSources = true }
+                            )
+                            else -> HistoryScreen(visible, store, play, options)
+                        }
                     }
-                } else when (targetTab) {
-                    0 -> HomeScreen(
-                        games, store, focused, effectiveHomeRow,
-                        { app, rowIndex ->
-                            activeHomeRow = rowIndex
-                            focusedPkg = app.pkg
-                        },
-                        play, options,
-                        onDetails = { detailPkg = it.pkg }
-                    )
-                    1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
-                    2 -> SearchScreen(visible, store, play, options)
-                    3 -> SettingsScreen(
-                        onAdd = { showPicker = true },
-                        onReset = { confirmReset = true },
-                        onPortraitWallpaper = {
-                            pendingWallpaperOrientation = "portrait"
-                            wallpaperPicker.launch(arrayOf("image/*"))
-                        },
-                        onLandscapeWallpaper = {
-                            pendingWallpaperOrientation = "landscape"
-                            wallpaperPicker.launch(arrayOf("image/*"))
-                        },
-                        onClearPortraitWallpaper = { store.setPortraitWallpaper(null) },
-                        onClearLandscapeWallpaper = { store.setLandscapeWallpaper(null) },
-                        onAccent = { store.setAccent(it) },
-                        currentAccent = store.accentHex,
-                        onMaterialYou = { store.setMaterialYou(it) },
-                        isLightTheme = store.isLightTheme,
-                        onThemeChange = { store.updateLightTheme(it) },
-                        hasPortraitWallpaper = store.portraitWallpaperUri != null,
-                        hasLandscapeWallpaper = store.landscapeWallpaperUri != null,
-                        store = store,
-                        onManageMetadataSources = { showMetadataSources = true }
-                    )
-                    else -> HistoryScreen(visible, store, play, options)
-                }
                 }
             }
-            BottomNavigation(tab) { tab = it }
+            if (!isLandscape) BottomNavigation(tab) { tab = it }
         }
 
     }
