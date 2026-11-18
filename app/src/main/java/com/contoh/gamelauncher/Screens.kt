@@ -128,17 +128,7 @@ fun ArtworkImage(
 
 // ---------- Komponen ----------
 
-@Composable
-fun MdiBrandingBadge(modifier: Modifier = Modifier) {
-    Row(
-        modifier.clip(RoundedCornerShape(5.dp)).background(Color(0xCC101923))
-            .padding(horizontal = 5.dp, vertical = 3.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text("M", color = Color(0xFF1A9FFF), fontSize = 10.sp, fontWeight = FontWeight.Black)
-        Text("DI", color = Color.White, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.3.sp)
-    }
-}
+// Branding overlay dihilangkan agar artwork dan ikon game tetap bersih.
 
 /** Kartu game potret ala Steam Deck. Kartu yang sedang fokus membesar dan diberi garis putih. */
 @OptIn(ExperimentalFoundationApi::class)
@@ -225,17 +215,6 @@ fun GameCard(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-        }
-        if (showMdiBranding) {
-            MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(6.dp))
-        }
-        if (isFav) {
-            Text(
-                "★",
-                color = Color(0xFFFFD54F),
-                fontSize = 16.sp,
-                modifier = Modifier.align(Alignment.TopEnd).padding(6.dp)
-            )
         }
     }
 }
@@ -388,7 +367,6 @@ fun HeroPanel(
                     contentScale = ContentScale.Crop
                 )
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.16f)))
-                MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(7.dp))
             }
             Column(
                 Modifier.weight(1f).fillMaxHeight(),
