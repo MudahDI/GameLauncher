@@ -151,7 +151,7 @@ private fun WallpaperBackground(store: Store) {
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
+fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeResetTick: Int = 0) {
     val ctx = LocalContext.current
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
@@ -163,6 +163,17 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
+    LaunchedEffect(homeResetTick) {
+        if (homeResetTick > 0) {
+            tab = 0
+            detailPkg = null
+            selectedPkg = null
+            metadataPkg = null
+            editingDescriptionPkg = null
+            homeFocusArea = "hero"
+            heroActionIndex = 0
+        }
+    }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
@@ -637,6 +648,8 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
 class MainActivity : ComponentActivity() {
     private var refreshTick by mutableIntStateOf(0)
     private var sessionRefresh by mutableIntStateOf(0)
+    private var homeResetTick by mutableIntStateOf(0)
+    private var hasBeenStopped = false
     private val packageChanges = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             refreshTick++
@@ -648,6 +661,15 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         Store.finishPendingSession(this)
         sessionRefresh++
+        if (hasBeenStopped) {
+            homeResetTick++
+            hasBeenStopped = false
+        }
+    }
+
+    override fun onStop() {
+        hasBeenStopped = true
+        super.onStop()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -710,8 +732,7 @@ class MainActivity : ComponentActivity() {
                     value = withContext(Dispatchers.IO) { loadAllApps(ctx) }
                 }
                 val list = apps
-                if (list == null) Box(Modifier.fillMaxSize().background(Deck.Bg))
-                else LauncherApp(list, sessionTick, store)
+                LauncherApp(list.orEmpty(), sessionTick, store, homeResetTick)
             }
         }
     }
