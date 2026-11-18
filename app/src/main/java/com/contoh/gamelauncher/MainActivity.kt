@@ -156,16 +156,6 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int) {
     }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
-    var rotationMode by rememberSaveable { mutableIntStateOf(0) }
-    val applyRotation: (Int) -> Unit = { mode ->
-        rotationMode = mode
-        val requested = when (mode) {
-            1 -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            2 -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            else -> ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        }
-        (ctx as? ComponentActivity)?.requestedOrientation = requested
-    }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
@@ -282,7 +272,16 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int) {
     ) {
         WallpaperBackground(store)
         Column(Modifier.fillMaxSize()) {
-            HeaderBar(onHistory = { tab = 4 }, onRotate = { applyRotation((rotationMode + 1) % 3) }, rotationMode = rotationMode, isLandscape = isLandscape, onSettings = { tab = 3 })
+            HeaderBar(
+                onHistory = { tab = 4 },
+                onRotate = {
+                    (ctx as? ComponentActivity)?.requestedOrientation =
+                        if (isLandscape) ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                        else ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                },
+                isLandscape = isLandscape,
+                onSettings = { tab = 3 }
+            )
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 AnimatedContent(
                     targetState = tab,
@@ -477,7 +476,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        // Orientation is manual: start in portrait and change only via the header button.
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         val packageFilter = IntentFilter().apply {
             addAction(Intent.ACTION_PACKAGE_ADDED)
             addAction(Intent.ACTION_PACKAGE_REMOVED)

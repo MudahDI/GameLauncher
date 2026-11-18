@@ -106,7 +106,7 @@ private fun HeaderGlyph(kind: String, color: Color, isLandscape: Boolean = false
     }
 }
 @Composable
-fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, isLandscape: Boolean, onSettings: () -> Unit) {
+fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean, onSettings: () -> Unit) {
     val clock by rememberClock()
     val battery by rememberBatteryPercent()
     Row(
