@@ -693,7 +693,7 @@ fun SearchScreen(
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val landscape = maxWidth > maxHeight
-    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 112.dp else 136.dp)
+    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 104.dp else 112.dp)
     val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Search field is a full-width item in the same lazy grid as the results,
@@ -764,7 +764,7 @@ fun LibraryScreen(
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val landscape = maxWidth > maxHeight
-    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 112.dp else 136.dp)
+    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 104.dp else 112.dp)
     val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Header, category selector, and app cards share one lazy grid so every
