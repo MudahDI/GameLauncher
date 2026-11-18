@@ -337,7 +337,7 @@ fun DeckButton(label: String, compact: Boolean = false, focused: Boolean = false
             .size(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Deck.Accent.copy(alpha = 0.18f))
-            .gamepadAction(onClick),
+            .gamepadAction(focused, onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = Deck.Accent, fontSize = if (compact) 16.sp else 18.sp)
