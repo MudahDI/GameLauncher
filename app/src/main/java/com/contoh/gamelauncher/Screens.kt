@@ -200,7 +200,7 @@ fun GameCard(
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, width * 1.5f) // Cover selalu portrait 2:3 pada semua orientasi
+            .size(width, width * 4f / 3f) // Rasio kartu 3:4 seperti release yang dipilih
             .scale(scale)
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
@@ -215,7 +215,7 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (cardArtworkUri != null) {
-            ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), ContentScale.Fit)
+            ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), ContentScale.Crop)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.12f)))
         } else {
             if (blurIconBackground) {
@@ -693,7 +693,7 @@ fun SearchScreen(
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val landscape = maxWidth > maxHeight
-    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 104.dp else 112.dp)
+    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 112.dp else 136.dp)
     val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Search field is a full-width item in the same lazy grid as the results,
