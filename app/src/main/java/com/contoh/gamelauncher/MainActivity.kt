@@ -420,7 +420,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             onDismissRequest = { selectedPkg = null },
             title = {
                 Column {
-                    Text(a.name, color = Color.White)
+                    Text(a.name, color = Deck.Text)
                     Text("OPSI GAME", color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.5.sp)
                 }
             },
@@ -613,7 +613,7 @@ class MainActivity : ComponentActivity() {
                 else -> darkColorScheme(primary = accent)
             }
             SideEffect {
-                window.statusBarColor = if (store.isLightTheme) android.graphics.Color.rgb(243, 245, 248) else android.graphics.Color.rgb(14, 20, 27)
+                window.statusBarColor = if (store.isLightTheme) android.graphics.Color.rgb(214, 220, 228) else android.graphics.Color.rgb(14, 20, 27)
                 window.navigationBarColor = window.statusBarColor
                 WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = store.isLightTheme
                 WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightNavigationBars = store.isLightTheme
