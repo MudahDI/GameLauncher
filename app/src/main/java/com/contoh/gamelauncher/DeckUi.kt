@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.BatteryManager
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -69,6 +70,44 @@ fun rememberBatteryPercent(): State<Int> {
 }
 
 @Composable
+private fun HeaderGlyph(kind: String, color: Color) {
+    Canvas(Modifier.size(21.dp)) {
+        val stroke = 1.8.dp.toPx()
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        when (kind) {
+            "history" -> {
+                drawCircle(color, radius = size.minDimension * 0.34f, style = Stroke(stroke))
+                drawLine(color, Offset(cx, cy), Offset(cx, cy - size.height * 0.20f), stroke)
+                drawLine(color, Offset(cx, cy), Offset(cx + size.width * 0.17f, cy + size.height * 0.10f), stroke)
+                drawLine(color, Offset(cx - size.width * 0.39f, cy - size.height * 0.25f), Offset(cx - size.width * 0.39f, cy - size.height * 0.43f), stroke)
+                drawLine(color, Offset(cx - size.width * 0.39f, cy - size.height * 0.25f), Offset(cx - size.width * 0.20f, cy - size.height * 0.25f), stroke)
+            }
+            "rotate" -> {
+                drawArc(color, 35f, 285f, false,
+                    Offset(size.width * 0.16f, size.height * 0.16f),
+                    Size(size.width * 0.68f, size.height * 0.68f),
+                    style = Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round))
+                drawLine(color, Offset(size.width * 0.70f, size.height * 0.12f), Offset(size.width * 0.91f, size.height * 0.16f), stroke)
+                drawLine(color, Offset(size.width * 0.70f, size.height * 0.12f), Offset(size.width * 0.77f, size.height * 0.32f), stroke)
+            }
+            else -> {
+                for (i in 0 until 8) {
+                    val angle = Math.toRadians(i * 45.0)
+                    val x1 = cx + kotlin.math.cos(angle).toFloat() * size.width * 0.31f
+                    val y1 = cy + kotlin.math.sin(angle).toFloat() * size.height * 0.31f
+                    val x2 = cx + kotlin.math.cos(angle).toFloat() * size.width * 0.45f
+                    val y2 = cy + kotlin.math.sin(angle).toFloat() * size.height * 0.45f
+                    drawLine(color, Offset(x1, y1), Offset(x2, y2), stroke)
+                }
+                drawCircle(color, size.width * 0.31f, style = Stroke(stroke))
+                drawCircle(color, size.width * 0.10f)
+            }
+        }
+    }
+}
+
+@Composable
 fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, onSettings: () -> Unit) {
     val clock by rememberClock()
     val battery by rememberBatteryPercent()
@@ -79,21 +118,9 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, on
             .padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            "MDI",
-            color = Deck.Accent,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.ExtraBold,
-            letterSpacing = 1.5.sp
-        )
+        Text("MDI", color = Deck.Accent, fontSize = 18.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.width(9.dp))
-        Text(
-            "LAUNCHER",
-            color = Deck.Text,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 2.sp
-        )
+        Text("LAUNCHER", color = Deck.Text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 2.sp)
         Spacer(Modifier.weight(1f))
         if (battery >= 0) {
             Text("$battery%", color = Deck.TextDim, fontSize = 12.sp)
@@ -102,32 +129,15 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, on
         Text(clock, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.width(9.dp))
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onHistory), contentAlignment = Alignment.Center) {
-            Text("◷", color = Deck.Text, fontSize = 21.sp)
+            HeaderGlyph("history", Deck.Text)
         }
         Spacer(Modifier.width(8.dp))
-        Box(
-            Modifier.size(36.dp)
-                .clip(RoundedCornerShape(9.dp))
-                .background(Deck.Panel)
-                .clickable(onClick = onRotate),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                when (rotationMode) { 1 -> "▯"; 2 -> "▰"; else -> "↻" },
-                color = Deck.Accent,
-                fontSize = 19.sp,
-                fontWeight = FontWeight.SemiBold
-            )
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onRotate), contentAlignment = Alignment.Center) {
+            HeaderGlyph("rotate", Deck.Accent)
         }
         Spacer(Modifier.width(8.dp))
-        Box(
-            Modifier.size(36.dp)
-                .clip(RoundedCornerShape(9.dp))
-                .background(Deck.Panel)
-                .clickable(onClick = onSettings),
-            contentAlignment = Alignment.Center
-        ) {
-            Text("⚙", color = Deck.Text, fontSize = 20.sp)
+        Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onSettings), contentAlignment = Alignment.Center) {
+            HeaderGlyph("settings", Deck.Text)
         }
     }
 }
