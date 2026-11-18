@@ -44,6 +44,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.focus.focusGroup
 import androidx.compose.ui.focus.focusable
@@ -142,16 +143,26 @@ fun ArtworkImage(
 }
 
 // Gamepad A/Enter attiva i controlli; il focus DPAD è gestito dal sistema Compose.
-private fun Modifier.gamepadClickable(onClick: () -> Unit): Modifier =
-    this.onPreviewKeyEvent { event ->
-        if (event.type == KeyEventType.KeyDown &&
-            (event.key == Key.ButtonA || event.key == Key.Enter ||
-                event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)
-        ) {
-            onClick()
-            true
-        } else false
-    }.clickable(onClick = onClick)
+private fun Modifier.gamepadClickable(onClick: () -> Unit): Modifier = composed {
+    var hasGamepadFocus by remember { mutableStateOf(false) }
+    this
+        .onFocusChanged { hasGamepadFocus = it.isFocused }
+        .then(
+            if (hasGamepadFocus) Modifier.border(
+                2.dp, Deck.Accent, RoundedCornerShape(10.dp)
+            ) else Modifier
+        )
+        .onPreviewKeyEvent { event ->
+            if (event.type == KeyEventType.KeyDown &&
+                (event.key == Key.ButtonA || event.key == Key.Enter ||
+                    event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)
+            ) {
+                onClick()
+                true
+            } else false
+        }
+        .clickable(onClick = onClick)
+}
 
 // ---------- Komponen ----------
 
