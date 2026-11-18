@@ -74,6 +74,7 @@ object LauncherBackup {
     fun import(context: Context, source: Uri) {
         val app = context.applicationContext
         val entries = mutableMapOf<String, ByteArray>()
+        var totalBytes = 0L
         app.contentResolver.openInputStream(source)?.use { input ->
             ZipInputStream(input).use { zip ->
                 while (true) {
@@ -81,10 +82,10 @@ object LauncherBackup {
                     require(!entry.isDirectory && !entry.name.startsWith("/") && !entry.name.contains("..")) {
                         "Struktur backup tidak valid."
                     }
-                    val bytes = zip.readBytes()
-                    if (entry.name == MANIFEST) {
-                        require(bytes.size <= MAX_MANIFEST_BYTES) { "File backup terlalu besar." }
-                    }
+                    require(entries.size < 501) { "Backup berisi terlalu banyak file." }
+                    val bytes = zip.readBounded(if (entry.name == MANIFEST) MAX_MANIFEST_BYTES else 64 * 1024 * 1024)
+                    totalBytes += bytes.size
+                    require(totalBytes <= 256L * 1024 * 1024) { "Ukuran backup melebihi batas 256 MB." }
                     entries[entry.name] = bytes
                     zip.closeEntry()
                 }
@@ -108,7 +109,7 @@ object LauncherBackup {
                     val assetName = item.getString("value")
                     require(assetName.startsWith("assets/") && !assetName.contains("..")) { "Referensi aset tidak valid." }
                     val bytes = entries[assetName] ?: error("Aset backup hilang: $assetName")
-                    val file = File(assetDir, "asset_${key.hashCode().toUInt().toString(16)}.bin")
+                    val file = File(assetDir, "asset_${Integer.toHexString(key.hashCode())}.bin")
                     file.writeBytes(bytes)
                     editor.putString(key, Uri.fromFile(file).toString())
                 }
@@ -131,4 +132,18 @@ object LauncherBackup {
     private fun openInput(context: Context, uri: Uri) =
         if (uri.scheme == "file") FileInputStream(uri.path ?: error("Path artwork tidak valid."))
         else context.contentResolver.openInputStream(uri) ?: error("Artwork tidak dapat dibaca: $uri")
+}
+
+private fun ZipInputStream.readBounded(maxBytes: Int): ByteArray {
+    val output = java.io.ByteArrayOutputStream()
+    val buffer = ByteArray(8192)
+    var total = 0
+    while (true) {
+        val count = read(buffer)
+        if (count < 0) break
+        total += count
+        require(total <= maxBytes) { "Salah satu file di dalam backup terlalu besar." }
+        output.write(buffer, 0, count)
+    }
+    return output.toByteArray()
 }
