@@ -278,6 +278,13 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) false
                 else when (event.key) {
+                    Key.ButtonA, Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> {
+                        if (isLandscape && sidebarGamepadFocus) {
+                            tab = sidebarGamepadIndex
+                            sidebarGamepadFocus = false
+                            true
+                        } else false
+                    }
                     // Sidebar landscape: arah vertikal memilih tab, kanan masuk ke konten.
                     Key.DirectionRight, Key.DirectionLeft -> {
                         if (isLandscape && sidebarGamepadFocus) {
