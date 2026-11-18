@@ -44,6 +44,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
@@ -133,6 +138,18 @@ fun ArtworkImage(
     )
 }
 
+// Gamepad A/Enter attiva i controlli; il focus DPAD è gestito dal sistema Compose.
+private fun Modifier.gamepadClickable(onClick: () -> Unit): Modifier =
+    this.onPreviewKeyEvent { event ->
+        if (event.type == KeyEventType.KeyDown &&
+            (event.key == Key.ButtonA || event.key == Key.Enter ||
+                event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)
+        ) {
+            onClick()
+            true
+        } else false
+    }.clickable(onClick = onClick)
+
 // ---------- Komponen ----------
 
 // Branding overlay dihilangkan agar artwork dan ikon game tetap bersih.
@@ -169,6 +186,9 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
             .background(Deck.Panel)
+            .onPreviewKeyEvent { event ->
+                if (event.type == KeyEventType.KeyDown && (event.key == Key.ButtonA || event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)) { onClick(); true } else false
+            }
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (coverUri != null) {
@@ -746,7 +766,7 @@ fun LibraryScreen(
                         Modifier.weight(1f)
                             .clip(RoundedCornerShape(10.dp))
                             .background(if (active) Deck.Accent.copy(alpha = 0.18f) else Deck.Panel.copy(alpha = 0.55f))
-                            .clickable { showGames = isGames; onlyFav = false }
+                            .gamepadClickable { showGames = isGames; onlyFav = false }
                             .padding(horizontal = 13.dp, vertical = 10.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -769,7 +789,7 @@ fun LibraryScreen(
                     Modifier.width(46.dp).height(43.dp)
                         .clip(RoundedCornerShape(10.dp))
                         .background(if (onlyFav) Deck.Accent.copy(alpha = 0.20f) else Deck.Panel.copy(alpha = 0.55f))
-                        .clickable { onlyFav = !onlyFav },
+                        .gamepadClickable { onlyFav = !onlyFav },
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -822,7 +842,7 @@ fun SettingRow(title: String, subtitle: String, onClick: () -> Unit) {
             .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(Deck.Panel)
-            .clickable(onClick = onClick)
+            .gamepadClickable(onClick)
             .padding(16.dp)
     ) {
         Text(title, color = Color.White, fontSize = 17.sp)
@@ -993,7 +1013,7 @@ fun AddAppDialog(
                         Row(
                             Modifier
                                 .fillMaxWidth()
-                                .clickable { onAdd(app) }
+                                .gamepadClickable { onAdd(app) }
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
@@ -1036,7 +1056,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
                 items(history, key = { it.pkg }) { app ->
                     val playedAt = store.lastPlayedAt[app.pkg] ?: 0L
                     val duration = store.playtimeMs[app.pkg] ?: 0L
-                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Deck.Panel).clickable { onPlay(app) }.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Row(Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Deck.Panel).gamepadClickable { onPlay(app) }.padding(11.dp), verticalAlignment = Alignment.CenterVertically) {
                         Image(app.icon, app.name, Modifier.size(if (landscape) 48.dp else 54.dp).clip(RoundedCornerShape(9.dp)))
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
