@@ -316,6 +316,7 @@ private fun Modifier.gamepadAction(onClick: () -> Unit): Modifier = composed {
         .clickable(onClick = onClick)
 }
 
+@Composable
 fun PlayButton(text: String, compact: Boolean = false, onClick: () -> Unit) {
     Box(
         Modifier
