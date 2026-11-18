@@ -504,21 +504,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             val ctx = LocalContext.current
             val store = remember { Store(ctx) }
-            val dynamicScheme = if (store.useMaterialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val baseScheme = if (store.useMaterialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 dynamicDarkColorScheme(ctx)
             } else {
                 darkColorScheme(primary = Color(android.graphics.Color.parseColor(store.accentHex)))
             }
             MaterialTheme(
-                colorScheme = darkColorScheme(
-                    primary = if (store.useMaterialYou) dynamicScheme.primary else Color(android.graphics.Color.parseColor(store.accentHex)),
-                    secondary = dynamicScheme.secondary,
-                    tertiary = dynamicScheme.tertiary,
-                    primaryContainer = dynamicScheme.primaryContainer,
-                    onPrimary = dynamicScheme.onPrimary,
+                colorScheme = baseScheme.copy(
                     background = Deck.Bg,
                     surface = Deck.Panel,
-                    onSurface = Deck.Text
+                    onSurface = Deck.Text,
+                    surfaceVariant = Deck.PanelLight,
+                    onSurfaceVariant = Deck.TextDim
                 )
             ) {
                 val tick = refreshTick
