@@ -143,6 +143,40 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
     }
 }
 
+
+@Composable
+fun SideNavigation(selected: Int, onSelect: (Int) -> Unit) {
+    val items = listOf(
+        Triple(0, "⌂", "Beranda"),
+        Triple(1, "🎮", "Koleksi"),
+        Triple(2, "▦", "Cari"),
+        Triple(4, "★", "Riwayat"),
+        Triple(3, "⚙", "Pengaturan")
+    )
+    Column(
+        Modifier.width(142.dp).fillMaxHeight()
+            .background(Deck.Bg.copy(alpha = 0.96f))
+            .padding(horizontal = 10.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(7.dp)
+    ) {
+        items.forEach { (index, symbol, label) ->
+            val active = selected == index
+            Row(
+                Modifier.fillMaxWidth().height(46.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(if (active) Deck.Accent.copy(alpha = 0.24f) else Color.Transparent)
+                    .clickable { onSelect(index) }
+                    .padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(symbol, color = if (active) Deck.Accent else Deck.TextDim, fontSize = 20.sp)
+                Spacer(Modifier.width(10.dp))
+                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 12.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
+            }
+        }
+    }
+}
+
 @Composable
 fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
     val tabs = listOf("BERANDA", "KOLEKSI", "CARI")
