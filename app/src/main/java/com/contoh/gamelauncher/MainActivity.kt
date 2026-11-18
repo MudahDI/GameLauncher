@@ -93,7 +93,7 @@ private fun OptionAction(
     danger: Boolean = false,
     onClick: () -> Unit
 ) {
-    val tint = if (danger) Color(0xFFFF7777) else Deck.Text
+    val tint = if (danger) Color(0xFFFF7777) else Deck.Accent
     Row(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
@@ -104,7 +104,7 @@ private fun OptionAction(
     ) {
         Box(
             Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
-                .background(if (danger) Color(0xFF4A252B) else Deck.PanelLight),
+                .background(if (danger) Color(0xFF4A252B) else Deck.Accent.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center
         ) {
             Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
