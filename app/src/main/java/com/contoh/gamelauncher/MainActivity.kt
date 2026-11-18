@@ -68,6 +68,7 @@ import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
@@ -265,7 +266,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             .fillMaxSize()
             .focusRequester(gamepadFocusRequester)
             .focusable()
-            .onPreviewKeyEvent { event ->
+            .onKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) false
                 else {
                     val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
