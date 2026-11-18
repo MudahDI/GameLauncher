@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -299,7 +300,7 @@ private fun BatteryGlyph(percent: Int) {
 
 @Composable
 private fun Modifier.gamepadAction(onClick: () -> Unit): Modifier = composed {
-    var focused by mutableStateOf(false)
+    var focused by remember { mutableStateOf(false) }
     this
         .focusable()
         .onFocusChanged { focused = it.isFocused }
