@@ -213,6 +213,15 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             ?: games.firstOrNull()
     }
     val selected = selectedPkg?.let { p -> (games + apps).find { it.pkg == p } }
+    // Beranda memiliki tiga baris navigasi vertikal: terakhir dimainkan, favorit, semua game.
+    val homeSections = remember(games, store.recent, store.favorites) {
+        val byPackage = games.associateBy { it.pkg }
+        listOf(
+            store.recent.mapNotNull(byPackage::get),
+            games.filter { it.pkg in store.favorites },
+            games
+        ).filter { it.isNotEmpty() }
+    }
 
     val gamepadFocusRequester = remember { FocusRequester() }
     LaunchedEffect(Unit) { gamepadFocusRequester.requestFocus() }
@@ -245,17 +254,40 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                             tab = if (tab >= 4) 0 else tab + 1
                             true
                         }
-                        Key.DirectionRight, Key.DirectionDown -> {
-                            if (tab == 0 && games.isNotEmpty()) {
-                                focusedPkg = games[(currentIndex + 1) % games.size].pkg
+                        Key.DirectionRight, Key.DirectionLeft -> {
+                            if (tab == 0 && homeSections.isNotEmpty()) {
+                                val rowIndex = homeSections.indexOfFirst { row -> row.any { it.pkg == focused?.pkg } }.coerceAtLeast(0)
+                                val row = homeSections[rowIndex]
+                                val itemIndex = row.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
+                                val nextIndex = if (event.key == Key.DirectionRight) {
+                                    (itemIndex + 1) % row.size
+                                } else {
+                                    (itemIndex - 1 + row.size) % row.size
+                                }
+                                focusedPkg = row[nextIndex].pkg
                                 true
                             } else false
                         }
-                        Key.DirectionLeft, Key.DirectionUp -> {
-                            if (tab == 0 && games.isNotEmpty()) {
-                                focusedPkg = games[(currentIndex - 1 + games.size) % games.size].pkg
+                        Key.DirectionDown, Key.DirectionUp -> {
+                            if (tab == 0 && homeSections.isNotEmpty()) {
+                                val rowIndex = homeSections.indexOfFirst { row -> row.any { it.pkg == focused?.pkg } }.coerceAtLeast(0)
+                                val nextRowIndex = if (event.key == Key.DirectionDown) {
+                                    (rowIndex + 1).coerceAtMost(homeSections.lastIndex)
+                                } else {
+                                    (rowIndex - 1).coerceAtLeast(0)
+                                }
+                                val currentRow = homeSections[rowIndex]
+                                val currentItemIndex = currentRow.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
+                                val targetRow = homeSections[nextRowIndex]
+                                focusedPkg = targetRow[currentItemIndex.coerceAtMost(targetRow.lastIndex)].pkg
                                 true
                             } else false
+                        }
+                        Key.ButtonY -> {
+                            (ctx as? ComponentActivity)?.requestedOrientation =
+                                if (isLandscape) ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                                else ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                            true
                         }
                         Key.ButtonA, Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> {
                             if (tab == 0 && focused != null) {
