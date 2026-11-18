@@ -901,6 +901,8 @@ fun SettingsScreen(
     onAccent: (String) -> Unit,
     currentAccent: String,
     onMaterialYou: (Boolean) -> Unit,
+    isLightTheme: Boolean,
+    onThemeChange: (Boolean) -> Unit,
     hasPortraitWallpaper: Boolean,
     hasLandscapeWallpaper: Boolean,
     store: Store,
@@ -911,7 +913,27 @@ fun SettingsScreen(
     ) {
         Text("TAMPILAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        Text("Warna elemen", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text("Tema aplikasi", color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text("Pilih tampilan gelap atau terang untuk seluruh launcher.", color = Deck.TextDim, fontSize = 12.sp)
+        Spacer(Modifier.height(10.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+            listOf(false to "Gelap", true to "Terang").forEach { (light, label) ->
+                val selected = isLightTheme == light
+                Column(
+                    Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
+                        .background(if (selected) Deck.Accent.copy(alpha = 0.18f) else Deck.Panel)
+                        .then(if (selected) Modifier.border(1.dp, Deck.Accent, RoundedCornerShape(10.dp)) else Modifier)
+                        .clickable { onThemeChange(light) }
+                        .padding(vertical = 13.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(if (light) "☀" else "☾", color = if (selected) Deck.Accent else Deck.Text, fontSize = 20.sp)
+                    Text(label, color = if (selected) Deck.Accent else Deck.Text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
+            }
+        }
+        Spacer(Modifier.height(18.dp))
+        Text("Warna elemen", color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
         Text("Atur warna tombol, indikator fokus, ikon aktif, dan elemen interaktif.", color = Deck.TextDim, fontSize = 12.sp)
         Spacer(Modifier.height(10.dp))
         Row(
@@ -922,7 +944,7 @@ fun SettingsScreen(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Material You", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                Text("Material You", color = Deck.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Text(
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
                         "Gunakan warna dinamis dari wallpaper perangkat"
