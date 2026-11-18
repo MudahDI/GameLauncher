@@ -166,6 +166,8 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
+    var sidebarGamepadFocus by rememberSaveable { mutableStateOf(false) }
+    var sidebarGamepadIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedFromHome by rememberSaveable { mutableStateOf(false) }
     var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
@@ -234,15 +236,12 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             ?: games.firstOrNull()
     }
     val selected = selectedPkg?.let { p -> (games + apps).find { it.pkg == p } }
-    // Beranda memiliki tiga baris navigasi vertikal: terakhir dimainkan, favorit, semua game.
-    // Stable row IDs: 0 = recent, 1 = favorites, 2 = all games.
-    val homeSections = remember(games, store.recent, store.favorites) {
-        val byPackage = games.associateBy { it.pkg }
-        listOf(
-            store.recent.mapNotNull(byPackage::get),
-            games.filter { it.pkg in store.favorites },
-            games
-        )
+    // Fokus vertikal mengikuti baris yang benar-benar tampil di HomeScreen.
+    // Jika ada favorit: 0 = favorit, 1 = game lainnya. Jika tidak: 0 = semua game.
+    val homeSections = remember(games, store.favorites) {
+        val favorites = games.filter { it.pkg in store.favorites }
+        val others = games.filterNot { it.pkg in store.favorites }
+        if (favorites.isNotEmpty()) listOf(favorites, others) else listOf(games)
     }
     val effectiveHomeRow = if (homeSections.getOrNull(activeHomeRow)?.isNotEmpty() == true) {
         activeHomeRow
@@ -279,10 +278,22 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) false
                 else when (event.key) {
-                    // Gamepad navigation is intentionally supported on Beranda only.
-                    Key.ButtonL1, Key.PageUp, Key.ButtonR1, Key.PageDown -> true
+                    // Sidebar landscape: arah vertikal memilih tab, kanan masuk ke konten.
                     Key.DirectionRight, Key.DirectionLeft -> {
-                        if (tab == 0) {
+                        if (isLandscape && sidebarGamepadFocus) {
+                            if (event.key == Key.DirectionRight) sidebarGamepadFocus = false
+                            true
+                        } else if (isLandscape && event.key == Key.DirectionLeft && tab in 0..2) {
+                            val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
+                            val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
+                            if (tab == 0 && itemIndex > 0 && row.isNotEmpty()) {
+                                focusedPkg = row[itemIndex - 1].pkg
+                            } else {
+                                sidebarGamepadFocus = true
+                                sidebarGamepadIndex = tab.coerceIn(0, 2)
+                            }
+                            true
+                        } else if (tab == 0 && !sidebarGamepadFocus) {
                             val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
                             if (row.isNotEmpty()) {
                                 val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
@@ -290,10 +301,13 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                                 focusedPkg = row[nextIndex].pkg
                             }
                             true
-                        } else true
+                        } else false
                     }
                     Key.DirectionDown, Key.DirectionUp -> {
-                        if (tab == 0) {
+                        if (isLandscape && sidebarGamepadFocus) {
+                            sidebarGamepadIndex = (sidebarGamepadIndex + if (event.key == Key.DirectionDown) 1 else -1).coerceIn(0, 2)
+                            true
+                        } else if (tab == 0) {
                             if (homeSections.any { it.isNotEmpty() }) {
                                 val direction = if (event.key == Key.DirectionDown) 1 else -1
                                 var targetRowIndex = effectiveHomeRow + direction
@@ -307,7 +321,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                                 }
                             }
                             true
-                        } else true
+                        } else false
                     }
                     else -> false
                 }
@@ -324,7 +338,11 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                             true
                         }
                         Key.ButtonA, Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> {
-                            if (tab == 0 && focused != null) {
+                            if (isLandscape && sidebarGamepadFocus) {
+                                tab = sidebarGamepadIndex
+                                sidebarGamepadFocus = false
+                                true
+                            } else if (tab == 0 && focused != null) {
                                 play(focused)
                                 true
                             } else false
@@ -363,7 +381,13 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                 onSettings = { tab = 3 }
             )
             Row(Modifier.weight(1f).fillMaxWidth()) {
-                if (isLandscape) SideNavigation(tab) { tab = it }
+                if (isLandscape) SideNavigation(
+                    selected = tab,
+                    focusedIndex = if (sidebarGamepadFocus) sidebarGamepadIndex else -1
+                ) {
+                    tab = it
+                    sidebarGamepadFocus = false
+                }
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                     AnimatedContent(
                         targetState = tab,
