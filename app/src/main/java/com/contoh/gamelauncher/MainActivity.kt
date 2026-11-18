@@ -494,7 +494,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             onDismiss = { metadataPkg = null },
             onApply = { result ->
                 coroutineScope.launch {
-                    store.setMetadata(app.pkg, result.title, result.extract)
+                    store.setMetadata(app.pkg, result.title, result.extract.ifBlank { store.description(app.pkg) })
                     val coverSource = result.coverUrl ?: result.thumbnailUrl?.takeIf {
                         result.bannerUrl == null || it != result.bannerUrl
                     }
