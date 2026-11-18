@@ -194,12 +194,12 @@ fun GameCard(
         label = "cardScale"
     )
     val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
-    val cardArtworkKind = remember(app.pkg, store.artworks) { if (store.artworkUri(app.pkg, "banner") != null) "banner" else "cover" }
+    val cardArtworkKind = remember(app.pkg, store.artworks, landscapeArtwork) { if (landscapeArtwork && store.artworkUri(app.pkg, "banner") != null) "banner" else "cover" }
     val cardArtworkUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, cardArtworkKind) }
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, width * 0.5625f) // Kartu beranda memakai artwork landscape 16:9
+            .size(width, if (landscapeArtwork) width * 0.5625f else width * 1.5f) // Rasio menyesuaikan mode beranda
             .scale(scale)
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
@@ -214,7 +214,7 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (cardArtworkUri != null) {
-            ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), ContentScale.Crop)
+            ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), if (landscapeArtwork) ContentScale.Crop else ContentScale.Fit)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.12f)))
         } else {
             if (blurIconBackground) {
