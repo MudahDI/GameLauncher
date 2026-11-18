@@ -175,6 +175,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     var descriptionDraft by rememberSaveable { mutableStateOf("") }
     var showPicker by rememberSaveable { mutableStateOf(false) }
     var confirmReset by rememberSaveable { mutableStateOf(false) }
+    var confirmRestart by rememberSaveable { mutableStateOf(false) }
     var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingWallpaperOrientation by rememberSaveable { mutableStateOf<String?>(null) }
@@ -397,6 +398,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                             3 -> SettingsScreen(
                                 onAdd = { showPicker = true },
                                 onReset = { confirmReset = true },
+                                onRestart = { confirmRestart = true },
                                 onPortraitWallpaper = {
                                     pendingWallpaperOrientation = "portrait"
                                     wallpaperPicker.launch(arrayOf("image/*"))
@@ -564,6 +566,26 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
         )
     }
 
+
+    if (confirmRestart) {
+        AlertDialog(
+            onDismissRequest = { confirmRestart = false },
+            title = { Text("Restart MDI Launcher?") },
+            text = { Text("Launcher akan dimulai ulang. Pengaturan, favorit, dan koleksi game tetap tersimpan.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmRestart = false
+                    val restartIntent = Intent(ctx, MainActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                    }
+                    ctx.startActivity(restartIntent)
+                }) { Text("Restart") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmRestart = false }) { Text("Batal") }
+            }
+        )
+    }
 
     if (confirmReset) {
         AlertDialog(
