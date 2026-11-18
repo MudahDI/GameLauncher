@@ -266,45 +266,34 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             .fillMaxSize()
             .focusRequester(gamepadFocusRequester)
             .focusable()
-            .onKeyEvent { event ->
+            .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) false
-                else {
-                    val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
-                    when (event.key) {
-                        Key.ButtonL1, Key.PageUp -> {
-                            tab = if (tab <= 0) 4 else tab - 1
-                            true
-                        }
-                        Key.ButtonR1, Key.PageDown -> {
-                            tab = if (tab >= 4) 0 else tab + 1
-                            true
-                        }
-                        Key.DirectionRight, Key.DirectionLeft -> {
-                            if (tab != 0) {
-                                focusManager.moveFocus(if (event.key == Key.DirectionRight) FocusDirection.Right else FocusDirection.Left)
-                            } else {
-                                val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
-                                if (row.isNotEmpty()) {
-                                    val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
-                                    val nextIndex = if (event.key == Key.DirectionRight) {
-                                        (itemIndex + 1) % row.size
-                                    } else {
-                                        (itemIndex - 1 + row.size) % row.size
-                                    }
-                                    focusedPkg = row[nextIndex].pkg
-                                }
-                                true
+                else when (event.key) {
+                    Key.ButtonL1, Key.PageUp -> {
+                        tab = if (tab <= 0) 4 else tab - 1
+                        true
+                    }
+                    Key.ButtonR1, Key.PageDown -> {
+                        tab = if (tab >= 4) 0 else tab + 1
+                        true
+                    }
+                    Key.DirectionRight, Key.DirectionLeft -> {
+                        if (tab == 0) {
+                            val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
+                            if (row.isNotEmpty()) {
+                                val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
+                                val nextIndex = if (event.key == Key.DirectionRight) (itemIndex + 1) % row.size else (itemIndex - 1 + row.size) % row.size
+                                focusedPkg = row[nextIndex].pkg
                             }
-                        }
-                        Key.DirectionDown, Key.DirectionUp -> {
-                            if (tab != 0) {
-                                focusManager.moveFocus(if (event.key == Key.DirectionDown) FocusDirection.Down else FocusDirection.Up)
-                            } else if (homeSections.any { it.isNotEmpty() }) {
+                            true
+                        } else focusManager.moveFocus(if (event.key == Key.DirectionRight) FocusDirection.Right else FocusDirection.Left)
+                    }
+                    Key.DirectionDown, Key.DirectionUp -> {
+                        if (tab == 0) {
+                            if (homeSections.any { it.isNotEmpty() }) {
                                 val direction = if (event.key == Key.DirectionDown) 1 else -1
                                 var targetRowIndex = effectiveHomeRow + direction
-                                while (targetRowIndex in homeSections.indices && homeSections[targetRowIndex].isEmpty()) {
-                                    targetRowIndex += direction
-                                }
+                                while (targetRowIndex in homeSections.indices && homeSections[targetRowIndex].isEmpty()) targetRowIndex += direction
                                 if (targetRowIndex in homeSections.indices) {
                                     val currentRow = homeSections[effectiveHomeRow]
                                     val targetRow = homeSections[targetRowIndex]
@@ -312,9 +301,18 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                                     activeHomeRow = targetRowIndex
                                     focusedPkg = targetRow[itemIndex.coerceAtMost(targetRow.lastIndex)].pkg
                                 }
-                                true
-                            } else false
-                        }
+                            }
+                            true
+                        } else focusManager.moveFocus(if (event.key == Key.DirectionDown) FocusDirection.Down else FocusDirection.Up)
+                    }
+                    else -> false
+                }
+            }
+            .onKeyEvent { event ->
+                if (event.type != KeyEventType.KeyDown) false
+                else {
+                    val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
+                    when (event.key) {
                         Key.ButtonY -> {
                             (ctx as? ComponentActivity)?.requestedOrientation =
                                 if (isLandscape) ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
