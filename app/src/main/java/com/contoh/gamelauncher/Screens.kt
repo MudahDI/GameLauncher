@@ -349,7 +349,7 @@ fun CardRow(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             horizontalArrangement = Arrangement.spacedBy(store.gridSpacingDp.dp)
         ) {
-            itemsIndexed(list, key = { _, app -> app.pkg }, contentType = { "game-card" }) { index, app ->
+            itemsIndexed(list, key = { _, app -> app.pkg }, contentType = { _, _ -> "game-card" }) { index, app ->
                 // Fokus visual berasal dari satu indeks aktif, bukan riwayat fokus tiap kartu.
                 GameCard(
                     app,
