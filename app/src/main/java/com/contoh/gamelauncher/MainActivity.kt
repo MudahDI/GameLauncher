@@ -169,6 +169,11 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
     // Home focus area: hero actions first, then the game rows.
     var homeFocusArea by rememberSaveable { mutableStateOf("hero") }
     var heroActionIndex by rememberSaveable { mutableIntStateOf(0) }
+    var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedFromHome by rememberSaveable { mutableStateOf(false) }
+    var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
     LaunchedEffect(homeResetTick) {
         if (homeResetTick > 0) {
             tab = 0
@@ -180,11 +185,6 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
             heroActionIndex = 0
         }
     }
-    var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    var selectedFromHome by rememberSaveable { mutableStateOf(false) }
-    var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var showMetadataSources by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var descriptionDraft by rememberSaveable { mutableStateOf("") }
