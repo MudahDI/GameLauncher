@@ -611,7 +611,7 @@ fun HomeScreen(
             HeroPanel(focused, store, compact, onPlay, onOptions, landscape = landscape, onDetails = onDetails)
             if (favs.isNotEmpty()) {
                 CardRow(
-                    "GAME FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
+                    "GAME FAVORIT", favs, focused?.pkg, activeRow == 0, 0, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
                     landscapeCards = landscape
                 )
@@ -620,7 +620,8 @@ fun HomeScreen(
             if (otherGames.isNotEmpty()) {
                 CardRow(
                     if (favs.isNotEmpty()) "GAME LAINNYA" else "SEMUA GAME",
-                    otherGames, focused?.pkg, activeRow == 2, 2, store,
+                    otherGames, focused?.pkg, activeRow == if (favs.isNotEmpty()) 1 else 0,
+                    if (favs.isNotEmpty()) 1 else 0, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
                     landscapeCards = landscape
                 )
