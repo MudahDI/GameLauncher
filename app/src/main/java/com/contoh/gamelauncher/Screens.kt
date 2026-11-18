@@ -426,7 +426,33 @@ fun HeroPanel(
     focusedActionIndex: Int = -1
 ) {
     if (focused == null) {
-        HintText("Belum ada game terdeteksi. Tambahkan app lewat tab ATUR.")
+        Box(
+            Modifier.fillMaxWidth()
+                .height(if (landscape) 184.dp else if (compact) 158.dp else 218.dp)
+                .clip(RoundedCornerShape(18.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(Deck.PanelLight, Deck.Panel, Deck.Bg)
+                    )
+                ),
+            contentAlignment = Alignment.CenterStart
+        ) {
+            Column(Modifier.padding(horizontal = 20.dp)) {
+                Text("MDI LAUNCHER", color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "MENYIAPKAN BERANDA",
+                    color = Deck.Text,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    "Memuat koleksi game dan artwork…",
+                    color = Deck.TextDim,
+                    fontSize = 12.sp
+                )
+            }
+        }
         return
     }
     val isFav = focused.pkg in store.favorites
