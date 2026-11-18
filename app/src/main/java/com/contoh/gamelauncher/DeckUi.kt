@@ -37,14 +37,15 @@ import java.util.Locale
 
 /** Palet warna bergaya antarmuka Steam Deck. */
 object Deck {
-    val Bg = Color(0xFF0E141B)
-    val Panel = Color(0xFF1B2838)
-    val PanelLight = Color(0xFF2A475E)
+    var IsLightTheme by mutableStateOf(false)
+    val Bg get() = if (IsLightTheme) Color(0xFFF3F5F8) else Color(0xFF0E141B)
+    val Panel get() = if (IsLightTheme) Color(0xFFFFFFFF) else Color(0xFF1B2838)
+    val PanelLight get() = if (IsLightTheme) Color(0xFFE5EAF0) else Color(0xFF2A475E)
     var Accent by mutableStateOf(Color(0xFF1A9FFF))
     val PlayLight = Color(0xFF75B022)
     val PlayDark = Color(0xFF588A1B)
-    val Text = Color(0xFFDCDEDF)
-    val TextDim = Color(0xFF8B929A)
+    val Text get() = if (IsLightTheme) Color(0xFF17212B) else Color(0xFFDCDEDF)
+    val TextDim get() = if (IsLightTheme) Color(0xFF596675) else Color(0xFF8B929A)
 }
 
 @Composable
@@ -114,7 +115,7 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
     Row(
         Modifier.fillMaxWidth()
             .height(48.dp)
-            .background(Color.Black.copy(alpha = 0.30f))
+            .background(Deck.Panel.copy(alpha = 0.92f))
             .padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -154,7 +155,7 @@ fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
     Row(
         Modifier.fillMaxWidth()
             .height(48.dp)
-            .background(Color(0xF20B1017))
+            .background(Deck.Bg.copy(alpha = 0.96f))
             .padding(horizontal = 8.dp, vertical = 3.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
