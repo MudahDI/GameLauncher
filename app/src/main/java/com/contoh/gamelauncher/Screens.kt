@@ -26,6 +26,7 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -328,7 +329,7 @@ fun CardRow(
 ) {
     val listState = rememberLazyListState()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val focusedIndex = remember(list, focusedPkg) {
+    val focusedIndex = remember(list, focusedPkg, rowActive) {
         if (rowActive) list.indexOfFirst { it.pkg == focusedPkg } else -1
     }
 
