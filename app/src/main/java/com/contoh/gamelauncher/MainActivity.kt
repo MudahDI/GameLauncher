@@ -149,7 +149,8 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-    SideEffect { Deck.Accent = MaterialTheme.colorScheme.primary }
+    val elementColor = MaterialTheme.colorScheme.primary
+    SideEffect { Deck.Accent = elementColor }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
