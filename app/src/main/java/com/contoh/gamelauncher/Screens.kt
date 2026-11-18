@@ -398,7 +398,8 @@ fun HeroPanel(
     compact: Boolean,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    landscape: Boolean = false
+    landscape: Boolean = false,
+    onDetails: (AppItem) -> Unit = {}
 ) {
     if (focused == null) {
         HintText("Belum ada game terdeteksi. Tambahkan app lewat tab ATUR.")
@@ -470,6 +471,7 @@ fun HeroPanel(
                 ) {
                     PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
                     DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
+                    DeckButton("ⓘ", compact = true) { onDetails(focused) }
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
@@ -578,7 +580,8 @@ fun HomeScreen(
     activeRow: Int,
     onFocus: (AppItem, Int) -> Unit,
     onPlay: (AppItem) -> Unit,
-    onOptions: (AppItem) -> Unit
+    onOptions: (AppItem) -> Unit,
+    onDetails: (AppItem) -> Unit = {}
 ) {
     // Lookup map avoids repeated linear scans for recently played apps.
     val visibleByPackage = remember(visible) { visible.associateBy { it.pkg } }
@@ -606,7 +609,7 @@ fun HomeScreen(
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     // Batasi lebar banner khusus landscape agar artwork tidak terlalu panoramik.
                     Box(Modifier.fillMaxWidth().widthIn(max = 760.dp)) {
-                        HeroPanel(focused, store, compact, onPlay, onOptions, landscape = true)
+                        HeroPanel(focused, store, compact, onPlay, onOptions, landscape = true, onDetails = onDetails)
                     }
                 }
                 if (recent.isNotEmpty()) CardRow(
@@ -628,7 +631,7 @@ fun HomeScreen(
                     .verticalScroll(rememberScrollState())
                     .padding(horizontal = 18.dp, vertical = 14.dp)
             ) {
-                HeroPanel(focused, store, compact, onPlay, onOptions)
+                HeroPanel(focused, store, compact, onPlay, onOptions, onDetails = onDetails)
                 if (recent.isNotEmpty()) CardRow(
                     "TERAKHIR DIMAINKAN", recent, focused?.pkg, activeRow == 0, 0, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
@@ -641,6 +644,63 @@ fun HomeScreen(
                     "SEMUA GAME", visible, focused?.pkg, activeRow == 2, 2, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
+            }
+        }
+    }
+}
+
+
+@Composable
+fun GameDetailScreen(
+    app: AppItem,
+    store: Store,
+    onBack: () -> Unit,
+    onPlay: (AppItem) -> Unit,
+    onOptions: (AppItem) -> Unit
+) {
+    val landscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val description = store.description(app.pkg).ifBlank {
+        "Belum ada deskripsi untuk game ini. Kamu bisa menambahkannya melalui pengelolaan metadata."
+    }
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+        val heroHeight = if (landscape) maxHeight * 0.78f else (maxHeight * 0.42f).coerceIn(220.dp, 340.dp)
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            Box(Modifier.fillMaxWidth().height(heroHeight).clip(RoundedCornerShape(bottomStart = 22.dp, bottomEnd = 22.dp))) {
+                ArtworkImage(app, store, "banner", Modifier.fillMaxSize(), ContentScale.Crop)
+                Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.08f), Color.Black.copy(alpha = 0.28f), Color.Black.copy(alpha = 0.94f)))))
+                Row(Modifier.align(Alignment.TopStart).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Box(Modifier.clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = 0.45f)).clickable(onClick = onBack).padding(horizontal = 14.dp, vertical = 9.dp)) {
+                        Text("‹  KEMBALI", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                }
+                Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 22.dp, vertical = 20.dp)) {
+                    Text("DETAIL GAME", color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                    Spacer(Modifier.height(5.dp))
+                    Text(app.name, color = Color.White, fontSize = if (landscape) 28.sp else 25.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text("Aplikasi Android  •  " + if (app.pkg in store.recent) "Pernah dimainkan" else "Siap dimainkan", color = Color.White.copy(alpha = 0.76f), fontSize = 12.sp)
+                }
+            }
+            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+                    PlayButton("▶  MAINKAN") { onPlay(app) }
+                    Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(Deck.Panel).clickable { store.toggleFav(app.pkg) }, contentAlignment = Alignment.Center) {
+                        Text(if (app.pkg in store.favorites) "★" else "♡", color = if (app.pkg in store.favorites) Color(0xFFFFD45C) else Deck.Text, fontSize = 21.sp)
+                    }
+                    Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(Deck.Panel).clickable { onOptions(app) }, contentAlignment = Alignment.Center) {
+                        Text("⋯", color = Deck.Text, fontSize = 22.sp)
+                    }
+                }
+                Text("TENTANG GAME", color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text(description, color = Deck.Text, fontSize = 14.sp, lineHeight = 21.sp)
+                Text("INFORMASI APLIKASI", color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Deck.Panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text("Nama paket", color = Deck.TextDim, fontSize = 11.sp)
+                    Text(app.pkg, color = Deck.Text, fontSize = 13.sp)
+                    Text("Status favorit", color = Deck.TextDim, fontSize = 11.sp)
+                    Text(if (app.pkg in store.favorites) "Favorit" else "Belum ditandai", color = Deck.Text, fontSize = 13.sp)
+                    Text("Total waktu bermain", color = Deck.TextDim, fontSize = 11.sp)
+                    Text(formatPlaytime(store.playtimeMs[app.pkg] ?: 0L), color = Deck.Text, fontSize = 13.sp)
+                }
             }
         }
     }
