@@ -185,7 +185,8 @@ fun GameCard(
     onFocus: () -> Unit = {},
     blurIconBackground: Boolean = false,
     showMdiBranding: Boolean = false,
-    showTitle: Boolean = true
+    showTitle: Boolean = true,
+    landscapeArtwork: Boolean = false
 ) {
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.06f else 1f,
@@ -197,7 +198,7 @@ fun GameCard(
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, width * 4 / 3)
+            .size(width, if (landscapeArtwork) width * 0.56f else width * 4 / 3)
             .scale(scale)
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
@@ -212,7 +213,7 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (coverUri != null) {
-            ArtworkImage(app, store, "cover", Modifier.fillMaxSize())
+            ArtworkImage(app, store, if (landscapeArtwork) "banner" else "cover", Modifier.fillMaxSize())
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
         } else {
             if (blurIconBackground) {
@@ -302,7 +303,8 @@ fun CardRow(
     onTap: (AppItem, Int) -> Unit,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    onFocus: (AppItem, Int) -> Unit
+    onFocus: (AppItem, Int) -> Unit,
+    landscapeCards: Boolean = false
 ) {
     val listState = rememberLazyListState()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
@@ -338,7 +340,8 @@ fun CardRow(
                     { onOptions(app) },
                     { onFocus(app, rowIndex) },
                     showMdiBranding = true,
-                    showTitle = false
+                    showTitle = false,
+                    landscapeArtwork = landscapeCards
                 )
             }
         }
@@ -409,90 +412,44 @@ fun HeroPanel(
     val heroShape = RoundedCornerShape(18.dp)
 
     if (landscape) {
-        // Ukuran panel mengikuti lebar aktual agar tetap seimbang di ponsel dan tablet.
-        BoxWithConstraints(Modifier.fillMaxWidth()) {
-            val artworkWidth = (maxWidth * 0.31f).coerceIn(176.dp, 258.dp)
-            val descriptionWidth = (maxWidth * 0.23f).coerceIn(148.dp, 204.dp)
-            val panelHeight = if (compact) 132.dp else 154.dp
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .height(panelHeight)
-                    .clip(heroShape)
-                    .background(Deck.Panel)
-                    .padding(10.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+        Box(
+            Modifier.fillMaxWidth()
+                .height(if (compact) 150.dp else 196.dp)
+                .clip(heroShape)
+                .background(Deck.Panel)
+        ) {
+            ArtworkImage(focused, store, "banner", Modifier.fillMaxSize(), ContentScale.Crop)
+            Box(Modifier.fillMaxSize().background(Brush.horizontalGradient(
+                0f to Color.Black.copy(alpha = 0.92f),
+                0.52f to Color.Black.copy(alpha = 0.48f),
+                1f to Color.Transparent
+            )))
+            Box(Modifier.fillMaxSize().background(Brush.verticalGradient(
+                listOf(Color.Transparent, Color.Black.copy(alpha = 0.24f))
+            )))
+            Column(
+                Modifier.align(Alignment.CenterStart).fillMaxWidth(0.58f)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.Center
             ) {
-                Box(
-                    Modifier
-                        .width(artworkWidth)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(12.dp))
-                ) {
-                    ArtworkImage(
-                        focused,
-                        store,
-                        "banner",
-                        Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Crop
-                    )
-                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.16f)))
+                Text("GAME UNGGULAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Spacer(Modifier.height(5.dp))
+                Text(focused.name, color = Color.White, fontSize = if (compact) 19.sp else 25.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                Text(if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan", color = Color.White.copy(alpha = 0.76f), fontSize = 11.sp)
+                if (store.description(focused.pkg).isNotBlank() && !compact) {
+                    Spacer(Modifier.height(4.dp))
+                    Text(store.description(focused.pkg), color = Color.White.copy(alpha = 0.84f), fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                 }
-                Column(
-                    Modifier.weight(1f).fillMaxHeight(),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                Text(
-                    "SEDANG DIPILIH",
-                    color = Deck.Accent,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.4.sp
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    focused.name,
-                    color = Color.White,
-                    fontSize = 22.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Text(
-                    if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
-                    color = Deck.TextDim,
-                    fontSize = 12.sp
-                )
-                Spacer(Modifier.height(10.dp))
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Spacer(Modifier.height(9.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
                     PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
-                    DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
+                    DeckButton(if (isFav) "★" else "♡", compact = true) { store.toggleFav(focused.pkg) }
                     DeckButton("ⓘ", compact = true) { onDetails(focused) }
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
-                Column(
-                    Modifier.width(descriptionWidth).fillMaxHeight(),
-                    verticalArrangement = Arrangement.Center
-                ) {
-                    Text("DESKRIPSI", color = Deck.TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                    Spacer(Modifier.height(6.dp))
-                    Text(
-                        store.description(focused.pkg).ifBlank { "Belum ada deskripsi. Tambahkan melalui Opsi game." },
-                        color = Color.White.copy(alpha = 0.88f),
-                        fontSize = 11.sp,
-                        lineHeight = 15.sp,
-                        maxLines = if (compact) 3 else 5,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            }
         }
-    } else {
+
         Box(
             Modifier
                 .fillMaxWidth()
@@ -639,7 +596,8 @@ fun HomeScreen(
                 }
                 if (favs.isNotEmpty()) CardRow(
                     "GAME FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
+                    cardWidth, compact, tap, onPlay, onOptions, onFocus,
+                    landscapeCards = true
                 )
                 AppStrip(installedApps, onPlay)
             }
