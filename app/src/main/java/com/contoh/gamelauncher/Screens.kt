@@ -45,6 +45,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.focus.focusGroup
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
@@ -149,7 +150,7 @@ private fun Modifier.gamepadClickable(onClick: () -> Unit): Modifier =
             onClick()
             true
         } else false
-    }.clickable(onClick = onClick).focusable()
+    }.clickable(onClick = onClick)
 
 // ---------- Komponen ----------
 
@@ -664,7 +665,7 @@ fun SearchScreen(
                 onValueChange = { q = it },
                 singleLine = true,
                 label = { Text("Cari game atau aplikasi") },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp).focusable()
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
         if (results.isEmpty()) {
