@@ -194,12 +194,13 @@ fun GameCard(
         label = "cardScale"
     )
     val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
-    val cardArtworkKind = remember(app.pkg, store.artworks, landscapeArtwork) { if (landscapeArtwork && store.artworkUri(app.pkg, "banner") != null) "banner" else "cover" }
-    val cardArtworkUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, cardArtworkKind) }
+    // Kartu koleksi selalu memakai cover portrait. Banner hanya untuk hero/detail.
+    val cardArtworkKind = "cover"
+    val cardArtworkUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, "cover") }
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, if (landscapeArtwork) width * 0.5625f else width * 1.5f) // Rasio menyesuaikan mode beranda
+            .size(width, width * 1.5f) // Cover selalu portrait 2:3 pada semua orientasi
             .scale(scale)
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
@@ -214,7 +215,7 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (cardArtworkUri != null) {
-            ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), if (landscapeArtwork) ContentScale.Crop else ContentScale.Fit)
+            ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), ContentScale.Fit)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.12f)))
         } else {
             if (blurIconBackground) {
@@ -425,7 +426,7 @@ fun HeroPanel(
     if (landscape) {
         Box(
             Modifier.fillMaxWidth()
-                .height(if (compact) 176.dp else 216.dp)
+                .height(if (compact) 150.dp else 184.dp)
                 .clip(heroShape)
                 .background(Deck.Panel)
         ) {
