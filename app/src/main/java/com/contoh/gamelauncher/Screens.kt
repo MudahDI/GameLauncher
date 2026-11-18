@@ -329,9 +329,7 @@ fun CardRow(
 ) {
     val listState = rememberLazyListState()
     val bringIntoViewRequester = remember { BringIntoViewRequester() }
-    val focusedIndex = remember(list, focusedPkg, rowActive) {
-        if (rowActive) list.indexOfFirst { it.pkg == focusedPkg } else -1
-    }
+    val focusedIndex = if (rowActive) list.indexOfFirst { it.pkg == focusedPkg } else -1
 
     // Keep the selected card visible horizontally, including when focus changes
     // through the gamepad or by tapping a card.
@@ -356,7 +354,7 @@ fun CardRow(
                     store,
                     cardWidth,
                     app.pkg in store.favorites,
-                    rowActive && focusedIndex == index,
+                    rowActive && app.pkg == focusedPkg,
                     { onTap(app, rowIndex) },
                     null,
                     { onOptions(app) },
@@ -424,7 +422,8 @@ fun HeroPanel(
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
     landscape: Boolean = false,
-    onDetails: (AppItem) -> Unit = {}
+    onDetails: (AppItem) -> Unit = {},
+    focusedActionIndex: Int = -1
 ) {
     if (focused == null) {
         HintText("Belum ada game terdeteksi. Tambahkan app lewat tab ATUR.")
@@ -472,10 +471,10 @@ fun HeroPanel(
                 }
                 Spacer(Modifier.height(9.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
-                    DeckButton(if (isFav) "♥" else "♡", compact = true) { store.toggleFav(focused.pkg) }
-                    DeckButton("ⓘ", compact = true) { onDetails(focused) }
-                    DeckButton("⋯", compact = true) { onOptions(focused) }
+                    PlayButton("▶  MAINKAN", compact = true, focused = focusedActionIndex == 0) { onPlay(focused) }
+                    DeckButton(if (isFav) "♥" else "♡", compact = true, focused = focusedActionIndex == 1) { store.toggleFav(focused.pkg) }
+                    DeckButton("ⓘ", compact = true, focused = focusedActionIndex == 2) { onDetails(focused) }
+                    DeckButton("⋯", compact = true, focused = focusedActionIndex == 3) { onOptions(focused) }
                 }
             }
         }
@@ -594,7 +593,8 @@ fun HomeScreen(
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
     onDetails: (AppItem) -> Unit = {},
-    installedApps: List<AppItem> = emptyList()
+    installedApps: List<AppItem> = emptyList(),
+    focusedActionIndex: Int = -1
 ) {
     val favs = remember(visible, store.favorites) {
         visible.filter { it.pkg in store.favorites }
@@ -610,7 +610,7 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = if (landscape) 18.dp else 12.dp)
         ) {
-            HeroPanel(focused, store, compact, onPlay, onOptions, landscape = landscape, onDetails = onDetails)
+            HeroPanel(focused, store, compact, onPlay, onOptions, landscape = landscape, onDetails = onDetails, focusedActionIndex = focusedActionIndex)
             if (favs.isNotEmpty()) {
                 CardRow(
                     "GAME FAVORIT", favs, focused?.pkg, activeRow == 0, 0, store,
