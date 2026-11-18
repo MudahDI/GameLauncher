@@ -3,6 +3,8 @@ package com.mdh.gamelauncher
 import android.os.Bundle
 import android.content.Context
 import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import androidx.activity.ComponentActivity
@@ -142,7 +144,7 @@ private fun WallpaperBackground(store: Store) {
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>) {
+fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int) {
     val ctx = LocalContext.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -200,7 +202,7 @@ fun LauncherApp(allApps: List<AppItem>) {
     // Dari tab mana pun, Back kembali ke Beranda dulu.
     BackHandler(enabled = tab != 0) { tab = 0 }
 
-    LaunchedEffect(allApps) { store.reloadPlayStats() }
+    LaunchedEffect(sessionRefresh) { store.reloadPlayStats() }
 
     // Semua aplikasi launcher tampil otomatis; klasifikasi mengikuti deteksi Android
     // kecuali pengguna pernah mengubah kategori secara manual.
@@ -459,16 +461,36 @@ fun LauncherApp(allApps: List<AppItem>) {
 
 class MainActivity : ComponentActivity() {
     private var refreshTick by mutableIntStateOf(0)
+    private var sessionRefresh by mutableIntStateOf(0)
+    private val packageChanges = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            refreshTick++
+        }
+    }
+    private var receiverRegistered = false
 
     override fun onResume() {
         super.onResume()
         Store.finishPendingSession(this)
-        refreshTick++
+        sessionRefresh++
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+        val packageFilter = IntentFilter().apply {
+            addAction(Intent.ACTION_PACKAGE_ADDED)
+            addAction(Intent.ACTION_PACKAGE_REMOVED)
+            addAction(Intent.ACTION_PACKAGE_CHANGED)
+            addDataScheme("package")
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(packageChanges, packageFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(packageChanges, packageFilter)
+        }
+        receiverRegistered = true
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
             window.attributes = window.attributes.apply {
@@ -492,14 +514,23 @@ class MainActivity : ComponentActivity() {
             ) {
                 val ctx = LocalContext.current
                 val tick = refreshTick
+                val sessionTick = sessionRefresh
                 val apps by produceState<List<AppItem>?>(initialValue = null, tick) {
                     value = withContext(Dispatchers.IO) { loadAllApps(ctx) }
                 }
                 val list = apps
                 if (list == null) Box(Modifier.fillMaxSize().background(Deck.Bg))
-                else LauncherApp(list)
+                else LauncherApp(list, sessionTick)
             }
         }
+    }
+
+    override fun onDestroy() {
+        if (receiverRegistered) {
+            runCatching { unregisterReceiver(packageChanges) }
+            receiverRegistered = false
+        }
+        super.onDestroy()
     }
 
     private fun applySystemBarsForOrientation() {

@@ -72,7 +72,7 @@ internal object ArtworkBitmapCache {
         cache.put(key, bitmap)
     }
 
-    fun load(context: android.content.Context, uri: android.net.Uri, maxDimension: Int = 1280): androidx.compose.ui.graphics.ImageBitmap? {
+    fun load(context: android.content.Context, uri: android.net.Uri, maxDimension: Int = 960): androidx.compose.ui.graphics.ImageBitmap? {
         val key = "${uri}|$maxDimension"
         get(key)?.let { return it.asImageBitmap() }
         return runCatching {
@@ -109,12 +109,13 @@ fun ArtworkImage(
 ) {
     val context = LocalContext.current
     val uri = store.artworkUri(app.pkg, kind)
+    val decodeSize = if (kind == "cover") 640 else 960
     val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
-        initialValue = uri?.let { ArtworkBitmapCache.get("${it}|1280")?.asImageBitmap() },
+        initialValue = uri?.let { ArtworkBitmapCache.get("${it}|$decodeSize")?.asImageBitmap() },
         key1 = uri
     ) {
         value = if (uri == null) null else withContext(Dispatchers.IO) {
-            ArtworkBitmapCache.load(context, uri, 1280)
+            ArtworkBitmapCache.load(context, uri, decodeSize)
         }
     }
     Image(
@@ -149,11 +150,12 @@ fun GameCard(
     isFav: Boolean,
     focused: Boolean,
     onClick: () -> Unit,
-    onDoubleClick: () -> Unit,
+    onDoubleClick: (() -> Unit)? = null,
     onLongClick: () -> Unit,
     onFocus: () -> Unit = {},
     blurIconBackground: Boolean = false,
-    showMdiBranding: Boolean = false
+    showMdiBranding: Boolean = false,
+    showTitle: Boolean = true
 ) {
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.06f else 1f,
@@ -181,7 +183,7 @@ fun GameCard(
                     displayIcon,
                     null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().scale(1.12f).blur(18.dp).alpha(0.72f)
+                    modifier = Modifier.fillMaxSize().scale(1.04f).alpha(0.58f)
                 )
                 Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.24f)))
             } else {
@@ -202,25 +204,27 @@ fun GameCard(
                     .clip(RoundedCornerShape(14.dp)),
             )
         }
-        Box(
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+        if (showTitle) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                        )
                     )
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    app.name,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                .padding(horizontal = 8.dp, vertical = 8.dp)
-        ) {
-            Text(
-                app.name,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            }
         }
         if (showMdiBranding) {
             MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(6.dp))
@@ -284,10 +288,11 @@ fun CardRow(
                 app.pkg in store.favorites,
                 app.pkg == focusedPkg,
                 { onTap(app) },
-                { onPlay(app) },
+                null,
                 { onOptions(app) },
                 { onFocus(app) },
-                showMdiBranding = true
+                showMdiBranding = true,
+                showTitle = false
             )
         }
     }
@@ -538,7 +543,7 @@ fun HomeScreen(
         val compact = maxHeight < 420.dp
         val landscape = maxWidth > maxHeight
         val cardWidth = if (compact) store.cardSizeDp.coerceAtMost(104).dp else store.cardSizeDp.dp
-        // Ketuk sekali untuk memilih, ketuk dua kali untuk bermain.
+        // Kartu beranda hanya memilih game. Aksi bermain tersedia di tombol MAINKAN pada HeroPanel.
         val tap: (AppItem) -> Unit = { a -> onFocus(a) }
 
         if (landscape) {
