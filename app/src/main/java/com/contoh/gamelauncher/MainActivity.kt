@@ -93,7 +93,7 @@ private fun OptionAction(
     danger: Boolean = false,
     onClick: () -> Unit
 ) {
-    val tint = if (danger) Color(0xFFFF7777) else Deck.Text
+    val tint = if (danger) Color(0xFFFF7777) else Deck.Accent
     Row(
         Modifier.fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
@@ -104,7 +104,7 @@ private fun OptionAction(
     ) {
         Box(
             Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
-                .background(if (danger) Color(0xFF4A252B) else Deck.PanelLight),
+                .background(if (danger) Color(0xFF4A252B) else Deck.Accent.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center
         ) {
             Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
@@ -504,21 +504,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             val ctx = LocalContext.current
             val store = remember { Store(ctx) }
-            val dynamicScheme = if (store.useMaterialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+            val baseScheme = if (store.useMaterialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
                 dynamicDarkColorScheme(ctx)
             } else {
                 darkColorScheme(primary = Color(android.graphics.Color.parseColor(store.accentHex)))
             }
             MaterialTheme(
-                colorScheme = darkColorScheme(
-                    primary = if (store.useMaterialYou) dynamicScheme.primary else Color(android.graphics.Color.parseColor(store.accentHex)),
-                    secondary = dynamicScheme.secondary,
-                    tertiary = dynamicScheme.tertiary,
-                    primaryContainer = dynamicScheme.primaryContainer,
-                    onPrimary = dynamicScheme.onPrimary,
+                colorScheme = baseScheme.copy(
                     background = Deck.Bg,
                     surface = Deck.Panel,
-                    onSurface = Deck.Text
+                    onSurface = Deck.Text,
+                    surfaceVariant = Deck.PanelLight,
+                    onSurfaceVariant = Deck.TextDim
                 )
             ) {
                 val tick = refreshTick

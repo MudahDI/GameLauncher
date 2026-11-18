@@ -162,7 +162,7 @@ fun GameCard(
             .size(width, width * 4 / 3)
             .scale(scale)
             .clip(shape)
-            .then(if (focused) Modifier.border(3.dp, Color.White, shape) else Modifier)
+            .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
             .background(Deck.Panel)
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
@@ -654,14 +654,14 @@ fun LibraryScreen(
                 Column(
                     Modifier.weight(1f)
                         .clip(RoundedCornerShape(10.dp))
-                        .background(if (active) Deck.PanelLight else Deck.Panel.copy(alpha = 0.55f))
+                        .background(if (active) Deck.Accent.copy(alpha = 0.18f) else Deck.Panel.copy(alpha = 0.55f))
                         .clickable { showGames = isGames; onlyFav = false }
                         .padding(horizontal = 13.dp, vertical = 10.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
                         label,
-                        color = if (active) Color.White else Deck.TextDim,
+                        color = if (active) Deck.Accent else Deck.TextDim,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 0.8.sp
@@ -796,7 +796,7 @@ fun SettingsScreen(
                     Box(
                         Modifier.size(34.dp).clip(RoundedCornerShape(50))
                             .background(Color(android.graphics.Color.parseColor(hex)))
-                            .then(if (selected) Modifier.border(2.dp, Color.White, RoundedCornerShape(50)) else Modifier)
+                            .then(if (selected) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(50)) else Modifier)
                             .clickable { onAccent(hex) }
                     )
                     Text(label, color = Deck.TextDim, fontSize = 10.sp)
