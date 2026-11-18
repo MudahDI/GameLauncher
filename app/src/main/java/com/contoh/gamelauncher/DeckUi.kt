@@ -299,32 +299,24 @@ private fun BatteryGlyph(percent: Int) {
     }
 }
 
-private fun Modifier.gamepadAction(onClick: () -> Unit): Modifier = composed {
-    var focused by remember { mutableStateOf(false) }
+private fun Modifier.gamepadAction(focused: Boolean, onClick: () -> Unit): Modifier =
     this
-        .focusable()
-        .onFocusChanged { focused = it.isFocused }
         .then(if (focused) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(8.dp)) else Modifier)
-        .onPreviewKeyEvent { event ->
-            if (event.type == KeyEventType.KeyDown &&
-                (event.key == Key.ButtonA || event.key == Key.Enter ||
-                    event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)
-            ) {
-                onClick()
-                true
-            } else false
-        }
         .clickable(onClick = onClick)
-}
 
 @Composable
-fun PlayButton(text: String, compact: Boolean = false, onClick: () -> Unit) {
+fun PlayButton(
+    text: String,
+    compact: Boolean = false,
+    focused: Boolean = false,
+    onClick: () -> Unit
+) {
     Box(
         Modifier
             .height(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Brush.horizontalGradient(listOf(Deck.Accent, Deck.Accent.copy(alpha = 0.82f))))
-            .gamepadAction(onClick)
+            .gamepadAction(focused, onClick)
             .padding(horizontal = if (compact) 14.dp else 28.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -339,7 +331,7 @@ fun PlayButton(text: String, compact: Boolean = false, onClick: () -> Unit) {
 }
 
 @Composable
-fun DeckButton(label: String, compact: Boolean = false, onClick: () -> Unit) {
+fun DeckButton(label: String, compact: Boolean = false, focused: Boolean = false, onClick: () -> Unit) {
     Box(
         Modifier
             .size(if (compact) 38.dp else 44.dp)
