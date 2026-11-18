@@ -343,38 +343,40 @@ fun HeroPanel(
     val heroShape = RoundedCornerShape(18.dp)
 
     if (landscape) {
-        // Layout landscape memakai artwork 16:9 yang terpisah dari panel informasi.
-        // Ruang horizontal dipakai untuk judul, status, dan aksi agar banner tidak
-        // berubah menjadi strip panoramik.
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(148.dp)
-                .clip(heroShape)
-                .background(Deck.Panel)
-                .padding(10.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
+        // Ukuran panel mengikuti lebar aktual agar tetap seimbang di ponsel dan tablet.
+        BoxWithConstraints(Modifier.fillMaxWidth()) {
+            val artworkWidth = (maxWidth * 0.31f).coerceIn(176.dp, 258.dp)
+            val descriptionWidth = (maxWidth * 0.23f).coerceIn(148.dp, 204.dp)
+            val panelHeight = if (compact) 132.dp else 154.dp
+            Row(
                 Modifier
-                    .width(228.dp)
-                    .fillMaxHeight()
-                    .clip(RoundedCornerShape(12.dp))
+                    .fillMaxWidth()
+                    .height(panelHeight)
+                    .clip(heroShape)
+                    .background(Deck.Panel)
+                    .padding(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                ArtworkImage(
-                    focused,
-                    store,
-                    "banner",
-                    Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-                Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.16f)))
-            }
-            Column(
-                Modifier.weight(1f).fillMaxHeight(),
-                verticalArrangement = Arrangement.Center
-            ) {
+                Box(
+                    Modifier
+                        .width(artworkWidth)
+                        .fillMaxHeight()
+                        .clip(RoundedCornerShape(12.dp))
+                ) {
+                    ArtworkImage(
+                        focused,
+                        store,
+                        "banner",
+                        Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.16f)))
+                }
+                Column(
+                    Modifier.weight(1f).fillMaxHeight(),
+                    verticalArrangement = Arrangement.Center
+                ) {
                 Text(
                     "SEDANG DIPILIH",
                     color = Deck.Accent,
@@ -406,20 +408,21 @@ fun HeroPanel(
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
-            Column(
-                Modifier.width(190.dp).fillMaxHeight(),
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text("DESKRIPSI", color = Deck.TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
-                Spacer(Modifier.height(7.dp))
-                Text(
-                    store.description(focused.pkg).ifBlank { "Belum ada deskripsi. Tambahkan melalui Opsi game." },
-                    color = Color.White.copy(alpha = 0.88f),
-                    fontSize = 12.sp,
-                    lineHeight = 17.sp,
-                    maxLines = 5,
-                    overflow = TextOverflow.Ellipsis
-                )
+                Column(
+                    Modifier.width(descriptionWidth).fillMaxHeight(),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Text("DESKRIPSI", color = Deck.TextDim, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        store.description(focused.pkg).ifBlank { "Belum ada deskripsi. Tambahkan melalui Opsi game." },
+                        color = Color.White.copy(alpha = 0.88f),
+                        fontSize = 11.sp,
+                        lineHeight = 15.sp,
+                        maxLines = if (compact) 3 else 5,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     } else {
@@ -590,14 +593,19 @@ fun SearchScreen(
         if (q.isBlank()) visible
         else visible.filter { it.name.contains(q, ignoreCase = true) }
     }
-    val tile = store.cardSizeDp.dp
-    val spacing = store.gridSpacingDp.dp
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val landscape = maxWidth > maxHeight
+    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 112.dp else 136.dp)
+    val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Search field is a full-width item in the same lazy grid as the results,
     // so it scrolls away naturally instead of occupying a fixed header row.
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(tile + 12.dp),
-        contentPadding = PaddingValues(horizontal = spacing + 8.dp, vertical = 8.dp),
+        columns = GridCells.Adaptive(tile + if (landscape) 10.dp else 12.dp),
+        contentPadding = PaddingValues(
+            horizontal = if (landscape) 18.dp else spacing + 8.dp,
+            vertical = if (landscape) 6.dp else 10.dp
+        ),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
         modifier = Modifier.fillMaxSize()
@@ -637,6 +645,7 @@ fun SearchScreen(
             }
         }
     }
+    }
 }
 
 @Composable
@@ -655,14 +664,19 @@ fun LibraryScreen(
     val list = remember(source, onlyFav, store.favorites) {
         if (onlyFav) source.filter { it.pkg in store.favorites } else source
     }
-    val tile = store.cardSizeDp.dp
-    val spacing = store.gridSpacingDp.dp
+    BoxWithConstraints(Modifier.fillMaxSize()) {
+    val landscape = maxWidth > maxHeight
+    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 112.dp else 136.dp)
+    val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Header, category selector, and app cards share one lazy grid so every
     // library control scrolls away together, including in landscape.
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(tile + 12.dp),
-        contentPadding = PaddingValues(horizontal = spacing + 8.dp, vertical = 8.dp),
+        columns = GridCells.Adaptive(tile + if (landscape) 10.dp else 12.dp),
+        contentPadding = PaddingValues(
+            horizontal = if (landscape) 18.dp else spacing + 8.dp,
+            vertical = if (landscape) 6.dp else 10.dp
+        ),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
         modifier = Modifier.fillMaxSize()
@@ -771,6 +785,7 @@ fun LibraryScreen(
                 )
             }
         }
+    }
     }
 }
 
