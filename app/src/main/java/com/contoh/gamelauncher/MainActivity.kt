@@ -362,7 +362,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                 isLandscape = isLandscape,
                 onSettings = { tab = 3 }
             )
-            Row(Modifier.weight(1f).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Row(Modifier.weight(1f).fillMaxWidth()) {
                 if (isLandscape) SideNavigation(tab) { tab = it }
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                     AnimatedContent(
