@@ -123,7 +123,8 @@ private fun OptionAction(
 @Composable
 private fun WallpaperBackground(store: Store) {
     val context = LocalContext.current
-    val uri = store.wallpaperUri
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val uri = if (isLandscape) store.landscapeWallpaperUri else store.portraitWallpaperUri
     val bitmap by produceState<androidx.compose.ui.graphics.ImageBitmap?>(
         initialValue = uri?.let { ArtworkBitmapCache.get("${it}|1440")?.asImageBitmap() },
         key1 = uri
@@ -166,13 +167,18 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     var confirmReset by rememberSaveable { mutableStateOf(false) }
     var pendingArtworkPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingArtworkKind by rememberSaveable { mutableStateOf<String?>(null) }
+    var pendingWallpaperOrientation by rememberSaveable { mutableStateOf<String?>(null) }
     val wallpaperPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) {
             runCatching {
                 ctx.contentResolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
-            store.setWallpaper(uri)
+            when (pendingWallpaperOrientation) {
+                "portrait" -> store.setPortraitWallpaper(uri)
+                "landscape" -> store.setLandscapeWallpaper(uri)
+            }
         }
+        pendingWallpaperOrientation = null
     }
     val artworkPicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val pkg = pendingArtworkPkg
@@ -347,12 +353,21 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                     3 -> SettingsScreen(
                         onAdd = { showPicker = true },
                         onReset = { confirmReset = true },
-                        onWallpaper = { wallpaperPicker.launch(arrayOf("image/*")) },
-                        onClearWallpaper = { store.setWallpaper(null) },
+                        onPortraitWallpaper = {
+                            pendingWallpaperOrientation = "portrait"
+                            wallpaperPicker.launch(arrayOf("image/*"))
+                        },
+                        onLandscapeWallpaper = {
+                            pendingWallpaperOrientation = "landscape"
+                            wallpaperPicker.launch(arrayOf("image/*"))
+                        },
+                        onClearPortraitWallpaper = { store.setPortraitWallpaper(null) },
+                        onClearLandscapeWallpaper = { store.setLandscapeWallpaper(null) },
                         onAccent = { store.setAccent(it) },
                         currentAccent = store.accentHex,
                         onMaterialYou = { store.setMaterialYou(it) },
-                        hasWallpaper = store.wallpaperUri != null,
+                        hasPortraitWallpaper = store.portraitWallpaperUri != null,
+                        hasLandscapeWallpaper = store.landscapeWallpaperUri != null,
                         store = store,
                         onManageMetadataSources = { showMetadataSources = true }
                     )
