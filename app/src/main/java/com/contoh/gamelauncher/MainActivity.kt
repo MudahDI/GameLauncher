@@ -297,10 +297,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         } else false
                     }
                     Key.DirectionDown, Key.DirectionUp -> {
-                        if (isLandscape && sidebarGamepadFocus) {
-                            sidebarGamepadIndex = (sidebarGamepadIndex + if (event.key == Key.DirectionDown) 1 else -1).coerceIn(0, 2)
-                            true
-                        } else if (tab == 0) {
+                        if (tab == 0) {
                             if (homeSections.any { it.isNotEmpty() }) {
                                 val direction = if (event.key == Key.DirectionDown) 1 else -1
                                 var targetRowIndex = effectiveHomeRow + direction
