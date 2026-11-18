@@ -198,7 +198,7 @@ fun GameCard(
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, if (landscapeArtwork) width * 0.56f else width * 4 / 3)
+            .size(width, width * 1.5f) // Rasio cover portrait 2:3, tetap sama di portrait dan landscape
             .scale(scale)
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
@@ -213,7 +213,7 @@ fun GameCard(
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (coverUri != null) {
-            ArtworkImage(app, store, "cover", Modifier.fillMaxSize(), ContentScale.Crop)
+            ArtworkImage(app, store, "cover", Modifier.fillMaxSize(), ContentScale.Fit)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
         } else {
             if (blurIconBackground) {
