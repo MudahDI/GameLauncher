@@ -194,11 +194,12 @@ fun GameCard(
         label = "cardScale"
     )
     val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
-    val coverUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, "cover") }
+    val cardArtworkKind = remember(app.pkg, store.artworks) { if (store.artworkUri(app.pkg, "banner") != null) "banner" else "cover" }
+    val cardArtworkUri = remember(app.pkg, store.artworks) { store.artworkUri(app.pkg, cardArtworkKind) }
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, width * 1.5f) // Rasio cover portrait 2:3, tetap sama di portrait dan landscape
+            .size(width, width * 0.5625f) // Kartu beranda memakai artwork landscape 16:9
             .scale(scale)
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
@@ -212,9 +213,9 @@ fun GameCard(
             }
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
-        if (coverUri != null) {
-            ArtworkImage(app, store, "cover", Modifier.fillMaxSize(), ContentScale.Fit)
-            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.22f)))
+        if (cardArtworkUri != null) {
+            ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), ContentScale.Crop)
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.12f)))
         } else {
             if (blurIconBackground) {
                 Image(
@@ -414,7 +415,7 @@ fun HeroPanel(
     if (landscape) {
         Box(
             Modifier.fillMaxWidth()
-                .height(if (compact) 150.dp else 196.dp)
+                .height(if (compact) 176.dp else 216.dp)
                 .clip(heroShape)
                 .background(Deck.Panel)
         ) {
@@ -545,18 +546,17 @@ private fun AppStrip(apps: List<AppItem>, onPlay: (AppItem) -> Unit) {
         SectionTitle("APLIKASI", false)
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             items(apps, key = { it.pkg }) { app ->
-                Column(
-                    Modifier.width(78.dp).clickable { onPlay(app) },
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Box(
+                    Modifier.width(124.dp).height(88.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Deck.PanelLight)
+                        .clickable { onPlay(app) },
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(Modifier.size(70.dp).clip(RoundedCornerShape(14.dp)).background(Deck.Panel).padding(11.dp)) {
-                        Image(app.icon, contentDescription = app.name, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
-                    }
-                    Spacer(Modifier.height(5.dp))
-                    Text(app.name, color = Deck.TextDim, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Image(app.icon, contentDescription = app.name, modifier = Modifier.size(54.dp), contentScale = ContentScale.Fit)
                 }
             }
         }
@@ -575,76 +575,41 @@ fun HomeScreen(
     onDetails: (AppItem) -> Unit = {},
     installedApps: List<AppItem> = emptyList()
 ) {
-    // Lookup map avoids repeated linear scans for recently played apps.
-    val visibleByPackage = remember(visible) { visible.associateBy { it.pkg } }
-    val recent = remember(visibleByPackage, store.recent) {
-        store.recent.mapNotNull(visibleByPackage::get)
-    }
     val favs = remember(visible, store.favorites) {
         visible.filter { it.pkg in store.favorites }
     }
-
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compact = maxHeight < 420.dp
         val landscape = maxWidth > maxHeight
-        val cardWidth = if (compact) store.cardSizeDp.coerceAtMost(104).dp else store.cardSizeDp.dp
-        // Kartu beranda hanya memilih game. Aksi bermain tersedia di tombol MAINKAN pada HeroPanel.
+        val cardWidth = if (landscape) 176.dp else store.cardSizeDp.dp.coerceAtMost(124.dp)
         val tap: (AppItem, Int) -> Unit = { app, rowIndex -> onFocus(app, rowIndex) }
 
-        if (landscape) {
-            // Beranda landscape mengikuti layout konsol: hero, favorit, lalu aplikasi.
-            Column(
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 18.dp, vertical = 14.dp)
-            ) {
-                Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    Box(Modifier.fillMaxWidth()) {
-                        HeroPanel(focused, store, compact, onPlay, onOptions, landscape = true, onDetails = onDetails)
-                    }
-                }
-                if (recent.isNotEmpty()) CardRow(
-                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, activeRow == 0, 0, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus,
-                    landscapeCards = true
-                )
-                if (favs.isNotEmpty()) CardRow(
+        Column(
+            Modifier.fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = if (landscape) 18.dp else 12.dp)
+        ) {
+            HeroPanel(focused, store, compact, onPlay, onOptions, landscape = landscape, onDetails = onDetails)
+            if (favs.isNotEmpty()) {
+                CardRow(
                     "GAME FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
-                    landscapeCards = true
+                    landscapeCards = landscape
                 )
-                if (visible.isNotEmpty()) CardRow(
-                    if (favs.isEmpty()) "GAME" else "SEMUA GAME",
-                    visible, focused?.pkg, activeRow == 2, 2, store,
+            } else if (visible.isNotEmpty()) {
+                CardRow(
+                    "GAME", visible, focused?.pkg, activeRow == 2, 2, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
-                    landscapeCards = true
+                    landscapeCards = landscape
                 )
-                if (installedApps.isNotEmpty()) AppStrip(installedApps, onPlay)
             }
-        } else {
-            Column(
-                Modifier.fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 18.dp, vertical = 14.dp)
-            ) {
-                HeroPanel(focused, store, compact, onPlay, onOptions, onDetails = onDetails)
-                if (recent.isNotEmpty()) CardRow(
-                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, activeRow == 0, 0, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
-                if (favs.isNotEmpty()) CardRow(
-                    "FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
-                if (visible.isNotEmpty()) CardRow(
-                    "SEMUA GAME", visible, focused?.pkg, activeRow == 2, 2, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
+            if (installedApps.isNotEmpty()) {
+                Spacer(Modifier.height(if (landscape) 4.dp else 8.dp))
+                AppStrip(installedApps, onPlay)
             }
         }
     }
 }
-
 
 @Composable
 fun GameDetailScreen(
