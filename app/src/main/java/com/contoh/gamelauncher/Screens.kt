@@ -149,7 +149,7 @@ private fun Modifier.gamepadClickable(onClick: () -> Unit): Modifier =
             onClick()
             true
         } else false
-    }.clickable(onClick = onClick)
+    }.clickable(onClick = onClick).focusable()
 
 // ---------- Komponen ----------
 
@@ -656,7 +656,7 @@ fun SearchScreen(
         ),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().focusGroup()
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             OutlinedTextField(
@@ -664,7 +664,7 @@ fun SearchScreen(
                 onValueChange = { q = it },
                 singleLine = true,
                 label = { Text("Cari game atau aplikasi") },
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp).focusable()
             )
         }
         if (results.isEmpty()) {
@@ -727,7 +727,7 @@ fun LibraryScreen(
         ),
         horizontalArrangement = Arrangement.spacedBy(spacing),
         verticalArrangement = Arrangement.spacedBy(spacing),
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize().focusGroup()
     ) {
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
@@ -889,7 +889,7 @@ fun SettingsScreen(
     onManageMetadataSources: () -> Unit
 ) {
     Column(
-        Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)
+        Modifier.fillMaxSize().focusGroup().verticalScroll(rememberScrollState()).padding(24.dp)
     ) {
         Text("TAMPILAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
@@ -915,6 +915,9 @@ fun SettingsScreen(
                 )
             }
             Switch(
+                modifier = Modifier.onPreviewKeyEvent { event ->
+                    if (event.type == KeyEventType.KeyDown && event.key == Key.ButtonA && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) { onMaterialYou(!store.useMaterialYou); true } else false
+                },
                 checked = store.useMaterialYou,
                 onCheckedChange = onMaterialYou,
                 enabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
@@ -1037,7 +1040,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
     val byPackage = remember(visible) { visible.associateBy { it.pkg } }
     val history = remember(store.recent, byPackage) { store.recent.mapNotNull(byPackage::get) }
     val landscape = LocalConfiguration.current.screenWidthDp > LocalConfiguration.current.screenHeightDp
-    Column(Modifier.fillMaxSize().padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = 14.dp)) {
+    Column(Modifier.fillMaxSize().focusGroup().padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("RIWAYAT BERMAIN", color = Color.White, fontSize = 17.sp, fontWeight = FontWeight.Bold)
