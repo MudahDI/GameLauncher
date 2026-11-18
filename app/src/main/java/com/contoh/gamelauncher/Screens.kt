@@ -153,7 +153,8 @@ fun GameCard(
     onLongClick: () -> Unit,
     onFocus: () -> Unit = {},
     blurIconBackground: Boolean = false,
-    showMdiBranding: Boolean = false
+    showMdiBranding: Boolean = false,
+    showTitle: Boolean = true
 ) {
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.06f else 1f,
@@ -202,25 +203,27 @@ fun GameCard(
                     .clip(RoundedCornerShape(14.dp)),
             )
         }
-        Box(
-            Modifier
-                .align(Alignment.BottomStart)
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+        if (showTitle) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomStart)
+                    .fillMaxWidth()
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                        )
                     )
+                    .padding(horizontal = 8.dp, vertical = 8.dp)
+            ) {
+                Text(
+                    app.name,
+                    color = Color.White,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
-                .padding(horizontal = 8.dp, vertical = 8.dp)
-        ) {
-            Text(
-                app.name,
-                color = Color.White,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Medium,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
+            }
         }
         if (showMdiBranding) {
             MdiBrandingBadge(Modifier.align(Alignment.TopEnd).padding(6.dp))
@@ -287,7 +290,8 @@ fun CardRow(
                 { onPlay(app) },
                 { onOptions(app) },
                 { onFocus(app) },
-                showMdiBranding = true
+                showMdiBranding = true,
+                showTitle = false
             )
         }
     }
