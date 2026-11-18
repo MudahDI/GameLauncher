@@ -186,7 +186,8 @@ fun GameCard(
     blurIconBackground: Boolean = false,
     showMdiBranding: Boolean = false,
     showTitle: Boolean = true,
-    landscapeArtwork: Boolean = false
+    landscapeArtwork: Boolean = false,
+    plainIcon: Boolean = false
 ) {
     val scale by animateFloatAsState(
         targetValue = if (focused) 1.06f else 1f,
@@ -200,7 +201,7 @@ fun GameCard(
     val displayIcon = app.icon
     Box(
         Modifier
-            .size(width, width * 4f / 3f) // Rasio kartu 3:4 seperti release yang dipilih
+            .size(width, if (plainIcon) width + 30.dp else width * 4f / 3f) // Kartu Beranda atau ikon standar Library/Search
             .scale(scale)
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
@@ -214,7 +215,15 @@ fun GameCard(
             }
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
-        if (cardArtworkUri != null) {
+        if (plainIcon) {
+            Image(
+                displayIcon,
+                app.name,
+                Modifier.align(Alignment.TopCenter).padding(top = 4.dp)
+                    .size(width * 0.72f)
+                    .clip(RoundedCornerShape(14.dp))
+            )
+        } else if (cardArtworkUri != null) {
             ArtworkImage(app, store, cardArtworkKind, Modifier.fillMaxSize(), ContentScale.Crop)
             Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.12f)))
         } else {
@@ -247,13 +256,11 @@ fun GameCard(
         if (showTitle) {
             Box(
                 Modifier
-                    .align(Alignment.BottomStart)
+                    .align(if (plainIcon) Alignment.BottomCenter else Alignment.BottomStart)
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
-                        )
-                    )
+                    .then(if (plainIcon) Modifier.background(Deck.Panel) else Modifier.background(
+                        Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)))
+                    ))
                     .padding(horizontal = 8.dp, vertical = 8.dp)
             ) {
                 Text(
@@ -738,7 +745,7 @@ fun SearchScreen(
                     { onPlay(app) },
                     { onOptions(app) },
                     { focusedPkg = app.pkg },
-                    blurIconBackground = true
+                    plainIcon = true
                 )
             }
         }
@@ -871,8 +878,8 @@ fun LibraryScreen(
                     { onPlay(app) },
                     { onOptions(app) },
                     { focusedPkg = app.pkg },
-                    blurIconBackground = true,
-                    showMdiBranding = true
+                    plainIcon = true,
+                    showMdiBranding = false
                 )
             }
         }
