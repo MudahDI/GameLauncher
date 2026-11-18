@@ -156,7 +156,10 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val elementColor = MaterialTheme.colorScheme.primary
-    SideEffect { Deck.Accent = elementColor }
+    SideEffect {
+        Deck.Accent = elementColor
+        Deck.IsLightTheme = store.isLightTheme
+    }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
@@ -269,14 +272,8 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             .onPreviewKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) false
                 else when (event.key) {
-                    Key.ButtonL1, Key.PageUp -> {
-                        tab = if (tab <= 0) 4 else tab - 1
-                        true
-                    }
-                    Key.ButtonR1, Key.PageDown -> {
-                        tab = if (tab >= 4) 0 else tab + 1
-                        true
-                    }
+                    // Gamepad navigation is intentionally supported on Beranda only.
+                    Key.ButtonL1, Key.PageUp, Key.ButtonR1, Key.PageDown -> true
                     Key.DirectionRight, Key.DirectionLeft -> {
                         if (tab == 0) {
                             val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
@@ -286,7 +283,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                                 focusedPkg = row[nextIndex].pkg
                             }
                             true
-                        } else focusManager.moveFocus(if (event.key == Key.DirectionRight) FocusDirection.Right else FocusDirection.Left)
+                        } else true
                     }
                     Key.DirectionDown, Key.DirectionUp -> {
                         if (tab == 0) {
@@ -303,7 +300,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                                 }
                             }
                             true
-                        } else focusManager.moveFocus(if (event.key == Key.DirectionDown) FocusDirection.Down else FocusDirection.Up)
+                        } else true
                     }
                     else -> false
                 }
@@ -393,6 +390,8 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         onAccent = { store.setAccent(it) },
                         currentAccent = store.accentHex,
                         onMaterialYou = { store.setMaterialYou(it) },
+                        isLightTheme = store.isLightTheme,
+                        onThemeChange = { store.setLightTheme(it) },
                         hasPortraitWallpaper = store.portraitWallpaperUri != null,
                         hasLandscapeWallpaper = store.landscapeWallpaperUri != null,
                         store = store,
@@ -606,10 +605,18 @@ class MainActivity : ComponentActivity() {
         setContent {
             val ctx = LocalContext.current
             val store = remember { Store(ctx) }
-            val baseScheme = if (store.useMaterialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
-                dynamicDarkColorScheme(ctx)
-            } else {
-                darkColorScheme(primary = Color(android.graphics.Color.parseColor(store.accentHex)))
+            val accent = Color(android.graphics.Color.parseColor(store.accentHex))
+            val baseScheme = when {
+                store.useMaterialYou && android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S ->
+                    if (store.isLightTheme) androidx.compose.material3.dynamicLightColorScheme(ctx) else dynamicDarkColorScheme(ctx)
+                store.isLightTheme -> androidx.compose.material3.lightColorScheme(primary = accent)
+                else -> darkColorScheme(primary = accent)
+            }
+            SideEffect {
+                window.statusBarColor = if (store.isLightTheme) android.graphics.Color.rgb(243, 245, 248) else android.graphics.Color.rgb(14, 20, 27)
+                window.navigationBarColor = window.statusBarColor
+                WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = store.isLightTheme
+                WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightNavigationBars = store.isLightTheme
             }
             MaterialTheme(
                 colorScheme = baseScheme.copy(
