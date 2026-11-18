@@ -59,6 +59,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.foundation.focusable
 import androidx.compose.ui.input.key.Key
@@ -149,6 +151,7 @@ private fun WallpaperBackground(store: Store) {
 @Composable
 fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     val ctx = LocalContext.current
+    val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
     val elementColor = MaterialTheme.colorScheme.primary
@@ -276,20 +279,26 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                             true
                         }
                         Key.DirectionRight, Key.DirectionLeft -> {
-                            val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
-                            if (tab == 0 && row.isNotEmpty()) {
-                                val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
-                                val nextIndex = if (event.key == Key.DirectionRight) {
-                                    (itemIndex + 1) % row.size
-                                } else {
-                                    (itemIndex - 1 + row.size) % row.size
+                            if (tab != 0) {
+                                focusManager.moveFocus(if (event.key == Key.DirectionRight) FocusDirection.Right else FocusDirection.Left)
+                            } else {
+                                val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
+                                if (row.isNotEmpty()) {
+                                    val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
+                                    val nextIndex = if (event.key == Key.DirectionRight) {
+                                        (itemIndex + 1) % row.size
+                                    } else {
+                                        (itemIndex - 1 + row.size) % row.size
+                                    }
+                                    focusedPkg = row[nextIndex].pkg
                                 }
-                                focusedPkg = row[nextIndex].pkg
                                 true
-                            } else false
+                            }
                         }
                         Key.DirectionDown, Key.DirectionUp -> {
-                            if (tab == 0 && homeSections.any { it.isNotEmpty() }) {
+                            if (tab != 0) {
+                                focusManager.moveFocus(if (event.key == Key.DirectionDown) FocusDirection.Down else FocusDirection.Up)
+                            } else if (homeSections.any { it.isNotEmpty() }) {
                                 val direction = if (event.key == Key.DirectionDown) 1 else -1
                                 var targetRowIndex = effectiveHomeRow + direction
                                 while (targetRowIndex in homeSections.indices && homeSections[targetRowIndex].isEmpty()) {
