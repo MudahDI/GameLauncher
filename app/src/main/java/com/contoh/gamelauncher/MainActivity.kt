@@ -3,6 +3,7 @@ package com.mdh.gamelauncher
 import android.os.Bundle
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.content.BroadcastReceiver
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
@@ -423,6 +424,17 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                     if (store.artworkUri(a.pkg, "banner") != null) {
                         OptionAction("Hapus banner landscape", "Kembali menggunakan artwork bawaan", "⌫", danger = true) {
                             store.clearArtwork(a.pkg, "banner")
+                        }
+                    }
+                    OptionAction("Info aplikasi", "Buka pengaturan Android untuk melihat info, mengelola izin, atau uninstall aplikasi", "ⓘ") {
+                        selectedPkg = null
+                        runCatching {
+                            ctx.startActivity(
+                                Intent(
+                                    android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.parse("package:${a.pkg}")
+                                )
+                            )
                         }
                     }
                     OptionAction("Sembunyikan dari launcher", "Hapus game ini dari daftar tanpa menghapus aplikasinya", "−", danger = true) {
