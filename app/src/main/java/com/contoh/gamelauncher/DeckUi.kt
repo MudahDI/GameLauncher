@@ -7,6 +7,15 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
+import androidx.compose.ui.composed
+import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.draw.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -289,13 +298,31 @@ private fun BatteryGlyph(percent: Int) {
 }
 
 @Composable
+private fun Modifier.gamepadAction(onClick: () -> Unit): Modifier = composed {
+    var focused by mutableStateOf(false)
+    this
+        .focusable()
+        .onFocusChanged { focused = it.isFocused }
+        .then(if (focused) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(8.dp)) else Modifier)
+        .onPreviewKeyEvent { event ->
+            if (event.type == KeyEventType.KeyDown &&
+                (event.key == Key.ButtonA || event.key == Key.Enter ||
+                    event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)
+            ) {
+                onClick()
+                true
+            } else false
+        }
+        .clickable(onClick = onClick)
+}
+
 fun PlayButton(text: String, compact: Boolean = false, onClick: () -> Unit) {
     Box(
         Modifier
             .height(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Brush.horizontalGradient(listOf(Deck.Accent, Deck.Accent.copy(alpha = 0.82f))))
-            .clickable(onClick = onClick)
+            .gamepadAction(onClick)
             .padding(horizontal = if (compact) 14.dp else 28.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -316,7 +343,7 @@ fun DeckButton(label: String, compact: Boolean = false, onClick: () -> Unit) {
             .size(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
             .background(Deck.Accent.copy(alpha = 0.18f))
-            .clickable(onClick = onClick),
+            .gamepadAction(onClick),
         contentAlignment = Alignment.Center
     ) {
         Text(label, color = Deck.Accent, fontSize = if (compact) 16.sp else 18.sp)
