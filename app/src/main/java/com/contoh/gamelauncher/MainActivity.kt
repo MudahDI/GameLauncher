@@ -484,8 +484,12 @@ class MainActivity : ComponentActivity() {
             addAction(Intent.ACTION_PACKAGE_CHANGED)
             addDataScheme("package")
         }
-        @Suppress("DEPRECATION")
-        registerReceiver(packageChanges, packageFilter)
+        if (android.os.Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(packageChanges, packageFilter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            @Suppress("DEPRECATION")
+            registerReceiver(packageChanges, packageFilter)
+        }
         receiverRegistered = true
         WindowCompat.setDecorFitsSystemWindows(window, false)
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.P) {
