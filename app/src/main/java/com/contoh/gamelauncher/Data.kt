@@ -155,7 +155,7 @@ class Store(ctx: Context) {
         sp.edit().putBoolean("material_you", enabled).apply()
     }
 
-    fun setLightTheme(enabled: Boolean) {
+    fun updateLightTheme(enabled: Boolean) {
         isLightTheme = enabled
         sp.edit().putBoolean("light_theme", enabled).apply()
     }
