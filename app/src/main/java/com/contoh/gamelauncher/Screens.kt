@@ -592,7 +592,7 @@ fun HomeScreen(
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val compact = maxHeight < 420.dp
         val landscape = maxWidth > maxHeight
-        val cardWidth = if (landscape) 176.dp else store.cardSizeDp.dp.coerceAtMost(124.dp)
+        val cardWidth = if (landscape) 132.dp else store.cardSizeDp.dp.coerceAtMost(124.dp)
         val tap: (AppItem, Int) -> Unit = { app, rowIndex -> onFocus(app, rowIndex) }
 
         Column(
@@ -693,7 +693,7 @@ fun SearchScreen(
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val landscape = maxWidth > maxHeight
-    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 112.dp else 136.dp)
+    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 92.dp else 136.dp)
     val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Search field is a full-width item in the same lazy grid as the results,
@@ -764,7 +764,7 @@ fun LibraryScreen(
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
     val landscape = maxWidth > maxHeight
-    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 104.dp else 112.dp)
+    val tile = store.cardSizeDp.dp.coerceAtMost(if (landscape) 88.dp else 112.dp)
     val spacing = store.gridSpacingDp.dp.coerceAtMost(if (landscape) 12.dp else 16.dp)
 
     // Header, category selector, and app cards share one lazy grid so every
@@ -805,49 +805,42 @@ fun LibraryScreen(
         }
         item(span = { GridItemSpan(maxLineSpan) }) {
             Row(
-                Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 2.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(18.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 listOf(
-                    Triple(true, "GAME", games.size),
-                    Triple(false, "APLIKASI", apps.size)
-                ).forEach { (isGames, label, count) ->
+                    Triple(true, "🎮", "Game (" + games.size + ")"),
+                    Triple(false, "▦", "Aplikasi (" + apps.size + ")")
+                ).forEach { (isGames, icon, label) ->
                     val active = showGames == isGames
-                    Column(
-                        Modifier.weight(1f)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(if (active) Deck.Accent.copy(alpha = 0.18f) else Deck.Panel.copy(alpha = 0.55f))
+                    Row(
+                        Modifier.clip(RoundedCornerShape(8.dp))
                             .gamepadClickable { showGames = isGames; onlyFav = false }
-                            .padding(horizontal = 13.dp, vertical = 10.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
+                            .padding(horizontal = 4.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
+                        Text(icon, fontSize = 15.sp)
                         Text(
                             label,
                             color = if (active) Deck.Accent else Deck.TextDim,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 0.8.sp
-                        )
-                        Text(
-                            count.toString(),
-                            color = if (active) Deck.Accent else Deck.TextDim,
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 12.sp,
+                            fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
                         )
                     }
                 }
-                Box(
-                    Modifier.width(46.dp).height(43.dp)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (onlyFav) Deck.Accent.copy(alpha = 0.20f) else Deck.Panel.copy(alpha = 0.55f))
-                        .gamepadClickable { onlyFav = !onlyFav },
-                    contentAlignment = Alignment.Center
+                Spacer(Modifier.weight(1f))
+                Row(
+                    Modifier.clip(RoundedCornerShape(8.dp))
+                        .gamepadClickable { onlyFav = !onlyFav }
+                        .padding(horizontal = 8.dp, vertical = 7.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        if (onlyFav) "★" else "☆",
-                        color = if (onlyFav) Deck.Accent else Deck.TextDim,
-                        fontSize = 20.sp
+                        if (onlyFav) "♥" else "♡",
+                        color = if (onlyFav) Color(0xFFFF5B78) else Deck.TextDim,
+                        fontSize = 19.sp
                     )
                 }
             }
