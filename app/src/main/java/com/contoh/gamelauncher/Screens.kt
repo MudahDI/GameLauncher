@@ -828,12 +828,15 @@ private fun SettingSlider(
 fun SettingsScreen(
     onAdd: () -> Unit,
     onReset: () -> Unit,
-    onWallpaper: () -> Unit,
-    onClearWallpaper: () -> Unit,
+    onPortraitWallpaper: () -> Unit,
+    onLandscapeWallpaper: () -> Unit,
+    onClearPortraitWallpaper: () -> Unit,
+    onClearLandscapeWallpaper: () -> Unit,
     onAccent: (String) -> Unit,
     currentAccent: String,
     onMaterialYou: (Boolean) -> Unit,
-    hasWallpaper: Boolean,
+    hasPortraitWallpaper: Boolean,
+    hasLandscapeWallpaper: Boolean,
     store: Store,
     onManageMetadataSources: () -> Unit
 ) {
@@ -893,13 +896,23 @@ fun SettingsScreen(
         }
         Spacer(Modifier.height(18.dp))
         SettingRow(
-            "Ganti wallpaper",
-            "Pilih gambar dari perangkat sebagai latar launcher",
-            onWallpaper
+            "Wallpaper Portrait",
+            if (hasPortraitWallpaper) "Ganti gambar latar khusus orientasi Portrait" else "Pilih gambar latar untuk orientasi Portrait",
+            onPortraitWallpaper
         )
-        if (hasWallpaper) {
+        Spacer(Modifier.height(8.dp))
+        SettingRow(
+            "Wallpaper Landscape",
+            if (hasLandscapeWallpaper) "Ganti gambar latar khusus orientasi Landscape" else "Pilih gambar latar untuk orientasi Landscape",
+            onLandscapeWallpaper
+        )
+        if (hasPortraitWallpaper) {
             Spacer(Modifier.height(8.dp))
-            SettingRow("Hapus wallpaper", "Kembali ke latar charcoal bawaan", onClearWallpaper)
+            SettingRow("Hapus wallpaper Portrait", "Gunakan latar charcoal bawaan saat Portrait", onClearPortraitWallpaper)
+        }
+        if (hasLandscapeWallpaper) {
+            Spacer(Modifier.height(8.dp))
+            SettingRow("Hapus wallpaper Landscape", "Gunakan latar charcoal bawaan saat Landscape", onClearLandscapeWallpaper)
         }
         Spacer(Modifier.height(24.dp))
         Text("TATA LETAK", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
