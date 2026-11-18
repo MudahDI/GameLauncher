@@ -209,13 +209,8 @@ fun GameCard(
                     .background(Deck.Panel)
             )
             .scale(scale)
-            // combinedClickable handles activation; focusable exposes the card
-            // as a DPAD focus target on Android devices.
-            .focusable()
-            .onFocusChanged { if (it.isFocused) onFocus() }
-            .onPreviewKeyEvent { event ->
-                if (event.type == KeyEventType.KeyDown && (event.key == Key.ButtonA || event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)) { onClick(); true } else false
-            }
+            // Home gamepad navigation is centralized in LauncherApp.
+            // Keep cards touch-clickable without creating competing Compose focus targets.
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
     ) {
         if (plainIcon) {
