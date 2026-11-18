@@ -742,6 +742,7 @@ fun SettingsScreen(
     onClearWallpaper: () -> Unit,
     onAccent: (String) -> Unit,
     currentAccent: String,
+    onMaterialYou: (Boolean) -> Unit,
     hasWallpaper: Boolean,
     store: Store,
     onManageMetadataSources: () -> Unit
@@ -751,10 +752,16 @@ fun SettingsScreen(
     ) {
         Text("TAMPILAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        Text("Warna aksen", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        Text("Ubah warna tombol, fokus, dan elemen aktif launcher.", color = Deck.TextDim, fontSize = 12.sp)
+        Text("Warna elemen", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text("Atur warna tombol, indikator fokus, ikon aktif, dan elemen interaktif.", color = Deck.TextDim, fontSize = 12.sp)
         Spacer(Modifier.height(10.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+        SettingRow(
+            "Material You",
+            if (store.useMaterialYou) "Aktif · mengikuti palet warna wallpaper Android" else "Nonaktif · gunakan warna elemen pilihan",
+            { onMaterialYou(!store.useMaterialYou) }
+        )
+        Spacer(Modifier.height(12.dp))
+        if (!store.useMaterialYou) Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
             listOf(
                 "#1A9FFF" to "Biru",
                 "#8B5CF6" to "Ungu",
@@ -797,7 +804,7 @@ fun SettingsScreen(
         SettingSlider("Intensitas wallpaper", "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.05f..1.00f, 94) { store.updateWallpaperOpacity(it) }
         SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
-        SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna aksen, dan efek wallpaper", { store.resetAppearance() })
+        SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna elemen, dan efek wallpaper", { store.resetAppearance() })
         Spacer(Modifier.height(24.dp))
         Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
