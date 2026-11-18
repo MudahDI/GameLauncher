@@ -938,7 +938,8 @@ fun SettingsScreen(
     hasPortraitWallpaper: Boolean,
     hasLandscapeWallpaper: Boolean,
     store: Store,
-    onManageMetadataSources: () -> Unit
+    onManageMetadataSources: () -> Unit,
+    onRestart: () -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().focusGroup().verticalScroll(rememberScrollState()).padding(24.dp)
@@ -1067,6 +1068,12 @@ fun SettingsScreen(
             "Reset kategori dan daftar",
             "Kembalikan kategori otomatis dan tampilkan aplikasi tersembunyi (favorit tetap)",
             onReset
+        )
+        Spacer(Modifier.height(10.dp))
+        SettingRow(
+            "Restart MDI Launcher",
+            "Mulai ulang launcher untuk menerapkan perubahan atau menyegarkan tampilan",
+            onRestart
         )
     }
 }
