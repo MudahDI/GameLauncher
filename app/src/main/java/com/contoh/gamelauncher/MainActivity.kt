@@ -391,7 +391,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         currentAccent = store.accentHex,
                         onMaterialYou = { store.setMaterialYou(it) },
                         isLightTheme = store.isLightTheme,
-                        onThemeChange = { store.setLightTheme(it) },
+                        onThemeChange = { store.updateLightTheme(it) },
                         hasPortraitWallpaper = store.portraitWallpaperUri != null,
                         hasLandscapeWallpaper = store.landscapeWallpaperUri != null,
                         store = store,
