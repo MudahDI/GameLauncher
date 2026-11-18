@@ -191,9 +191,13 @@ fun GameCard(
     landscapeArtwork: Boolean = false,
     plainIcon: Boolean = false
 ) {
-    // Card focus decoration intentionally disabled: LauncherApp owns D-pad selection,
-    // and stale Compose focus must never leave multiple cards highlighted.
-    val scale = 1f
+    // Visual focus follows LauncherApp's single selected package, never Compose's
+    // remembered per-card focus. This keeps exactly one active card highlighted.
+    val scale by animateFloatAsState(
+        targetValue = if (focused) 1.035f else 1f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = 420f),
+        label = "gameCardFocusScale"
+    )
     val shape = remember(store.cardCornerDp) { RoundedCornerShape(store.cardCornerDp.dp) }
     // Kartu koleksi selalu memakai cover portrait. Banner hanya untuk hero/detail.
     val cardArtworkKind = "cover"
@@ -207,6 +211,10 @@ fun GameCard(
                     .background(Deck.Panel)
             )
             .scale(scale)
+            .then(
+                if (focused) Modifier.border(2.dp, Deck.Accent, shape)
+                else Modifier
+            )
             // Home gamepad navigation is centralized in LauncherApp.
             // Keep cards touch-clickable without creating competing Compose focus targets.
             .combinedClickable(onClick = onClick, onDoubleClick = onDoubleClick, onLongClick = onLongClick)
