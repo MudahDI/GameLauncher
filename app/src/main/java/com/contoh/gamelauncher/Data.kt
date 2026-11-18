@@ -97,6 +97,7 @@ class Store(ctx: Context) {
     }
     var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
     var useMaterialYou by mutableStateOf(sp.getBoolean("material_you", false))
+    var isLightTheme by mutableStateOf(sp.getBoolean("light_theme", false))
     var cardSizeDp by mutableStateOf(sp.getInt("card_size_dp", 112).coerceIn(88, 148))
     var gridSpacingDp by mutableStateOf(sp.getInt("grid_spacing_dp", 14).coerceIn(6, 24))
     var cardCornerDp by mutableStateOf(sp.getInt("card_corner_dp", 10).coerceIn(4, 20))
@@ -152,6 +153,11 @@ class Store(ctx: Context) {
     fun setMaterialYou(enabled: Boolean) {
         useMaterialYou = enabled
         sp.edit().putBoolean("material_you", enabled).apply()
+    }
+
+    fun setLightTheme(enabled: Boolean) {
+        isLightTheme = enabled
+        sp.edit().putBoolean("light_theme", enabled).apply()
     }
 
     fun setAccent(hex: String) {
