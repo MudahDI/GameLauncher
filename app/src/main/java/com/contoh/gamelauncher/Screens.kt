@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
@@ -589,15 +590,52 @@ fun SearchScreen(
         if (q.isBlank()) visible
         else visible.filter { it.name.contains(q, ignoreCase = true) }
     }
-    Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(
-            value = q,
-            onValueChange = { q = it },
-            singleLine = true,
-            label = { Text("Cari game atau aplikasi") },
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp, vertical = 12.dp)
-        )
-        GameGrid(results, store, onPlay, onOptions, tile = store.cardSizeDp.dp, focusedPkg = focusedPkg, onFocus = { focusedPkg = it.pkg }, emptyLabel = "Tidak ada hasil.", spacing = store.gridSpacingDp.dp)
+    val tile = store.cardSizeDp.dp
+    val spacing = store.gridSpacingDp.dp
+
+    // Search field is a full-width item in the same lazy grid as the results,
+    // so it scrolls away naturally instead of occupying a fixed header row.
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(tile + 12.dp),
+        contentPadding = PaddingValues(horizontal = spacing + 8.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(spacing),
+        verticalArrangement = Arrangement.spacedBy(spacing),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            OutlinedTextField(
+                value = q,
+                onValueChange = { q = it },
+                singleLine = true,
+                label = { Text("Cari game atau aplikasi") },
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+        if (results.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    Modifier.fillMaxWidth().height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("Tidak ada hasil.", color = Deck.TextDim)
+                }
+            }
+        } else {
+            items(results, key = { it.pkg }, contentType = { "game-card" }) { app ->
+                GameCard(
+                    app,
+                    store,
+                    tile,
+                    app.pkg in store.favorites,
+                    app.pkg == focusedPkg,
+                    { onPlay(app) },
+                    { onPlay(app) },
+                    { onOptions(app) },
+                    { focusedPkg = app.pkg },
+                    blurIconBackground = true
+                )
+            }
+        }
     }
 }
 
@@ -617,87 +655,122 @@ fun LibraryScreen(
     val list = remember(source, onlyFav, store.favorites) {
         if (onlyFav) source.filter { it.pkg in store.favorites } else source
     }
+    val tile = store.cardSizeDp.dp
+    val spacing = store.gridSpacingDp.dp
 
-    Column(Modifier.fillMaxSize()) {
-        Row(
-            Modifier.fillMaxWidth().padding(start = 20.dp, end = 14.dp, top = 13.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Text(
-                    "PERPUSTAKAAN",
-                    color = Color.White,
-                    fontSize = 17.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 0.7.sp
-                )
-                Text(
-                    "${list.size} item ditampilkan",
-                    color = Deck.TextDim,
-                    fontSize = 11.sp
-                )
-            }
-            TextButton(onClick = onAdd) {
-                Text("+ PULIHKAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            }
-        }
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            listOf(
-                Triple(true, "GAME", games.size),
-                Triple(false, "APLIKASI", apps.size)
-            ).forEach { (isGames, label, count) ->
-                val active = showGames == isGames
-                Column(
-                    Modifier.weight(1f)
-                        .clip(RoundedCornerShape(10.dp))
-                        .background(if (active) Deck.Accent.copy(alpha = 0.18f) else Deck.Panel.copy(alpha = 0.55f))
-                        .clickable { showGames = isGames; onlyFav = false }
-                        .padding(horizontal = 13.dp, vertical = 10.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
+    // Header, category selector, and app cards share one lazy grid so every
+    // library control scrolls away together, including in landscape.
+    LazyVerticalGrid(
+        columns = GridCells.Adaptive(tile + 12.dp),
+        contentPadding = PaddingValues(horizontal = spacing + 8.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(spacing),
+        verticalArrangement = Arrangement.spacedBy(spacing),
+        modifier = Modifier.fillMaxSize()
+    ) {
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(
+                Modifier.fillMaxWidth().padding(start = 12.dp, end = 2.dp, top = 5.dp, bottom = 2.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(Modifier.weight(1f)) {
                     Text(
-                        label,
-                        color = if (active) Deck.Accent else Deck.TextDim,
-                        fontSize = 11.sp,
+                        "PERPUSTAKAAN",
+                        color = Color.White,
+                        fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
-                        letterSpacing = 0.8.sp
+                        letterSpacing = 0.7.sp
                     )
                     Text(
-                        count.toString(),
-                        color = if (active) Deck.Accent else Deck.TextDim,
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.SemiBold
+                        "${list.size} item ditampilkan",
+                        color = Deck.TextDim,
+                        fontSize = 11.sp
+                    )
+                }
+                TextButton(onClick = onAdd) {
+                    Text("+ PULIHKAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        item(span = { GridItemSpan(maxLineSpan) }) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = 0.dp, vertical = 2.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                listOf(
+                    Triple(true, "GAME", games.size),
+                    Triple(false, "APLIKASI", apps.size)
+                ).forEach { (isGames, label, count) ->
+                    val active = showGames == isGames
+                    Column(
+                        Modifier.weight(1f)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(if (active) Deck.Accent.copy(alpha = 0.18f) else Deck.Panel.copy(alpha = 0.55f))
+                            .clickable { showGames = isGames; onlyFav = false }
+                            .padding(horizontal = 13.dp, vertical = 10.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            label,
+                            color = if (active) Deck.Accent else Deck.TextDim,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 0.8.sp
+                        )
+                        Text(
+                            count.toString(),
+                            color = if (active) Deck.Accent else Deck.TextDim,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+                Box(
+                    Modifier.width(46.dp).height(43.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(if (onlyFav) Deck.Accent.copy(alpha = 0.20f) else Deck.Panel.copy(alpha = 0.55f))
+                        .clickable { onlyFav = !onlyFav },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        if (onlyFav) "★" else "☆",
+                        color = if (onlyFav) Deck.Accent else Deck.TextDim,
+                        fontSize = 20.sp
                     )
                 }
             }
-            Box(
-                Modifier.width(46.dp).height(43.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(if (onlyFav) Deck.Accent.copy(alpha = 0.20f) else Deck.Panel.copy(alpha = 0.55f))
-                    .clickable { onlyFav = !onlyFav },
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    if (onlyFav) "★" else "☆",
-                    color = if (onlyFav) Deck.Accent else Deck.TextDim,
-                    fontSize = 20.sp
+        }
+        if (list.isEmpty()) {
+            item(span = { GridItemSpan(maxLineSpan) }) {
+                Box(
+                    Modifier.fillMaxWidth().height(150.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        if (onlyFav) "Belum ada favorit di kategori ini."
+                        else if (showGames) "Belum ada game."
+                        else "Belum ada aplikasi.",
+                        color = Deck.TextDim
+                    )
+                }
+            }
+        } else {
+            items(list, key = { it.pkg }, contentType = { "game-card" }) { app ->
+                GameCard(
+                    app,
+                    store,
+                    tile,
+                    app.pkg in store.favorites,
+                    app.pkg == focusedPkg,
+                    { onPlay(app) },
+                    { onPlay(app) },
+                    { onOptions(app) },
+                    { focusedPkg = app.pkg },
+                    blurIconBackground = true,
+                    showMdiBranding = true
                 )
             }
         }
-        Spacer(Modifier.height(5.dp))
-        GameGrid(
-            list, store, onPlay, onOptions,
-            tile = store.cardSizeDp.dp,
-            focusedPkg = focusedPkg,
-            onFocus = { focusedPkg = it.pkg },
-            emptyLabel = if (onlyFav) "Belum ada favorit di kategori ini." else if (showGames) "Belum ada game." else "Belum ada aplikasi.",
-            spacing = store.gridSpacingDp.dp,
-            showMdiBranding = true
-        )
     }
 }
 
