@@ -237,6 +237,14 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                 else {
                     val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
                     when (event.key) {
+                        Key.ButtonL1, Key.PageUp -> {
+                            tab = if (tab <= 0) 4 else tab - 1
+                            true
+                        }
+                        Key.ButtonR1, Key.PageDown -> {
+                            tab = if (tab >= 4) 0 else tab + 1
+                            true
+                        }
                         Key.DirectionRight, Key.DirectionDown -> {
                             if (tab == 0 && games.isNotEmpty()) {
                                 focusedPkg = games[(currentIndex + 1) % games.size].pkg
@@ -249,15 +257,23 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                                 true
                             } else false
                         }
-                        Key.ButtonA -> {
+                        Key.ButtonA, Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> {
                             if (tab == 0 && focused != null) {
                                 play(focused)
                                 true
                             } else false
                         }
-                        Key.ButtonB -> {
-                            tab = 0
-                            true
+                        Key.ButtonB, Key.Escape, Key.Back -> {
+                            when {
+                                selectedPkg != null -> selectedPkg = null
+                                metadataPkg != null -> metadataPkg = null
+                                editingDescriptionPkg != null -> editingDescriptionPkg = null
+                                showMetadataSources -> showMetadataSources = false
+                                showPicker -> showPicker = false
+                                confirmReset -> confirmReset = false
+                                tab != 0 -> tab = 0
+                                else -> false
+                            }.let { true }
                         }
                         else -> false
                     }
