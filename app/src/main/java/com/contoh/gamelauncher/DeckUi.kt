@@ -69,45 +69,44 @@ fun rememberBatteryPercent(): State<Int> {
 }
 
 @Composable
-private fun HeaderGlyph(kind: String, color: Color) {
-    Canvas(Modifier.size(21.dp)) {
-        val stroke = 1.8.dp.toPx()
+private fun HeaderGlyph(kind: String, color: Color, isLandscape: Boolean = false) {
+    Canvas(Modifier.size(22.dp)) {
+        val sw = 2.1.dp.toPx()
         val cx = size.width / 2f
         val cy = size.height / 2f
         when (kind) {
             "history" -> {
-                drawCircle(color, radius = size.minDimension * 0.34f, style = Stroke(stroke))
-                drawLine(color, Offset(cx, cy), Offset(cx, cy - size.height * 0.20f), stroke)
-                drawLine(color, Offset(cx, cy), Offset(cx + size.width * 0.17f, cy + size.height * 0.10f), stroke)
-                drawLine(color, Offset(cx - size.width * 0.39f, cy - size.height * 0.25f), Offset(cx - size.width * 0.39f, cy - size.height * 0.43f), stroke)
-                drawLine(color, Offset(cx - size.width * 0.39f, cy - size.height * 0.25f), Offset(cx - size.width * 0.20f, cy - size.height * 0.25f), stroke)
+                drawCircle(color, size.minDimension * 0.39f, style = Stroke(sw))
+                drawLine(color, Offset(cx, cy), Offset(cx, cy - size.height * 0.22f), sw, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawLine(color, Offset(cx, cy), Offset(cx + size.width * 0.19f, cy + size.height * 0.15f), sw, cap = androidx.compose.ui.graphics.StrokeCap.Round)
             }
             "rotate" -> {
-                drawArc(color, 35f, 285f, false,
-                    Offset(size.width * 0.16f, size.height * 0.16f),
-                    Size(size.width * 0.68f, size.height * 0.68f),
-                    style = Stroke(stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round))
-                drawLine(color, Offset(size.width * 0.70f, size.height * 0.12f), Offset(size.width * 0.91f, size.height * 0.16f), stroke)
-                drawLine(color, Offset(size.width * 0.70f, size.height * 0.12f), Offset(size.width * 0.77f, size.height * 0.32f), stroke)
+                val w = if (isLandscape) size.width * 0.68f else size.width * 0.43f
+                val h = if (isLandscape) size.height * 0.43f else size.height * 0.68f
+                val left = (size.width - w) / 2f
+                val top = (size.height - h) / 2f
+                drawRoundRect(color, Offset(left, top), Size(w, h), CornerRadius(2.5.dp.toPx()), style = Stroke(sw))
+                drawLine(color, Offset(cx - w * 0.16f, top + h * 0.82f), Offset(cx + w * 0.16f, top + h * 0.82f), sw, cap = androidx.compose.ui.graphics.StrokeCap.Round)
             }
             else -> {
-                for (i in 0 until 8) {
-                    val angle = Math.toRadians(i * 45.0)
-                    val x1 = cx + kotlin.math.cos(angle).toFloat() * size.width * 0.31f
-                    val y1 = cy + kotlin.math.sin(angle).toFloat() * size.height * 0.31f
-                    val x2 = cx + kotlin.math.cos(angle).toFloat() * size.width * 0.45f
-                    val y2 = cy + kotlin.math.sin(angle).toFloat() * size.height * 0.45f
-                    drawLine(color, Offset(x1, y1), Offset(x2, y2), stroke)
+                val outer = androidx.compose.ui.graphics.Path()
+                val teeth = 24
+                for (i in 0 until teeth) {
+                    val angle = -Math.PI / 2.0 + i * Math.PI * 2.0 / teeth
+                    val radius = if (i % 3 == 0 || i % 3 == 1) size.minDimension * 0.46f else size.minDimension * 0.37f
+                    val x = cx + kotlin.math.cos(angle).toFloat() * radius
+                    val y = cy + kotlin.math.sin(angle).toFloat() * radius
+                    if (i == 0) outer.moveTo(x, y) else outer.lineTo(x, y)
                 }
-                drawCircle(color, size.width * 0.31f, style = Stroke(stroke))
-                drawCircle(color, size.width * 0.10f)
+                outer.close()
+                drawPath(outer, color, style = Stroke(sw, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                drawCircle(color, size.minDimension * 0.19f, style = Stroke(sw))
             }
         }
     }
 }
-
 @Composable
-fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, onSettings: () -> Unit) {
+fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, isLandscape: Boolean, onSettings: () -> Unit) {
     val clock by rememberClock()
     val battery by rememberBatteryPercent()
     Row(
@@ -132,7 +131,7 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, rotationMode: Int, on
         }
         Spacer(Modifier.width(8.dp))
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onRotate), contentAlignment = Alignment.Center) {
-            HeaderGlyph("rotate", Deck.Accent)
+            HeaderGlyph("rotate", Deck.Accent, isLandscape)
         }
         Spacer(Modifier.width(8.dp))
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onSettings), contentAlignment = Alignment.Center) {

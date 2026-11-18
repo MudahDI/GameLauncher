@@ -282,7 +282,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int) {
     ) {
         WallpaperBackground(store)
         Column(Modifier.fillMaxSize()) {
-            HeaderBar(onHistory = { tab = 4 }, onRotate = { applyRotation((rotationMode + 1) % 3) }, rotationMode = rotationMode, onSettings = { tab = 3 })
+            HeaderBar(onHistory = { tab = 4 }, onRotate = { applyRotation((rotationMode + 1) % 3) }, rotationMode = rotationMode, isLandscape = isLandscape, onSettings = { tab = 3 })
             Box(Modifier.weight(1f).fillMaxWidth()) {
                 AnimatedContent(
                     targetState = tab,
