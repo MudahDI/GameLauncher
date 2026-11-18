@@ -38,14 +38,14 @@ import java.util.Locale
 /** Palet warna bergaya antarmuka Steam Deck. */
 object Deck {
     var IsLightTheme by mutableStateOf(false)
-    val Bg get() = if (IsLightTheme) Color(0xFFF3F5F8) else Color(0xFF0E141B)
-    val Panel get() = if (IsLightTheme) Color(0xFFFFFFFF) else Color(0xFF1B2838)
-    val PanelLight get() = if (IsLightTheme) Color(0xFFE5EAF0) else Color(0xFF2A475E)
+    val Bg get() = if (IsLightTheme) Color(0xFFD6DCE4) else Color(0xFF0E141B)
+    val Panel get() = if (IsLightTheme) Color(0xFFE3E8EE) else Color(0xFF1B2838)
+    val PanelLight get() = if (IsLightTheme) Color(0xFFC6CFDA) else Color(0xFF2A475E)
     var Accent by mutableStateOf(Color(0xFF1A9FFF))
     val PlayLight = Color(0xFF75B022)
     val PlayDark = Color(0xFF588A1B)
-    val Text get() = if (IsLightTheme) Color(0xFF17212B) else Color(0xFFDCDEDF)
-    val TextDim get() = if (IsLightTheme) Color(0xFF596675) else Color(0xFF8B929A)
+    val Text get() = if (IsLightTheme) Color(0xFF202A35) else Color(0xFFDCDEDF)
+    val TextDim get() = if (IsLightTheme) Color(0xFF536170) else Color(0xFF8B929A)
 }
 
 @Composable
@@ -119,12 +119,6 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
             .padding(horizontal = 18.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Image(
-            painter = painterResource(R.drawable.ic_launcher_monochrome),
-            contentDescription = "Logo MDI",
-            modifier = Modifier.size(27.dp)
-        )
-        Spacer(Modifier.width(9.dp))
         Text("MDI", color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 1.1.sp)
         Spacer(Modifier.width(6.dp))
         Text("LAUNCHER", color = Deck.TextDim, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.7.sp)
