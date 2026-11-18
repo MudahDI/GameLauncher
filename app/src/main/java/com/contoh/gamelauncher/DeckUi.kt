@@ -145,33 +145,70 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
 
 
 @Composable
+private fun SideNavGlyph(kind: String, color: Color) {
+    Canvas(Modifier.size(21.dp)) {
+        val stroke = 1.9.dp.toPx()
+        val cx = size.width / 2f
+        val cy = size.height / 2f
+        when (kind) {
+            "home" -> {
+                val path = androidx.compose.ui.graphics.Path().apply {
+                    moveTo(size.width * 0.12f, size.height * 0.48f)
+                    lineTo(cx, size.height * 0.12f)
+                    lineTo(size.width * 0.88f, size.height * 0.48f)
+                    lineTo(size.width * 0.80f, size.height * 0.48f)
+                    lineTo(size.width * 0.80f, size.height * 0.88f)
+                    lineTo(size.width * 0.57f, size.height * 0.88f)
+                    lineTo(size.width * 0.57f, size.height * 0.62f)
+                    lineTo(size.width * 0.43f, size.height * 0.62f)
+                    lineTo(size.width * 0.43f, size.height * 0.88f)
+                    lineTo(size.width * 0.20f, size.height * 0.88f)
+                    lineTo(size.width * 0.20f, size.height * 0.48f)
+                    close()
+                }
+                drawPath(path, color, style = Stroke(stroke, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+            }
+            "games" -> {
+                drawRoundRect(color, Offset(size.width * 0.08f, size.height * 0.28f), Size(size.width * 0.84f, size.height * 0.48f), CornerRadius(size.height * 0.20f), style = Stroke(stroke))
+                drawLine(color, Offset(size.width * 0.25f, cy), Offset(size.width * 0.43f, cy), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawLine(color, Offset(size.width * 0.34f, size.height * 0.39f), Offset(size.width * 0.34f, size.height * 0.61f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+                drawCircle(color, size.minDimension * 0.055f, Offset(size.width * 0.68f, size.height * 0.44f))
+                drawCircle(color, size.minDimension * 0.055f, Offset(size.width * 0.78f, size.height * 0.58f))
+            }
+            "search" -> {
+                drawCircle(color, size.minDimension * 0.31f, Offset(size.width * 0.43f, size.height * 0.42f), style = Stroke(stroke))
+                drawLine(color, Offset(size.width * 0.64f, size.height * 0.64f), Offset(size.width * 0.88f, size.height * 0.88f), stroke, cap = androidx.compose.ui.graphics.StrokeCap.Round)
+            }
+        }
+    }
+}
+
+@Composable
 fun SideNavigation(selected: Int, onSelect: (Int) -> Unit) {
     val items = listOf(
-        Triple(0, "⌂", "Beranda"),
-        Triple(1, "🎮", "Koleksi"),
-        Triple(2, "▦", "Cari"),
-        Triple(4, "★", "Riwayat"),
-        Triple(3, "⚙", "Pengaturan")
+        Triple(0, "home", "Beranda"),
+        Triple(1, "games", "Koleksi"),
+        Triple(2, "search", "Cari")
     )
     Column(
         Modifier.width(142.dp).fillMaxHeight()
             .background(Deck.Bg.copy(alpha = 0.96f))
             .padding(horizontal = 10.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(7.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         items.forEach { (index, symbol, label) ->
             val active = selected == index
             Row(
-                Modifier.fillMaxWidth().height(46.dp)
+                Modifier.fillMaxWidth().height(48.dp)
                     .clip(RoundedCornerShape(24.dp))
                     .background(if (active) Deck.Accent.copy(alpha = 0.24f) else Color.Transparent)
                     .clickable { onSelect(index) }
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 13.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(symbol, color = if (active) Deck.Accent else Deck.TextDim, fontSize = 20.sp)
-                Spacer(Modifier.width(10.dp))
-                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 12.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
+                SideNavGlyph(symbol, if (active) Deck.Accent else Deck.TextDim)
+                Spacer(Modifier.width(12.dp))
+                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 13.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
             }
         }
     }
