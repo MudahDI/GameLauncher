@@ -166,6 +166,9 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     // Simpan package name (bukan AppItem) supaya state bisa bertahan saat proses dibunuh sistem.
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
+    // Home focus area: hero actions first, then the game rows.
+    var homeFocusArea by rememberSaveable { mutableStateOf("hero") }
+    var heroActionIndex by rememberSaveable { mutableIntStateOf(0) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var selectedFromHome by rememberSaveable { mutableStateOf(false) }
     var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
@@ -281,24 +284,38 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         if (tab in 0..2) {
                             val direction = if (event.key == Key.ButtonR1) 1 else -1
                             tab = (tab + direction + 3) % 3
+                            if (tab == 0) homeFocusArea = "hero"
                             true
                         } else false
                     }
                     Key.ButtonA, Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> false
                     Key.DirectionRight, Key.DirectionLeft -> {
                         if (tab == 0) {
-                            val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
-                            if (row.isNotEmpty()) {
-                                val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
-                                val nextIndex = if (event.key == Key.DirectionRight) (itemIndex + 1) % row.size else (itemIndex - 1 + row.size) % row.size
-                                focusedPkg = row[nextIndex].pkg
+                            if (homeFocusArea == "hero") {
+                                val step = if (event.key == Key.DirectionRight) 1 else -1
+                                heroActionIndex = (heroActionIndex + step).coerceIn(0, 3)
+                            } else {
+                                val row = homeSections.getOrNull(effectiveHomeRow).orEmpty()
+                                if (row.isNotEmpty()) {
+                                    val itemIndex = row.indexOfFirst { it.pkg == focusedPkg }.coerceAtLeast(0)
+                                    val nextIndex = if (event.key == Key.DirectionRight) (itemIndex + 1) % row.size else (itemIndex - 1 + row.size) % row.size
+                                    focusedPkg = row[nextIndex].pkg
+                                }
                             }
                             true
                         } else false
                     }
                     Key.DirectionDown, Key.DirectionUp -> {
                         if (tab == 0) {
-                            if (homeSections.any { it.isNotEmpty() }) {
+                            if (homeFocusArea == "hero") {
+                                if (event.key == Key.DirectionDown && homeSections.any { it.isNotEmpty() }) {
+                                    homeFocusArea = "cards"
+                                    activeHomeRow = effectiveHomeRow
+                                }
+                            } else if (event.key == Key.DirectionUp && effectiveHomeRow == 0) {
+                                homeFocusArea = "hero"
+                                heroActionIndex = 0
+                            } else if (homeSections.any { it.isNotEmpty() }) {
                                 val direction = if (event.key == Key.DirectionDown) 1 else -1
                                 var targetRowIndex = effectiveHomeRow + direction
                                 while (targetRowIndex in homeSections.indices && homeSections[targetRowIndex].isEmpty()) targetRowIndex += direction
@@ -329,7 +346,14 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         }
                         Key.ButtonA, Key.Enter, Key.NumPadEnter, Key.DirectionCenter -> {
                             if (tab == 0 && focused != null) {
-                                play(focused)
+                                if (homeFocusArea == "hero") {
+                                    when (heroActionIndex) {
+                                        0 -> play(focused)
+                                        1 -> store.toggleFav(focused.pkg)
+                                        2 -> detailPkg = focused.pkg
+                                        3 -> homeOptions(focused)
+                                    }
+                                } else play(focused)
                                 true
                             } else false
                         }
@@ -390,14 +414,16 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                             }
                         } else when (targetTab) {
                             0 -> HomeScreen(
-                                games, store, focused, effectiveHomeRow,
+                                games, store, focused, if (homeFocusArea == "cards") effectiveHomeRow else -1,
                                 { app, rowIndex ->
+                                    homeFocusArea = "cards"
                                     activeHomeRow = rowIndex
                                     focusedPkg = app.pkg
                                 },
                                 play, homeOptions,
                                 onDetails = { detailPkg = it.pkg },
-                                installedApps = apps
+                                installedApps = apps,
+                                focusedActionIndex = if (homeFocusArea == "hero") heroActionIndex else -1
                             )
                             1 -> LibraryScreen(games, apps, store, play, options) { showPicker = true }
                             2 -> SearchScreen(visible, store, play, options)
