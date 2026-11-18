@@ -521,6 +521,7 @@ fun HeroPanel(
                 ) {
                     PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
                     DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
+                    DeckButton("ⓘ", compact = true) { onDetails(focused) }
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
