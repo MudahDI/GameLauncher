@@ -249,10 +249,12 @@ fun CardRow(
     title: String,
     list: List<AppItem>,
     focusedPkg: String?,
+    rowActive: Boolean,
+    rowIndex: Int,
     store: Store,
     cardWidth: Dp,
     compact: Boolean,
-    onTap: (AppItem) -> Unit,
+    onTap: (AppItem, Int) -> Unit,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
     onFocus: (AppItem) -> Unit
@@ -268,8 +270,8 @@ fun CardRow(
                 store,
                 cardWidth,
                 app.pkg in store.favorites,
-                app.pkg == focusedPkg,
-                { onTap(app) },
+                rowActive && app.pkg == focusedPkg,
+                { onTap(app, rowIndex) },
                 null,
                 { onOptions(app) },
                 { onFocus(app) },
@@ -510,7 +512,8 @@ fun HomeScreen(
     visible: List<AppItem>,
     store: Store,
     focused: AppItem?,
-    onFocus: (AppItem) -> Unit,
+    activeRow: Int,
+    onFocus: (AppItem, Int) -> Unit,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit
 ) {
@@ -528,7 +531,7 @@ fun HomeScreen(
         val landscape = maxWidth > maxHeight
         val cardWidth = if (compact) store.cardSizeDp.coerceAtMost(104).dp else store.cardSizeDp.dp
         // Kartu beranda hanya memilih game. Aksi bermain tersedia di tombol MAINKAN pada HeroPanel.
-        val tap: (AppItem) -> Unit = { a -> onFocus(a) }
+        val tap: (AppItem, Int) -> Unit = { app, rowIndex -> onFocus(app, rowIndex) }
 
         if (landscape) {
             // Kembalikan susunan landscape sebelumnya: banner di atas, deretan game di bawah.
@@ -544,15 +547,15 @@ fun HomeScreen(
                     }
                 }
                 if (recent.isNotEmpty()) CardRow(
-                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
+                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, activeRow == 0, 0, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (favs.isNotEmpty()) CardRow(
-                    "FAVORIT", favs, focused?.pkg, store,
+                    "FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (visible.isNotEmpty()) CardRow(
-                    "SEMUA GAME", visible, focused?.pkg, store,
+                    "SEMUA GAME", visible, focused?.pkg, activeRow == 2, 2, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
             }
