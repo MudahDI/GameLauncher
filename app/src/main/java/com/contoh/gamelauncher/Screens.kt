@@ -257,7 +257,7 @@ fun CardRow(
     onTap: (AppItem, Int) -> Unit,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    onFocus: (AppItem) -> Unit
+    onFocus: (AppItem, Int) -> Unit
 ) {
     SectionTitle(title, compact)
     LazyRow(
@@ -274,7 +274,7 @@ fun CardRow(
                 { onTap(app, rowIndex) },
                 null,
                 { onOptions(app) },
-                { onFocus(app) },
+                { onFocus(app, rowIndex) },
                 showMdiBranding = true,
                 showTitle = false
             )
@@ -567,15 +567,15 @@ fun HomeScreen(
             ) {
                 HeroPanel(focused, store, compact, onPlay, onOptions)
                 if (recent.isNotEmpty()) CardRow(
-                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, store,
+                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, activeRow == 0, 0, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (favs.isNotEmpty()) CardRow(
-                    "FAVORIT", favs, focused?.pkg, store,
+                    "FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
                 if (visible.isNotEmpty()) CardRow(
-                    "SEMUA GAME", visible, focused?.pkg, store,
+                    "SEMUA GAME", visible, focused?.pkg, activeRow == 2, 2, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
             }
