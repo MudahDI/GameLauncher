@@ -457,6 +457,7 @@ fun HeroPanel(
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
             }
+        }
     } else {
         Box(
             Modifier
