@@ -528,7 +528,7 @@ fun HeroPanel(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
-                    DeckButton(if (isFav) "★" else "☆", compact = true) { store.toggleFav(focused.pkg) }
+                    DeckButton(if (isFav) "♥" else "♡", compact = true) { store.toggleFav(focused.pkg) }
                     DeckButton("ⓘ", compact = true) { onDetails(focused) }
                     DeckButton("⋯", compact = true) { onOptions(focused) }
                 }
@@ -680,7 +680,7 @@ fun GameDetailScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
                     PlayButton("▶  MAINKAN") { onPlay(app) }
                     Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(Deck.Panel).clickable { store.toggleFav(app.pkg) }, contentAlignment = Alignment.Center) {
-                        Text(if (app.pkg in store.favorites) "★" else "♡", color = if (app.pkg in store.favorites) Color(0xFFFFD45C) else Deck.Text, fontSize = 21.sp)
+                        Text(if (app.pkg in store.favorites) "♥" else "♡", color = if (app.pkg in store.favorites) Color(0xFFFF6B8A) else Deck.Text, fontSize = 21.sp)
                     }
                     Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(Deck.Panel).clickable { onOptions(app) }, contentAlignment = Alignment.Center) {
                         Text("⋯", color = Deck.Text, fontSize = 22.sp)
