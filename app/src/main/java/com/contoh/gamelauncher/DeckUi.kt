@@ -127,7 +127,7 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
         Text(clock, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.Medium)
         Spacer(Modifier.width(9.dp))
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onHistory), contentAlignment = Alignment.Center) {
-            HeaderGlyph("history", Deck.Text)
+            HeaderGlyph("history", Deck.Accent)
         }
         Spacer(Modifier.width(8.dp))
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onRotate), contentAlignment = Alignment.Center) {
@@ -135,7 +135,7 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
         }
         Spacer(Modifier.width(8.dp))
         Box(Modifier.size(36.dp).clip(RoundedCornerShape(9.dp)).background(Deck.Panel).clickable(onClick = onSettings), contentAlignment = Alignment.Center) {
-            HeaderGlyph("settings", Deck.Text)
+            HeaderGlyph("settings", Deck.Accent)
         }
     }
 }
@@ -155,7 +155,7 @@ fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
             Column(
                 Modifier.weight(1f).fillMaxHeight()
                     .clip(RoundedCornerShape(10.dp))
-                    .background(if (active) Deck.Panel else Color.Transparent)
+                    .background(if (active) Deck.Accent.copy(alpha = 0.16f) else Color.Transparent)
                     .clickable { onSelect(index) }
                     .padding(vertical = 3.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -163,7 +163,7 @@ fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
             ) {
                 Text(
                     label,
-                    color = if (active) Color.White else Deck.TextDim,
+                    color = if (active) Deck.Accent else Deck.TextDim,
                     fontSize = 10.sp,
                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
                     letterSpacing = 0.5.sp
@@ -219,7 +219,7 @@ fun PlayButton(text: String, compact: Boolean = false, onClick: () -> Unit) {
         Modifier
             .height(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(Brush.horizontalGradient(listOf(Deck.PlayLight, Deck.PlayDark)))
+            .background(Brush.horizontalGradient(listOf(Deck.Accent, Deck.Accent.copy(alpha = 0.82f))))
             .clickable(onClick = onClick)
             .padding(horizontal = if (compact) 14.dp else 28.dp),
         contentAlignment = Alignment.Center
@@ -240,10 +240,10 @@ fun DeckButton(label: String, compact: Boolean = false, onClick: () -> Unit) {
         Modifier
             .size(if (compact) 38.dp else 44.dp)
             .clip(RoundedCornerShape(6.dp))
-            .background(Deck.PanelLight)
+            .background(Deck.Accent.copy(alpha = 0.18f))
             .clickable(onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        Text(label, color = Color.White, fontSize = if (compact) 16.sp else 18.sp)
+        Text(label, color = Deck.Accent, fontSize = if (compact) 16.sp else 18.sp)
     }
 }
