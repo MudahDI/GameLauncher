@@ -194,7 +194,7 @@ private fun SideNavGlyph(kind: String, color: Color) {
 }
 
 @Composable
-fun SideNavigation(selected: Int, onSelect: (Int) -> Unit) {
+fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Unit) {
     val items = listOf(
         Triple(0, "home", "Beranda"),
         Triple(1, "games", "Koleksi"),
@@ -212,6 +212,7 @@ fun SideNavigation(selected: Int, onSelect: (Int) -> Unit) {
                 Modifier.fillMaxWidth().height(62.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(if (active) Deck.Accent.copy(alpha = 0.24f) else Color.Transparent)
+                    .then(if (focusedIndex == index) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(14.dp)) else Modifier)
                     .clickable { onSelect(index) }
                     .padding(vertical = 8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
