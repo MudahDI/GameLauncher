@@ -572,6 +572,31 @@ fun HeroPanel(
 }
 
 
+
+@Composable
+private fun AppStrip(apps: List<AppItem>, onPlay: (AppItem) -> Unit) {
+    Column {
+        SectionTitle("APLIKASI", false)
+        LazyRow(
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            items(apps, key = { it.pkg }) { app ->
+                Column(
+                    Modifier.width(78.dp).clickable { onPlay(app) },
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Box(Modifier.size(70.dp).clip(RoundedCornerShape(14.dp)).background(Deck.Panel).padding(11.dp)) {
+                        Image(app.icon, contentDescription = app.name, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Fit)
+                    }
+                    Spacer(Modifier.height(5.dp))
+                    Text(app.name, color = Deck.TextDim, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+    }
+}
+
 @Composable
 fun HomeScreen(
     visible: List<AppItem>,
@@ -581,7 +606,8 @@ fun HomeScreen(
     onFocus: (AppItem, Int) -> Unit,
     onPlay: (AppItem) -> Unit,
     onOptions: (AppItem) -> Unit,
-    onDetails: (AppItem) -> Unit = {}
+    onDetails: (AppItem) -> Unit = {},
+    installedApps: List<AppItem> = emptyList()
 ) {
     // Lookup map avoids repeated linear scans for recently played apps.
     val visibleByPackage = remember(visible) { visible.associateBy { it.pkg } }
@@ -600,30 +626,22 @@ fun HomeScreen(
         val tap: (AppItem, Int) -> Unit = { app, rowIndex -> onFocus(app, rowIndex) }
 
         if (landscape) {
-            // Kembalikan susunan landscape sebelumnya: banner di atas, deretan game di bawah.
+            // Beranda landscape mengikuti layout konsol: hero, favorit, lalu aplikasi.
             Column(
                 Modifier.fillMaxSize()
                     .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 20.dp, vertical = 16.dp)
+                    .padding(horizontal = 18.dp, vertical = 14.dp)
             ) {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                    // Batasi lebar banner khusus landscape agar artwork tidak terlalu panoramik.
-                    Box(Modifier.fillMaxWidth().widthIn(max = 760.dp)) {
+                    Box(Modifier.fillMaxWidth()) {
                         HeroPanel(focused, store, compact, onPlay, onOptions, landscape = true, onDetails = onDetails)
                     }
                 }
-                if (recent.isNotEmpty()) CardRow(
-                    "TERAKHIR DIMAINKAN", recent, focused?.pkg, activeRow == 0, 0, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
                 if (favs.isNotEmpty()) CardRow(
-                    "FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
+                    "GAME FAVORIT", favs, focused?.pkg, activeRow == 1, 1, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus
                 )
-                if (visible.isNotEmpty()) CardRow(
-                    "SEMUA GAME", visible, focused?.pkg, activeRow == 2, 2, store,
-                    cardWidth, compact, tap, onPlay, onOptions, onFocus
-                )
+                AppStrip(installedApps, onPlay)
             }
         } else {
             Column(
