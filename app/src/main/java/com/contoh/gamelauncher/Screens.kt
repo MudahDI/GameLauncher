@@ -279,6 +279,17 @@ fun GameCard(
                 )
             }
         }
+        // Draw the focus frame LAST, above the artwork/title, so it cannot be
+        // hidden behind the cover image. The dark inner stroke keeps it readable
+        // even when the artwork itself uses a similar accent color.
+        if (focused) {
+            Box(
+                Modifier.fillMaxSize()
+                    .border(4.dp, Color.Black.copy(alpha = 0.9f), shape)
+                    .padding(2.dp)
+                    .border(2.dp, Deck.Accent, shape)
+            )
+        }
     }
 }
 
