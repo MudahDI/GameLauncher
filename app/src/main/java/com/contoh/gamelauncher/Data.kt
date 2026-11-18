@@ -80,7 +80,14 @@ class Store(ctx: Context) {
     var artworks by mutableStateOf(readArtworkMap())
     var descriptions by mutableStateOf(readDescriptionMap())
     var metadataTitles by mutableStateOf(readMetadataTitleMap())
-    var wallpaperUri by mutableStateOf(sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) })
+    // Wallpaper disimpan terpisah untuk tiap orientasi. Wallpaper lama dimigrasikan ke Portrait.
+    var portraitWallpaperUri by mutableStateOf(
+        sp.getString("wallpaper_portrait_uri", null)?.let { Uri.parse(it) }
+            ?: sp.getString("wallpaper_uri", null)?.let { Uri.parse(it) }
+    )
+    var landscapeWallpaperUri by mutableStateOf(
+        sp.getString("wallpaper_landscape_uri", null)?.let { Uri.parse(it) }
+    )
     init {
         // Migrasi sekali: gunakan identitas biru MDI sebagai aksen awal versi ini.
         if (!sp.getBoolean("blue_branding_migrated", false)) {
@@ -131,9 +138,15 @@ class Store(ctx: Context) {
         updateWallpaperOverlay(0.62f)
     }
 
-    fun setWallpaper(uri: Uri?) {
-        wallpaperUri = uri
-        sp.edit().putString("wallpaper_uri", uri?.toString()).apply()
+    fun setPortraitWallpaper(uri: Uri?) {
+        portraitWallpaperUri = uri
+        sp.edit().putString("wallpaper_portrait_uri", uri?.toString())
+            .remove("wallpaper_uri").apply()
+    }
+
+    fun setLandscapeWallpaper(uri: Uri?) {
+        landscapeWallpaperUri = uri
+        sp.edit().putString("wallpaper_landscape_uri", uri?.toString()).apply()
     }
 
     fun setMaterialYou(enabled: Boolean) {
