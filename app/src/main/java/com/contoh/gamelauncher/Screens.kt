@@ -146,6 +146,8 @@ fun ArtworkImage(
 private fun Modifier.gamepadClickable(onClick: () -> Unit): Modifier = composed {
     var hasGamepadFocus by remember { mutableStateOf(false) }
     this
+        // Explicit focus target is required for hardware DPAD traversal.
+        .focusable()
         .onFocusChanged { hasGamepadFocus = it.isFocused }
         .then(
             if (hasGamepadFocus) Modifier.border(
@@ -200,6 +202,9 @@ fun GameCard(
             .clip(shape)
             .then(if (focused) Modifier.border(3.dp, Deck.Accent, shape) else Modifier)
             .background(Deck.Panel)
+            // combinedClickable handles activation; focusable exposes the card
+            // as a DPAD focus target on Android devices.
+            .focusable()
             .onFocusChanged { if (it.isFocused) onFocus() }
             .onPreviewKeyEvent { event ->
                 if (event.type == KeyEventType.KeyDown && (event.key == Key.ButtonA || event.key == Key.Enter || event.key == Key.NumPadEnter || event.key == Key.DirectionCenter)) { onClick(); true } else false
