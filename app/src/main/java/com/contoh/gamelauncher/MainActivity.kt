@@ -167,6 +167,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     var focusedPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var activeHomeRow by rememberSaveable { mutableIntStateOf(0) }
     var selectedPkg by rememberSaveable { mutableStateOf<String?>(null) }
+    var selectedFromHome by rememberSaveable { mutableStateOf(false) }
     var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
@@ -267,7 +268,8 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                 .onSuccess { store.markPlayed(a.pkg) }
         }
     }
-    val options: (AppItem) -> Unit = { a -> selectedPkg = a.pkg }
+    val options: (AppItem) -> Unit = { a -> selectedFromHome = false; selectedPkg = a.pkg }
+    val homeOptions: (AppItem) -> Unit = { a -> selectedFromHome = true; selectedPkg = a.pkg }
 
     Box(
         Modifier
@@ -389,7 +391,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                                     activeHomeRow = rowIndex
                                     focusedPkg = app.pkg
                                 },
-                                play, options,
+                                play, homeOptions,
                                 onDetails = { detailPkg = it.pkg },
                                 installedApps = apps
                             )
@@ -459,6 +461,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
                         selectedPkg = null
                     }
+                    if (selectedFromHome) {
                     if (store.isGame(a)) OptionAction("Cari metadata & artwork", "Cari judul, deskripsi, dan gambar dari Wikipedia", "⌕") {
                         metadataPkg = a.pkg
                         selectedPkg = null
@@ -489,6 +492,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                         OptionAction("Hapus banner landscape", "Kembali menggunakan artwork bawaan", "⌫", danger = true) {
                             store.clearArtwork(a.pkg, "banner")
                         }
+                    }
                     }
                     OptionAction("Info aplikasi", "Buka pengaturan Android untuk melihat info, mengelola izin, atau uninstall aplikasi", "ⓘ") {
                         selectedPkg = null
