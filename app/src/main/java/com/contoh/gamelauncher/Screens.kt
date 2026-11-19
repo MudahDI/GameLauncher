@@ -1040,6 +1040,21 @@ fun SettingsScreen(
             }
         }
         Spacer(Modifier.height(24.dp))
+        Text(tx("TEKS VERTIKAL", "VERTICAL TEXT"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        Text(tx("Teks di area punch-hole", "Text in punch-hole area"), color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(tx("Tampil vertikal di ruang samping navigasi saat Landscape. Kosongkan untuk menyembunyikannya.", "Shown vertically in the gutter beside navigation in landscape. Leave blank to hide it."), color = Deck.TextDim, fontSize = 12.sp)
+        Spacer(Modifier.height(8.dp))
+        OutlinedTextField(
+            value = store.verticalRailText,
+            onValueChange = { store.updateVerticalRailText(it) },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            label = { Text(tx("Teks vertikal", "Vertical text")) },
+            placeholder = { Text("MDI LAUNCHER") }
+        )
+        Text(tx("Maksimal 24 karakter. Contoh: MDI LAUNCHER, YOUR NAME, atau slogan singkat.", "Up to 24 characters. Example: MDI LAUNCHER, YOUR NAME, or a short slogan."), color = Deck.TextDim, fontSize = 11.sp)
+        Spacer(Modifier.height(24.dp))
         Text(tx("TAMPILAN", "APPEARANCE"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         Text(tx("Tema aplikasi", "App theme"), color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
