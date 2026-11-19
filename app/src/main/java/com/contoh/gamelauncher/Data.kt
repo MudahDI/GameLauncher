@@ -98,6 +98,12 @@ class Store(ctx: Context) {
     var accentHex by mutableStateOf(sp.getString("accent_hex", "#1A9FFF") ?: "#1A9FFF")
     var useMaterialYou by mutableStateOf(sp.getBoolean("material_you", false))
     var isLightTheme by mutableStateOf(sp.getBoolean("light_theme", false))
+    var language by mutableStateOf(sp.getString("language", "id") ?: "id")
+
+    fun setLanguage(value: String) {
+        language = if (value == "en") "en" else "id"
+        sp.edit().putString("language", language).apply()
+    }
     var cardSizeDp by mutableStateOf(sp.getInt("card_size_dp", 112).coerceIn(88, 148))
     var gridSpacingDp by mutableStateOf(sp.getInt("grid_spacing_dp", 14).coerceIn(6, 24))
     var cardCornerDp by mutableStateOf(sp.getInt("card_corner_dp", 10).coerceIn(4, 20))
