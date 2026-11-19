@@ -99,6 +99,12 @@ class Store(ctx: Context) {
     var useMaterialYou by mutableStateOf(sp.getBoolean("material_you", false))
     var isLightTheme by mutableStateOf(sp.getBoolean("light_theme", false))
     var language by mutableStateOf(sp.getString("language", "id") ?: "id")
+    var verticalRailText by mutableStateOf(sp.getString("vertical_rail_text", "MDI LAUNCHER") ?: "MDI LAUNCHER")
+
+    fun updateVerticalRailText(value: String) {
+        verticalRailText = value.take(24)
+        sp.edit().putString("vertical_rail_text", verticalRailText).apply()
+    }
 
     fun updateLanguage(value: String) {
         language = if (value == "en") "en" else "id"
