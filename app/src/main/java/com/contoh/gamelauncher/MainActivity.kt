@@ -391,7 +391,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
                 onSettings = { tab = 3 }
             )
             Row(Modifier.weight(1f).fillMaxWidth()) {
-                if (isLandscape) SideNavigation(selected = tab) { tab = it }
+                if (isLandscape) SideNavigation(selected = tab, verticalText = store.verticalRailText) { tab = it }
                 Box(Modifier.weight(1f).fillMaxHeight()) {
                     AnimatedContent(
                         targetState = tab,
