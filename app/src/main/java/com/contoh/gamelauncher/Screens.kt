@@ -222,14 +222,14 @@ fun GameCard(
             .drawWithContent {
                 drawContent()
                 if (focused && !plainIcon) {
-                    val inset = 1.5.dp.toPx()
+                    val inset = 2.dp.toPx()
                     val radius = store.cardCornerDp.dp.toPx()
                     drawRoundRect(
                         color = Deck.Accent,
                         topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
                         size = androidx.compose.ui.geometry.Size(size.width - inset * 2, size.height - inset * 2),
                         cornerRadius = CornerRadius(radius, radius),
-                        style = Stroke(width = 2.5.dp.toPx())
+                        style = Stroke(width = 4.5.dp.toPx())
                     )
                 }
             }
