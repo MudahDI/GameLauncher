@@ -160,6 +160,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
     SideEffect {
         Deck.Accent = elementColor
         Deck.IsLightTheme = store.isLightTheme
+        Deck.Language = store.language
     }
     // 0 = Beranda, 1 = Koleksi, 2 = Cari, 3 = Atur, 4 = Riwayat
     var tab by rememberSaveable { mutableStateOf(0) }
@@ -459,7 +460,9 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                                 hasPortraitWallpaper = store.portraitWallpaperUri != null,
                                 hasLandscapeWallpaper = store.landscapeWallpaperUri != null,
                                 store = store,
-                                onManageMetadataSources = { showMetadataSources = true }
+                                onManageMetadataSources = { showMetadataSources = true },
+                                currentLanguage = store.language,
+                                onLanguageChange = { store.setLanguage(it) }
                             )
                             else -> HistoryScreen(visible, store, play, options)
                         }
