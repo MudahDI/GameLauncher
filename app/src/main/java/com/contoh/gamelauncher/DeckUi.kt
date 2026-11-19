@@ -207,26 +207,38 @@ fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Uni
         Triple(2, "search", tx("Cari", "Search"))
     )
     Column(
-        Modifier.width(88.dp).fillMaxHeight()
+        Modifier.width(68.dp).fillMaxHeight()
             .background(Deck.Bg.copy(alpha = 0.98f))
-            .padding(horizontal = 8.dp, vertical = 14.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+            .padding(horizontal = 6.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items.forEach { (index, symbol, label) ->
             val active = selected == index
             Column(
-                Modifier.fillMaxWidth().height(62.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(if (active) Deck.Accent.copy(alpha = 0.24f) else Color.Transparent)
-                    .then(if (focusedIndex == index) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(14.dp)) else Modifier)
+                Modifier.fillMaxWidth().height(58.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .then(if (focusedIndex == index) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(12.dp)) else Modifier)
                     .clickable { onSelect(index) }
-                    .padding(vertical = 8.dp),
+                    .padding(vertical = 4.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                SideNavGlyph(symbol, if (active) Deck.Accent else Deck.TextDim)
-                Spacer(Modifier.height(5.dp))
-                Text(label, color = if (active) Deck.Text else Deck.TextDim, fontSize = 9.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium, maxLines = 1)
+                Box(
+                    Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
+                        .background(if (active) Deck.Accent.copy(alpha = 0.20f) else Color.Transparent),
+                    contentAlignment = Alignment.Center
+                ) {
+                    SideNavGlyph(symbol, if (active) Deck.Accent else Deck.TextDim)
+                }
+                Spacer(Modifier.height(2.dp))
+                Text(
+                    label,
+                    color = if (active) Deck.Text else Deck.TextDim,
+                    fontSize = 8.sp,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                    maxLines = 1
+                )
             }
         }
     }
