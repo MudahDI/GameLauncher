@@ -1128,11 +1128,11 @@ fun SettingsScreen(
         )
         if (hasPortraitWallpaper) {
             Spacer(Modifier.height(8.dp))
-            SettingRow(tx("Hapus wallpaper Portrait", "Remove portrait wallpaper"), tx("Gunakan latar charcoal bawaan saat Portrait", "Use the default charcoal background in portrait"), onClearPortraitWallpaper)
+            SettingRow(tx(tx("Hapus wallpaper Portrait", "Remove portrait wallpaper"), "Remove portrait wallpaper"), tx("Gunakan latar charcoal bawaan saat Portrait", "Use the default charcoal background in portrait"), onClearPortraitWallpaper)
         }
         if (hasLandscapeWallpaper) {
             Spacer(Modifier.height(8.dp))
-            SettingRow(tx("Hapus wallpaper Landscape", "Remove landscape wallpaper"), tx("Gunakan latar charcoal bawaan saat Landscape", "Use the default charcoal background in landscape"), onClearLandscapeWallpaper)
+            SettingRow(tx(tx("Hapus wallpaper Landscape", "Remove landscape wallpaper"), "Remove landscape wallpaper"), tx("Gunakan latar charcoal bawaan saat Landscape", "Use the default charcoal background in landscape"), onClearLandscapeWallpaper)
         }
         Spacer(Modifier.height(24.dp))
         Text(tx("TATA LETAK", "LAYOUT"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
@@ -1146,11 +1146,11 @@ fun SettingsScreen(
         SettingSlider(tx("Intensitas wallpaper", "Wallpaper intensity"), "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.05f..1.00f, 94) { store.updateWallpaperOpacity(it) }
         SettingSlider(tx("Kegelapan overlay", "Overlay darkness"), "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
-        SettingRow(tx("Pulihkan tampilan default", "Restore default appearance"), tx("Kembalikan ukuran kartu, jarak, sudut, warna elemen, dan efek wallpaper", "Restore card size, spacing, corners, accent color, and wallpaper effects"), { store.resetAppearance() })
+        SettingRow(tx("Pulihkan tampilan default", "Restore default appearance"), tx(tx("Kembalikan ukuran kartu, jarak, sudut, warna elemen, dan efek wallpaper", "Restore card size, spacing, corners, accent color, and wallpaper effects"), "Restore card size, spacing, corners, accent color, and wallpaper effects"), { store.resetAppearance() })
         Spacer(Modifier.height(24.dp))
         Text(tx("DATABASE GAME", "GAME DATABASE"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        SettingRow(tx("Sumber metadata game", "Game metadata sources"), tx("Kelola provider bawaan dan endpoint database kustom", "Manage built-in providers and custom database endpoints"), onManageMetadataSources)
+        SettingRow(tx("Sumber metadata game", "Game metadata sources"), tx(tx("Kelola provider bawaan dan endpoint database kustom", "Manage built-in providers and custom database endpoints"), "Manage built-in providers and custom database endpoints"), onManageMetadataSources)
         Spacer(Modifier.height(24.dp))
         Text(tx(tx("APLIKASI", "APPS"), "APPS"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
@@ -1218,8 +1218,8 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
     Column(Modifier.fillMaxSize().focusGroup().padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = 14.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
-                Text("RIWAYAT BERMAIN", color = Deck.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
-                Text("${history.size} game pernah dibuka", color = Deck.TextDim, fontSize = 11.sp)
+                Text(tx("RIWAYAT BERMAIN", "PLAY HISTORY"), color = Deck.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text(tx("${history.size} game pernah dibuka", "${history.size} games played"), color = Deck.TextDim, fontSize = 11.sp)
             }
             TextButton(onClick = { store.clearHistory() }) { Text("BERSIHKAN", color = Deck.Accent, fontSize = 10.sp) }
         }
@@ -1241,7 +1241,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
                         Spacer(Modifier.width(12.dp))
                         Column(Modifier.weight(1f)) {
                             Text(app.name, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            Text("Terakhir: " + if (playedAt > 0L) android.text.format.DateUtils.getRelativeTimeSpanString(playedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS) else "—", color = Deck.TextDim, fontSize = 10.sp)
+                            Text(tx("Terakhir: ", "Last played: ") + if (playedAt > 0L) android.text.format.DateUtils.getRelativeTimeSpanString(playedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS) else "—", color = Deck.TextDim, fontSize = 10.sp)
                             Text("Total bermain: " + formatPlaytime(duration), color = Deck.Accent, fontSize = 10.sp)
                         }
                         TextButton(onClick = { onOptions(app) }) { Text("•••", color = Deck.TextDim) }
