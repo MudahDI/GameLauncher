@@ -639,7 +639,6 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
 class MainActivity : ComponentActivity() {
     private var refreshTick by mutableIntStateOf(0)
     private var sessionRefresh by mutableIntStateOf(0)
-    private var hasBeenStopped = false
     private val packageChanges = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             refreshTick++
@@ -651,11 +650,9 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         Store.finishPendingSession(this)
         sessionRefresh++
-        hasBeenStopped = false
     }
 
     override fun onStop() {
-        hasBeenStopped = true
         super.onStop()
     }
 
