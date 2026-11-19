@@ -626,7 +626,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                         addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
                     }
                     ctx.startActivity(restartIntent)
-                }) { Text("Restart") }
+                }) { Text(tx("Restart", "Restart")) }
             },
             dismissButton = {
                 TextButton(onClick = { confirmRestart = false }) { Text(tx("Batal", "Cancel")) }
