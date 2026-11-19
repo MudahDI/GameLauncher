@@ -207,9 +207,12 @@ fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Uni
         Triple(2, "search", tx("Cari", "Search"))
     )
     Column(
-        Modifier.windowInsetsPadding(WindowInsets.displayCutout)
-            .width(68.dp).fillMaxHeight()
+        Modifier
+            // Extend the rail background behind the camera safe-area gutter,
+            // while keeping navigation content inside the display cutout inset.
             .background(Deck.Bg.copy(alpha = 0.98f))
+            .windowInsetsPadding(WindowInsets.displayCutout)
+            .width(68.dp).fillMaxHeight()
             .padding(horizontal = 6.dp, vertical = 16.dp),
         verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
