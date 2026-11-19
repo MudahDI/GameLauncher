@@ -489,7 +489,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
             title = {
                 Column {
                     Text(a.name, color = Deck.Text)
-                    Text("OPSI GAME", color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.5.sp)
+                    Text(tx("OPSI GAME", "GAME OPTIONS"), color = Deck.TextDim, fontSize = 10.sp, letterSpacing = 1.5.sp)
                 }
             },
             text = {
@@ -497,47 +497,47 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                     Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
-                    OptionAction(if (fav) "Hapus dari favorit" else "Tambahkan ke favorit", "Atur game ini sebagai favorit", if (fav) "♥" else "♡") {
+                    OptionAction(if (fav) tx("Hapus dari favorit", "Remove from favorites") else tx("Tambahkan ke favorit", "Add to favorites"), tx("Atur game ini sebagai favorit", "Set this game as a favorite"), if (fav) "♥" else "♡") {
                         store.toggleFav(a.pkg); selectedPkg = null
                     }
-                    OptionAction(if (store.isGame(a)) "Pindahkan ke Aplikasi" else "Pindahkan ke Game", "Ubah kategori di koleksi launcher", "⇄") {
+                    OptionAction(if (store.isGame(a)) tx("Pindahkan ke Aplikasi", "Move to Apps") else tx("Pindahkan ke Game", "Move to Games"), tx("Ubah kategori di koleksi launcher", "Change this item's launcher category"), "⇄") {
                         if (store.isGame(a)) store.moveToApps(a.pkg) else store.moveToGame(a.pkg)
                         selectedPkg = null
                     }
                     if (selectedFromHome) {
-                    if (store.isGame(a)) OptionAction("Cari metadata & artwork", "Cari judul, deskripsi, dan gambar dari Wikipedia", "⌕") {
+                    if (store.isGame(a)) OptionAction(tx("Cari metadata & artwork", "Find metadata & artwork"), tx("Cari judul, deskripsi, dan gambar dari Wikipedia", "Find titles, descriptions, and artwork from metadata sources"), "⌕") {
                         metadataPkg = a.pkg
                         selectedPkg = null
                     }
-                    OptionAction("Edit deskripsi", "Ubah informasi yang tampil di halaman utama", "✎") {
+                    OptionAction(tx("Edit deskripsi", "Edit description"), tx("Ubah informasi yang tampil di halaman utama", "Change the information shown on the home screen"), "✎") {
                         descriptionDraft = store.description(a.pkg)
                         editingDescriptionPkg = a.pkg
                         selectedPkg = null
                     }
-                    OptionAction(if (store.artworkUri(a.pkg, "cover") == null) "Pilih cover portrait" else "Ganti cover portrait", "Artwork untuk kartu koleksi", "▣") {
+                    OptionAction(if (store.artworkUri(a.pkg, "cover") == null) tx("Pilih cover portrait", "Choose portrait cover") else tx("Ganti cover portrait", "Change portrait cover"), tx("Artwork untuk kartu koleksi", "Artwork used on library cards"), "▣") {
                         pendingArtworkPkg = a.pkg
                         pendingArtworkKind = "cover"
                         selectedPkg = null
                         artworkPicker.launch(arrayOf("image/*"))
                     }
                     if (store.artworkUri(a.pkg, "cover") != null) {
-                        OptionAction("Hapus cover portrait", "Kembali menggunakan ikon aplikasi", "⌫", danger = true) {
+                        OptionAction(tx("Hapus cover portrait", "Remove portrait cover"), tx("Kembali menggunakan ikon aplikasi", "Use the app icon again"), "⌫", danger = true) {
                             store.clearArtwork(a.pkg, "cover")
                         }
                     }
-                    OptionAction(if (store.artworkUri(a.pkg, "banner") == null) "Pilih banner landscape" else "Ganti banner landscape", "Artwork untuk panel utama mode landscape", "▤") {
+                    OptionAction(if (store.artworkUri(a.pkg, "banner") == null) tx("Pilih banner landscape", "Choose landscape banner") else tx("Ganti banner landscape", "Change landscape banner"), tx("Artwork untuk panel utama mode landscape", "Artwork for the landscape home panel"), "▤") {
                         pendingArtworkPkg = a.pkg
                         pendingArtworkKind = "banner"
                         selectedPkg = null
                         artworkPicker.launch(arrayOf("image/*"))
                     }
                     if (store.artworkUri(a.pkg, "banner") != null) {
-                        OptionAction("Hapus banner landscape", "Kembali menggunakan artwork bawaan", "⌫", danger = true) {
+                        OptionAction(tx("Hapus banner landscape", "Remove landscape banner"), tx("Kembali menggunakan artwork bawaan", "Use the default artwork again"), "⌫", danger = true) {
                             store.clearArtwork(a.pkg, "banner")
                         }
                     }
                     }
-                    OptionAction("Info aplikasi", "Buka pengaturan Android untuk melihat info, mengelola izin, atau uninstall aplikasi", "ⓘ") {
+                    OptionAction(tx("Info aplikasi", "App info"), tx("Buka pengaturan Android untuk melihat info, mengelola izin, atau uninstall aplikasi", "Open Android settings to view app details, manage permissions, or uninstall"), "ⓘ") {
                         selectedPkg = null
                         runCatching {
                             ctx.startActivity(
@@ -548,13 +548,13 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                             )
                         }
                     }
-                    OptionAction("Sembunyikan dari launcher", "Hapus game ini dari daftar tanpa menghapus aplikasinya", "−", danger = true) {
+                    OptionAction(tx("Sembunyikan dari launcher", "Hide from launcher"), tx("Hapus game ini dari daftar tanpa menghapus aplikasinya", "Remove this game from the launcher without uninstalling it"), "−", danger = true) {
                         store.removeApp(a.pkg)
                         selectedPkg = null
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { selectedPkg = null }) { Text("Tutup") } }
+            confirmButton = { TextButton(onClick = { selectedPkg = null }) { Text(tx("Tutup", "Close")) } }
         )
     }
 
@@ -590,7 +590,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
         val appName = allApps.firstOrNull { it.pkg == pkg }?.name ?: pkg
         AlertDialog(
             onDismissRequest = { editingDescriptionPkg = null },
-            title = { Text("Deskripsi game") },
+            title = { Text(tx("Deskripsi game", "Game description")) },
             text = {
                 androidx.compose.material3.OutlinedTextField(
                     value = descriptionDraft,
@@ -605,10 +605,10 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                 TextButton(onClick = {
                     store.setDescription(pkg, descriptionDraft)
                     editingDescriptionPkg = null
-                }) { Text("Simpan") }
+                }) { Text(tx("Simpan", "Save")) }
             },
             dismissButton = {
-                TextButton(onClick = { editingDescriptionPkg = null }) { Text("Batal") }
+                TextButton(onClick = { editingDescriptionPkg = null }) { Text(tx("Batal", "Cancel")) }
             }
         )
     }
@@ -618,7 +618,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
         AlertDialog(
             onDismissRequest = { confirmRestart = false },
             title = { Text("Restart MDI Launcher?") },
-            text = { Text("Launcher akan dimulai ulang. Pengaturan, favorit, dan koleksi game tetap tersimpan.") },
+            text = { Text(tx("Launcher akan dimulai ulang. Pengaturan, favorit, dan koleksi game tetap tersimpan.", "The launcher will restart. Your settings, favorites, and game library will be preserved.")) },
             confirmButton = {
                 TextButton(onClick = {
                     confirmRestart = false
@@ -629,7 +629,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                 }) { Text("Restart") }
             },
             dismissButton = {
-                TextButton(onClick = { confirmRestart = false }) { Text("Batal") }
+                TextButton(onClick = { confirmRestart = false }) { Text(tx("Batal", "Cancel")) }
             }
         )
     }
@@ -638,11 +638,11 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
         AlertDialog(
             onDismissRequest = { confirmReset = false },
             title = { Text("Kembalikan daftar otomatis?") },
-            text = { Text("Kategori manual dan aplikasi tersembunyi akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.") },
+            text = { Text(tx("Kategori manual dan aplikasi tersembunyi akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.", "Manual categories and hidden apps will return to automatic detection. Favorites will remain unchanged.")) },
             confirmButton = {
                 TextButton(onClick = { store.resetList(); confirmReset = false }) { Text("Kembalikan") }
             },
-            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text("Batal") } }
+            dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(tx("Batal", "Cancel")) } }
         )
     }
 }
