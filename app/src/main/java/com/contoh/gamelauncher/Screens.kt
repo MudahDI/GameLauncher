@@ -712,7 +712,7 @@ fun GameDetailScreen(
                 Box(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.08f), Color.Black.copy(alpha = 0.28f), Color.Black.copy(alpha = 0.94f)))))
                 Row(Modifier.align(Alignment.TopStart).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
                     Box(Modifier.clip(RoundedCornerShape(12.dp)).background(Color.Black.copy(alpha = 0.45f)).clickable(onClick = onBack).padding(horizontal = 14.dp, vertical = 9.dp)) {
-                        Text("‹  KEMBALI", color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                        Text(tx("‹  KEMBALI", "‹  BACK"), color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                     }
                 }
                 Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 22.dp, vertical = 20.dp)) {
@@ -740,7 +740,7 @@ fun GameDetailScreen(
                     Text(app.pkg, color = Deck.Text, fontSize = 13.sp)
                     Text(tx("Status favorit", "Favorite status"), color = Deck.TextDim, fontSize = 11.sp)
                     Text(if (app.pkg in store.favorites) tx("Favorit", "Favorite") else tx("Belum ditandai", "Not favorited"), color = Deck.Text, fontSize = 13.sp)
-                    Text("Total waktu bermain", color = Deck.TextDim, fontSize = 11.sp)
+                    Text(tx("Total waktu bermain", "Total play time"), color = Deck.TextDim, fontSize = 11.sp)
                     Text(formatPlaytime(store.playtimeMs[app.pkg] ?: 0L), color = Deck.Text, fontSize = 13.sp)
                 }
             }
@@ -1221,7 +1221,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
                 Text(tx("RIWAYAT BERMAIN", "PLAY HISTORY"), color = Deck.Text, fontSize = 17.sp, fontWeight = FontWeight.Bold)
                 Text(tx("${history.size} game pernah dibuka", "${history.size} games played"), color = Deck.TextDim, fontSize = 11.sp)
             }
-            TextButton(onClick = { store.clearHistory() }) { Text("BERSIHKAN", color = Deck.Accent, fontSize = 10.sp) }
+            TextButton(onClick = { store.clearHistory() }) { Text(tx("BERSIHKAN", "CLEAR"), color = Deck.Accent, fontSize = 10.sp) }
         }
         if (history.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -1242,7 +1242,7 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
                         Column(Modifier.weight(1f)) {
                             Text(app.name, color = Deck.Text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                             Text(tx("Terakhir: ", "Last played: ") + if (playedAt > 0L) android.text.format.DateUtils.getRelativeTimeSpanString(playedAt, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS) else "—", color = Deck.TextDim, fontSize = 10.sp)
-                            Text("Total bermain: " + formatPlaytime(duration), color = Deck.Accent, fontSize = 10.sp)
+                            Text(tx("Total bermain: ", "Total played: ") + formatPlaytime(duration), color = Deck.Accent, fontSize = 10.sp)
                         }
                         TextButton(onClick = { onOptions(app) }) { Text("•••", color = Deck.TextDim) }
                     }
