@@ -347,7 +347,6 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
             .onKeyEvent { event ->
                 if (event.type != KeyEventType.KeyDown) false
                 else {
-                    val currentIndex = games.indexOfFirst { it.pkg == focused?.pkg }.coerceAtLeast(0)
                     when (event.key) {
                         Key.ButtonY -> {
                             (ctx as? ComponentActivity)?.requestedOrientation =
@@ -370,16 +369,16 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                         }
                         Key.ButtonB, Key.Escape, Key.Back -> {
                             when {
-                                detailPkg != null -> detailPkg = null
-                                selectedPkg != null -> selectedPkg = null
-                                metadataPkg != null -> metadataPkg = null
-                                editingDescriptionPkg != null -> editingDescriptionPkg = null
-                                showMetadataSources -> showMetadataSources = false
-                                showPicker -> showPicker = false
-                                confirmReset -> confirmReset = false
-                                tab != 0 -> tab = 0
+                                detailPkg != null -> { detailPkg = null; true }
+                                selectedPkg != null -> { selectedPkg = null; true }
+                                metadataPkg != null -> { metadataPkg = null; true }
+                                editingDescriptionPkg != null -> { editingDescriptionPkg = null; true }
+                                showMetadataSources -> { showMetadataSources = false; true }
+                                showPicker -> { showPicker = false; true }
+                                confirmReset -> { confirmReset = false; true }
+                                tab != 0 -> { tab = 0; true }
                                 else -> false
-                            }.let { true }
+                            }
                         }
                         else -> false
                     }
