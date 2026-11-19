@@ -469,13 +469,13 @@ fun HeroPanel(
                 Text("MDI LAUNCHER", color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "MENYIAPKAN BERANDA",
+                    tx("MENYIAPKAN BERANDA", "PREPARING HOME"),
                     color = Deck.Text,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    "Memuat koleksi game dan artwork…",
+                    tx("Memuat koleksi game dan artwork…", "Loading your game library and artwork…"),
                     color = Deck.TextDim,
                     fontSize = 12.sp
                 )
@@ -515,7 +515,7 @@ fun HeroPanel(
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.Center
             ) {
-                Text("GAME UNGGULAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text(tx("GAME UNGGULAN", "FEATURED GAME"), color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(5.dp))
                 Text(focused.name, color = Color.White, fontSize = if (compact) 19.sp else 25.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 Text(if (focused.pkg in store.recent) tx("Terakhir dimainkan", "Recently played") else tx("Siap dimainkan", "Ready to play"), color = Color.White.copy(alpha = 0.76f), fontSize = 11.sp)
@@ -525,7 +525,7 @@ fun HeroPanel(
                 }
                 Spacer(Modifier.height(9.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                    PlayButton("▶  MAINKAN", compact = true, focused = focusedActionIndex == 0) { onPlay(focused) }
+                    PlayButton(tx("▶  MAINKAN", "▶  PLAY"), compact = true, focused = focusedActionIndex == 0) { onPlay(focused) }
                     DeckButton(if (isFav) "♥" else "♡", compact = true, focused = focusedActionIndex == 1) { store.toggleFav(focused.pkg) }
                     DeckButton("ⓘ", compact = true, focused = focusedActionIndex == 2) { onDetails(focused) }
                     DeckButton("⋯", compact = true, focused = focusedActionIndex == 3) { onOptions(focused) }
@@ -571,7 +571,7 @@ fun HeroPanel(
                         letterSpacing = 1.5.sp
                     )
                     Spacer(Modifier.weight(1f))
-                    if (isFav) Text("♥ FAVORIT", color = Color(0xFFFF6B8A), fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                    if (isFav) Text(tx("♥ FAVORIT", "♥ FAVORITE"), color = Color(0xFFFF6B8A), fontSize = 9.sp, fontWeight = FontWeight.Bold)
                 }
                 Spacer(Modifier.height(5.dp))
                 Text(
@@ -602,7 +602,7 @@ fun HeroPanel(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    PlayButton("▶  MAINKAN", compact = true) { onPlay(focused) }
+                    PlayButton(tx("▶  MAINKAN", "▶  PLAY"), compact = true) { onPlay(focused) }
                     DeckButton(if (isFav) "♥" else "♡", compact = true) { store.toggleFav(focused.pkg) }
                     DeckButton("ⓘ", compact = true) { onDetails(focused) }
                     DeckButton("⋯", compact = true) { onOptions(focused) }
@@ -702,7 +702,7 @@ fun GameDetailScreen(
 ) {
     val landscape = LocalConfiguration.current.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
     val description = store.description(app.pkg).ifBlank {
-        "Belum ada deskripsi untuk game ini. Kamu bisa menambahkannya melalui pengelolaan metadata."
+        tx("Belum ada deskripsi untuk game ini. Kamu bisa menambahkannya melalui pengelolaan metadata.", "There is no description for this game yet. Add one through metadata management.")
     }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val heroHeight = if (landscape) maxHeight * 0.78f else (maxHeight * 0.42f).coerceIn(220.dp, 340.dp)
@@ -719,12 +719,12 @@ fun GameDetailScreen(
                     Text(tx("DETAIL GAME", "GAME DETAILS"), color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
                     Spacer(Modifier.height(5.dp))
                     Text(app.name, color = Color.White, fontSize = if (landscape) 28.sp else 25.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text("Aplikasi Android  •  " + if (app.pkg in store.recent) "Pernah dimainkan" else tx("Siap dimainkan", "Ready to play"), color = Color.White.copy(alpha = 0.76f), fontSize = 12.sp)
+                    Text("Aplikasi Android  •  " + if (app.pkg in store.recent) tx("Pernah dimainkan", "Previously played") else tx("Siap dimainkan", "Ready to play"), color = Color.White.copy(alpha = 0.76f), fontSize = 12.sp)
                 }
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                 Row(horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
-                    PlayButton("▶  MAINKAN") { onPlay(app) }
+                    PlayButton(tx("▶  MAINKAN", "▶  PLAY")) { onPlay(app) }
                     Box(Modifier.size(44.dp).clip(RoundedCornerShape(8.dp)).background(Deck.Panel).clickable { store.toggleFav(app.pkg) }, contentAlignment = Alignment.Center) {
                         Text(if (app.pkg in store.favorites) "♥" else "♡", color = if (app.pkg in store.favorites) Color(0xFFFF6B8A) else Deck.Text, fontSize = 21.sp)
                     }
@@ -869,7 +869,7 @@ fun LibraryScreen(
                     )
                 }
                 TextButton(onClick = onAdd) {
-                    Text("+ PULIHKAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                    Text(tx("+ PULIHKAN", "+ RESTORE"), color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                 }
             }
         }
@@ -1117,22 +1117,22 @@ fun SettingsScreen(
         Spacer(Modifier.height(18.dp))
         SettingRow(
             "Wallpaper Portrait",
-            if (hasPortraitWallpaper) "Ganti gambar latar khusus orientasi Portrait" else "Pilih gambar latar untuk orientasi Portrait",
+            if (hasPortraitWallpaper) tx("Ganti gambar latar khusus orientasi Portrait", "Change portrait wallpaper") else tx("Pilih gambar latar untuk orientasi Portrait", "Choose portrait wallpaper"),
             onPortraitWallpaper
         )
         Spacer(Modifier.height(8.dp))
         SettingRow(
             "Wallpaper Landscape",
-            if (hasLandscapeWallpaper) "Ganti gambar latar khusus orientasi Landscape" else "Pilih gambar latar untuk orientasi Landscape",
+            if (hasLandscapeWallpaper) tx("Ganti gambar latar khusus orientasi Landscape", "Change landscape wallpaper") else tx("Pilih gambar latar untuk orientasi Landscape", "Choose landscape wallpaper"),
             onLandscapeWallpaper
         )
         if (hasPortraitWallpaper) {
             Spacer(Modifier.height(8.dp))
-            SettingRow("Hapus wallpaper Portrait", "Gunakan latar charcoal bawaan saat Portrait", onClearPortraitWallpaper)
+            SettingRow(tx("Hapus wallpaper Portrait", "Remove portrait wallpaper"), tx("Gunakan latar charcoal bawaan saat Portrait", "Use the default charcoal background in portrait"), onClearPortraitWallpaper)
         }
         if (hasLandscapeWallpaper) {
             Spacer(Modifier.height(8.dp))
-            SettingRow("Hapus wallpaper Landscape", "Gunakan latar charcoal bawaan saat Landscape", onClearLandscapeWallpaper)
+            SettingRow(tx("Hapus wallpaper Landscape", "Remove landscape wallpaper"), tx("Gunakan latar charcoal bawaan saat Landscape", "Use the default charcoal background in landscape"), onClearLandscapeWallpaper)
         }
         Spacer(Modifier.height(24.dp))
         Text(tx("TATA LETAK", "LAYOUT"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
@@ -1146,29 +1146,29 @@ fun SettingsScreen(
         SettingSlider(tx("Intensitas wallpaper", "Wallpaper intensity"), "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.05f..1.00f, 94) { store.updateWallpaperOpacity(it) }
         SettingSlider(tx("Kegelapan overlay", "Overlay darkness"), "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
-        SettingRow(tx("Pulihkan tampilan default", "Restore default appearance"), "Kembalikan ukuran kartu, jarak, sudut, warna elemen, dan efek wallpaper", { store.resetAppearance() })
+        SettingRow(tx("Pulihkan tampilan default", "Restore default appearance"), tx("Kembalikan ukuran kartu, jarak, sudut, warna elemen, dan efek wallpaper", "Restore card size, spacing, corners, accent color, and wallpaper effects"), { store.resetAppearance() })
         Spacer(Modifier.height(24.dp))
         Text(tx("DATABASE GAME", "GAME DATABASE"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        SettingRow(tx("Sumber metadata game", "Game metadata sources"), "Kelola provider bawaan dan endpoint database kustom", onManageMetadataSources)
+        SettingRow(tx("Sumber metadata game", "Game metadata sources"), tx("Kelola provider bawaan dan endpoint database kustom", "Manage built-in providers and custom database endpoints"), onManageMetadataSources)
         Spacer(Modifier.height(24.dp))
         Text(tx(tx("APLIKASI", "APPS"), "APPS"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         SettingRow(
             tx("Pulihkan aplikasi tersembunyi", "Restore hidden apps"),
-            "Tampilkan kembali aplikasi yang sebelumnya disembunyikan",
+            tx("Tampilkan kembali aplikasi yang sebelumnya disembunyikan", "Show previously hidden apps"),
             onAdd
         )
         Spacer(Modifier.height(10.dp))
         SettingRow(
             tx("Reset kategori dan daftar", "Reset categories and list"),
-            "Kembalikan kategori otomatis dan tampilkan aplikasi tersembunyi (favorit tetap)",
+            tx("Kembalikan kategori otomatis dan tampilkan aplikasi tersembunyi (favorit tetap)", "Restore automatic categories and show hidden apps (favorites are kept)"),
             onReset
         )
         Spacer(Modifier.height(10.dp))
         SettingRow(
             tx("Restart MDI Launcher", "Restart MDI Launcher"),
-            "Mulai ulang launcher untuk menerapkan perubahan atau menyegarkan tampilan",
+            tx("Mulai ulang launcher untuk menerapkan perubahan atau menyegarkan tampilan", "Restart the launcher to apply changes or refresh the interface"),
             onRestart
         )
     }
@@ -1183,10 +1183,10 @@ fun AddAppDialog(
     val listMaxHeight = (LocalConfiguration.current.screenHeightDp * 0.5f).dp
     AlertDialog(
         onDismissRequest = onClose,
-        title = { Text("Pulihkan aplikasi") },
+        title = { Text(tx("Pulihkan aplikasi", "Restore apps")) },
         text = {
             if (candidates.isEmpty()) {
-                Text("Tidak ada aplikasi tersembunyi.")
+                Text(tx("Tidak ada aplikasi tersembunyi.", "There are no hidden apps."))
             } else {
                 LazyColumn(Modifier.heightIn(max = listMaxHeight)) {
                     items(candidates, key = { it.pkg }) { app ->
@@ -1205,7 +1205,7 @@ fun AddAppDialog(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onClose) { Text("Selesai") } }
+        confirmButton = { TextButton(onClick = onClose) { Text(tx("Selesai", "Done")) } }
     )
 }
 
@@ -1227,8 +1227,8 @@ fun HistoryScreen(visible: List<AppItem>, store: Store, onPlay: (AppItem) -> Uni
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text("◷", color = Deck.TextDim, fontSize = 36.sp)
-                    Text("Belum ada riwayat bermain", color = Deck.Text, fontSize = 14.sp)
-                    Text("Game yang kamu buka akan muncul di sini.", color = Deck.TextDim, fontSize = 11.sp)
+                    Text(tx("Belum ada riwayat bermain", "No play history yet"), color = Deck.Text, fontSize = 14.sp)
+                    Text(tx("Game yang kamu buka akan muncul di sini.", "Games you launch will appear here."), color = Deck.TextDim, fontSize = 11.sp)
                 }
             }
         } else {
