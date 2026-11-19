@@ -37,6 +37,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -200,87 +203,100 @@ private fun SideNavGlyph(kind: String, color: Color) {
 }
 
 @Composable
-fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Unit) {
+fun SideNavigation(
+    selected: Int,
+    focusedIndex: Int = -1,
+    verticalText: String = "MDI LAUNCHER",
+    onSelect: (Int) -> Unit
+) {
     val items = listOf(
         Triple(0, "home", tx("Beranda", "Home")),
         Triple(1, "games", tx("Koleksi", "Library")),
         Triple(2, "search", tx("Cari", "Search"))
     )
-    Column(
-        Modifier
-            // Extend the rail background behind the camera safe-area gutter,
-            // while keeping navigation content inside the display cutout inset.
+    val density = LocalDensity.current
+    val layoutDirection = LocalLayoutDirection.current
+    val gutterPx = WindowInsets.displayCutout.getLeft(density, layoutDirection)
+    val gutterWidth = with(density) { gutterPx.toDp() }
+
+    Box(
+        Modifier.width(gutterWidth + 68.dp).fillMaxHeight()
             .background(Deck.Bg.copy(alpha = 0.98f))
-            .windowInsetsPadding(WindowInsets.displayCutout)
-            .width(68.dp).fillMaxHeight()
-            .padding(horizontal = 6.dp, vertical = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        items.forEach { (index, symbol, label) ->
-            val active = selected == index
-            Column(
-                Modifier.fillMaxWidth().height(66.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .then(if (focusedIndex == index) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(12.dp)) else Modifier)
-                    .clickable { onSelect(index) }
-                    .padding(vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+        if (gutterWidth > 18.dp && verticalText.isNotBlank()) {
+            Box(
+                Modifier.width(gutterWidth).fillMaxHeight(),
+                contentAlignment = Alignment.Center
             ) {
-                Box(
-                    Modifier.size(34.dp).clip(RoundedCornerShape(11.dp))
-                        .background(if (active) Deck.Accent.copy(alpha = 0.20f) else Color.Transparent),
-                    contentAlignment = Alignment.Center
-                ) {
-                    SideNavGlyph(symbol, if (active) Deck.Accent else Deck.TextDim)
-                }
-                Spacer(Modifier.height(2.dp))
                 Text(
-                    label,
-                    color = if (active) Deck.Text else Deck.TextDim,
+                    verticalText.trim(),
+                    modifier = Modifier.graphicsLayer { rotationZ = -90f },
+                    color = Deck.TextDim.copy(alpha = 0.72f),
                     fontSize = 10.sp,
-                    lineHeight = 12.sp,
-                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 2.sp,
                     maxLines = 1,
                     softWrap = false
                 )
             }
         }
-
-        Spacer(Modifier.weight(1f))
-        Box(
-            Modifier.fillMaxWidth()
-                .padding(horizontal = 8.dp)
-                .height(1.dp)
-                .background(Deck.TextDim.copy(alpha = 0.18f))
-        )
         Column(
-            Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 2.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            Modifier.align(Alignment.CenterEnd)
+                .windowInsetsPadding(WindowInsets.displayCutout)
+                .width(68.dp).fillMaxHeight()
+                .padding(horizontal = 6.dp, vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Box(
-                Modifier.size(34.dp)
-                    .clip(RoundedCornerShape(10.dp))
-                    .background(Deck.Panel),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("M", color = Deck.Accent, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
+            items.forEach { (index, symbol, label) ->
+                val active = selected == index
+                Column(
+                    Modifier.fillMaxWidth().height(66.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .then(if (focusedIndex == index) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(12.dp)) else Modifier)
+                        .clickable { onSelect(index) }
+                        .padding(vertical = 4.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Box(
+                        Modifier.size(34.dp).clip(RoundedCornerShape(11.dp))
+                            .background(if (active) Deck.Accent.copy(alpha = 0.20f) else Color.Transparent),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        SideNavGlyph(symbol, if (active) Deck.Accent else Deck.TextDim)
+                    }
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        label,
+                        color = if (active) Deck.Text else Deck.TextDim,
+                        fontSize = 10.sp,
+                        lineHeight = 12.sp,
+                        fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                        softWrap = false
+                    )
+                }
             }
-            Text(
-                "MDI",
-                color = Deck.TextDim,
-                fontSize = 9.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
+            Spacer(Modifier.weight(1f))
+            Box(
+                Modifier.fillMaxWidth().padding(horizontal = 8.dp).height(1.dp)
+                    .background(Deck.TextDim.copy(alpha = 0.18f))
             )
-            Text(
-                "v2.0",
-                color = Deck.TextDim.copy(alpha = 0.72f),
-                fontSize = 8.sp,
-                lineHeight = 10.sp
-            )
+            Column(
+                Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Box(
+                    Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)).background(Deck.Panel),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("M", color = Deck.Accent, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
+                }
+                Text("MDI", color = Deck.TextDim, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                Text("v2.0", color = Deck.TextDim.copy(alpha = 0.72f), fontSize = 8.sp, lineHeight = 10.sp)
+            }
         }
     }
 }
