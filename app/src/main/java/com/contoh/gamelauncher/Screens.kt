@@ -617,7 +617,7 @@ fun HeroPanel(
 @Composable
 private fun AppStrip(apps: List<AppItem>, onPlay: (AppItem) -> Unit) {
     Column {
-        SectionTitle("APLIKASI", false)
+        SectionTitle(tx("APLIKASI", "APPS"), false)
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -881,7 +881,7 @@ fun LibraryScreen(
             ) {
                 listOf(
                     Triple(true, "GAME", games.size),
-                    Triple(false, "APLIKASI", apps.size)
+                    Triple(false, tx("APLIKASI", "APPS"), apps.size)
                 ).forEach { (isGames, label, count) ->
                     val active = showGames == isGames
                     Row(
@@ -1009,18 +1009,44 @@ fun SettingsScreen(
     hasLandscapeWallpaper: Boolean,
     store: Store,
     onManageMetadataSources: () -> Unit,
-    onRestart: () -> Unit
+    onRestart: () -> Unit,
+    currentLanguage: String,
+    onLanguageChange: (String) -> Unit
 ) {
     Column(
         Modifier.fillMaxSize().focusGroup().verticalScroll(rememberScrollState()).padding(24.dp)
     ) {
-        Text("TAMPILAN", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text(tx("BAHASA", "LANGUAGE"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        Text("Tema aplikasi", color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        Text("Pilih tampilan gelap atau terang untuk seluruh launcher.", color = Deck.TextDim, fontSize = 12.sp)
+        Text(tx("Bahasa aplikasi", "App language"), color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(tx("Pilih bahasa yang digunakan di seluruh launcher.", "Choose the language used throughout the launcher."), color = Deck.TextDim, fontSize = 12.sp)
+        Spacer(Modifier.height(10.dp))
+        Row(
+            Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).background(Deck.Panel).padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf("id" to "🇮🇩  Indonesia", "en" to "🇬🇧  English").forEach { (code, label) ->
+                val selected = currentLanguage == code
+                Box(
+                    Modifier.weight(1f).clip(RoundedCornerShape(9.dp))
+                        .background(if (selected) Deck.Accent.copy(alpha = 0.20f) else Color.Transparent)
+                        .then(if (selected) Modifier.border(1.dp, Deck.Accent, RoundedCornerShape(9.dp)) else Modifier)
+                        .clickable { onLanguageChange(code) }
+                        .padding(vertical = 12.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(label, color = if (selected) Deck.Accent else Deck.TextDim, fontSize = 12.sp, fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium)
+                }
+            }
+        }
+        Spacer(Modifier.height(24.dp))
+        Text(tx("TAMPILAN", "APPEARANCE"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Spacer(Modifier.height(12.dp))
+        Text(tx("Tema aplikasi", "App theme"), color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(tx("Pilih tampilan gelap atau terang untuk seluruh launcher.", "Choose dark or light appearance for the launcher."), color = Deck.TextDim, fontSize = 12.sp)
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
-            listOf(false to "Gelap", true to "Terang").forEach { (light, label) ->
+            listOf(false to tx("Gelap", "Dark"), true to tx("Terang", "Light")).forEach { (light, label) ->
                 val selected = isLightTheme == light
                 Column(
                     Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
@@ -1036,8 +1062,8 @@ fun SettingsScreen(
             }
         }
         Spacer(Modifier.height(18.dp))
-        Text("Warna elemen", color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
-        Text("Atur warna tombol, indikator fokus, ikon aktif, dan elemen interaktif.", color = Deck.TextDim, fontSize = 12.sp)
+        Text(tx("Warna elemen", "Accent color"), color = Deck.Text, fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
+        Text(tx("Atur warna tombol, indikator fokus, ikon aktif, dan elemen interaktif.", "Customize buttons, focus indicators, active icons, and interactive elements."), color = Deck.TextDim, fontSize = 12.sp)
         Spacer(Modifier.height(10.dp))
         Row(
             Modifier.fillMaxWidth()
@@ -1050,9 +1076,9 @@ fun SettingsScreen(
                 Text("Material You", color = Deck.Text, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
                 Text(
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S)
-                        "Gunakan warna dinamis dari wallpaper perangkat"
+                        tx("Gunakan warna dinamis dari wallpaper perangkat", "Use dynamic colors from your device wallpaper")
                     else
-                        "Memerlukan Android 12 atau lebih baru",
+                        tx("Memerlukan Android 12 atau lebih baru", "Requires Android 12 or later"),
                     color = Deck.TextDim,
                     fontSize = 11.sp
                 )
@@ -1109,39 +1135,39 @@ fun SettingsScreen(
             SettingRow("Hapus wallpaper Landscape", "Gunakan latar charcoal bawaan saat Landscape", onClearLandscapeWallpaper)
         }
         Spacer(Modifier.height(24.dp))
-        Text("TATA LETAK", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text(tx("TATA LETAK", "LAYOUT"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        SettingSlider("Ukuran kartu", "${store.cardSizeDp} dp", store.cardSizeDp.toFloat(), 88f..148f, 14) { store.setCardSize(it.toInt()) }
-        SettingSlider("Jarak antar-kartu", "${store.gridSpacingDp} dp", store.gridSpacingDp.toFloat(), 6f..24f, 17) { store.setGridSpacing(it.toInt()) }
-        SettingSlider("Sudut kartu", "${store.cardCornerDp} dp", store.cardCornerDp.toFloat(), 4f..20f, 15) { store.setCardCorner(it.toInt()) }
+        SettingSlider(tx("Ukuran kartu", "Card size"), "${store.cardSizeDp} dp", store.cardSizeDp.toFloat(), 88f..148f, 14) { store.setCardSize(it.toInt()) }
+        SettingSlider(tx("Jarak antar-kartu", "Card spacing"), "${store.gridSpacingDp} dp", store.gridSpacingDp.toFloat(), 6f..24f, 17) { store.setGridSpacing(it.toInt()) }
+        SettingSlider(tx("Sudut kartu", "Card corners"), "${store.cardCornerDp} dp", store.cardCornerDp.toFloat(), 4f..20f, 15) { store.setCardCorner(it.toInt()) }
         Spacer(Modifier.height(24.dp))
-        Text("WALLPAPER", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text(tx("WALLPAPER", "WALLPAPER"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        SettingSlider("Intensitas wallpaper", "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.05f..1.00f, 94) { store.updateWallpaperOpacity(it) }
-        SettingSlider("Kegelapan overlay", "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
+        SettingSlider(tx("Intensitas wallpaper", "Wallpaper intensity"), "${(store.wallpaperOpacity * 100).toInt()}%", store.wallpaperOpacity, 0.05f..1.00f, 94) { store.updateWallpaperOpacity(it) }
+        SettingSlider(tx("Kegelapan overlay", "Overlay darkness"), "${(store.wallpaperOverlay * 100).toInt()}%", store.wallpaperOverlay, 0.15f..0.95f, 79) { store.updateWallpaperOverlay(it) }
         Spacer(Modifier.height(10.dp))
-        SettingRow("Pulihkan tampilan default", "Kembalikan ukuran kartu, jarak, sudut, warna elemen, dan efek wallpaper", { store.resetAppearance() })
+        SettingRow(tx("Pulihkan tampilan default", "Restore default appearance"), "Kembalikan ukuran kartu, jarak, sudut, warna elemen, dan efek wallpaper", { store.resetAppearance() })
         Spacer(Modifier.height(24.dp))
-        Text("DATABASE GAME", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text(tx("DATABASE GAME", "GAME DATABASE"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
-        SettingRow("Sumber metadata game", "Kelola provider bawaan dan endpoint database kustom", onManageMetadataSources)
+        SettingRow(tx("Sumber metadata game", "Game metadata sources"), "Kelola provider bawaan dan endpoint database kustom", onManageMetadataSources)
         Spacer(Modifier.height(24.dp))
-        Text("APLIKASI", color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text(tx("APLIKASI", "APPS"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         SettingRow(
-            "Pulihkan aplikasi tersembunyi",
+            tx("Pulihkan aplikasi tersembunyi", "Restore hidden apps"),
             "Tampilkan kembali aplikasi yang sebelumnya disembunyikan",
             onAdd
         )
         Spacer(Modifier.height(10.dp))
         SettingRow(
-            "Reset kategori dan daftar",
+            tx("Reset kategori dan daftar", "Reset categories and list"),
             "Kembalikan kategori otomatis dan tampilkan aplikasi tersembunyi (favorit tetap)",
             onReset
         )
         Spacer(Modifier.height(10.dp))
         SettingRow(
-            "Restart MDI Launcher",
+            tx("Restart MDI Launcher", "Restart MDI Launcher"),
             "Mulai ulang launcher untuk menerapkan perubahan atau menyegarkan tampilan",
             onRestart
         )
