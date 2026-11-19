@@ -518,7 +518,7 @@ fun HeroPanel(
                 Text("GAME UNGGULAN", color = Deck.Accent, fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
                 Spacer(Modifier.height(5.dp))
                 Text(focused.name, color = Color.White, fontSize = if (compact) 19.sp else 25.sp, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                Text(if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan", color = Color.White.copy(alpha = 0.76f), fontSize = 11.sp)
+                Text(if (focused.pkg in store.recent) tx("Terakhir dimainkan", "Recently played") else tx("Siap dimainkan", "Ready to play"), color = Color.White.copy(alpha = 0.76f), fontSize = 11.sp)
                 if (store.description(focused.pkg).isNotBlank() && !compact) {
                     Spacer(Modifier.height(4.dp))
                     Text(store.description(focused.pkg), color = Color.White.copy(alpha = 0.84f), fontSize = 11.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
@@ -564,7 +564,7 @@ fun HeroPanel(
                     Box(Modifier.size(6.dp).clip(RoundedCornerShape(50)).background(Deck.Accent))
                     Spacer(Modifier.width(7.dp))
                     Text(
-                        "GAME TERPILIH",
+                        tx("GAME TERPILIH", "FEATURED GAME"),
                         color = Color.White.copy(alpha = 0.82f),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
@@ -583,7 +583,7 @@ fun HeroPanel(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if (focused.pkg in store.recent) "Terakhir dimainkan" else "Siap dimainkan",
+                    if (focused.pkg in store.recent) tx("Terakhir dimainkan", "Recently played") else tx("Siap dimainkan", "Ready to play"),
                     color = Color.White.copy(alpha = 0.72f),
                     fontSize = 11.sp
                 )
@@ -617,7 +617,7 @@ fun HeroPanel(
 @Composable
 private fun AppStrip(apps: List<AppItem>, onPlay: (AppItem) -> Unit) {
     Column {
-        SectionTitle(tx("APLIKASI", "APPS"), false)
+        SectionTitle(tx(tx("APLIKASI", "APPS"), "APPS"), false)
         LazyRow(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(14.dp)
@@ -667,7 +667,7 @@ fun HomeScreen(
             HeroPanel(focused, store, compact, onPlay, onOptions, landscape = landscape, onDetails = onDetails, focusedActionIndex = focusedActionIndex)
             if (favs.isNotEmpty()) {
                 CardRow(
-                    "GAME FAVORIT", favs, focused?.pkg, activeRow == 0, 0, store,
+                    tx("GAME FAVORIT", "FAVORITES"), favs, focused?.pkg, activeRow == 0, 0, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
                     landscapeCards = landscape
                 )
@@ -677,7 +677,7 @@ fun HomeScreen(
             }
             if (otherGames.isNotEmpty()) {
                 CardRow(
-                    if (favs.isNotEmpty()) "GAME LAINNYA" else "SEMUA GAME",
+                    if (favs.isNotEmpty()) tx("GAME LAINNYA", "MORE GAMES") else tx("SEMUA GAME", "ALL GAMES"),
                     otherGames, focused?.pkg, activeRow == if (favs.isNotEmpty()) 1 else 0,
                     if (favs.isNotEmpty()) 1 else 0, store,
                     cardWidth, compact, tap, onPlay, onOptions, onFocus,
@@ -716,10 +716,10 @@ fun GameDetailScreen(
                     }
                 }
                 Column(Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(horizontal = 22.dp, vertical = 20.dp)) {
-                    Text("DETAIL GAME", color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
+                    Text(tx("DETAIL GAME", "GAME DETAILS"), color = Color.White.copy(alpha = 0.78f), fontSize = 10.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.8.sp)
                     Spacer(Modifier.height(5.dp))
                     Text(app.name, color = Color.White, fontSize = if (landscape) 28.sp else 25.sp, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    Text("Aplikasi Android  •  " + if (app.pkg in store.recent) "Pernah dimainkan" else "Siap dimainkan", color = Color.White.copy(alpha = 0.76f), fontSize = 12.sp)
+                    Text("Aplikasi Android  •  " + if (app.pkg in store.recent) "Pernah dimainkan" else tx("Siap dimainkan", "Ready to play"), color = Color.White.copy(alpha = 0.76f), fontSize = 12.sp)
                 }
             }
             Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 18.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -732,14 +732,14 @@ fun GameDetailScreen(
                         Text("⋯", color = Deck.Text, fontSize = 22.sp)
                     }
                 }
-                Text("TENTANG GAME", color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text(tx("TENTANG GAME", "ABOUT THIS GAME"), color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                 Text(description, color = Deck.Text, fontSize = 14.sp, lineHeight = 21.sp)
-                Text("INFORMASI APLIKASI", color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
+                Text(tx("INFORMASI APLIKASI", "APP INFORMATION"), color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.4.sp)
                 Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(14.dp)).background(Deck.Panel).padding(14.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    Text("Nama paket", color = Deck.TextDim, fontSize = 11.sp)
+                    Text(tx("Nama paket", "Package name"), color = Deck.TextDim, fontSize = 11.sp)
                     Text(app.pkg, color = Deck.Text, fontSize = 13.sp)
-                    Text("Status favorit", color = Deck.TextDim, fontSize = 11.sp)
-                    Text(if (app.pkg in store.favorites) "Favorit" else "Belum ditandai", color = Deck.Text, fontSize = 13.sp)
+                    Text(tx("Status favorit", "Favorite status"), color = Deck.TextDim, fontSize = 11.sp)
+                    Text(if (app.pkg in store.favorites) tx("Favorit", "Favorite") else tx("Belum ditandai", "Not favorited"), color = Deck.Text, fontSize = 13.sp)
                     Text("Total waktu bermain", color = Deck.TextDim, fontSize = 11.sp)
                     Text(formatPlaytime(store.playtimeMs[app.pkg] ?: 0L), color = Deck.Text, fontSize = 13.sp)
                 }
@@ -783,7 +783,7 @@ fun SearchScreen(
                 value = q,
                 onValueChange = { q = it },
                 singleLine = true,
-                label = { Text("Cari game atau aplikasi") },
+                label = { Text(tx("Cari game atau aplikasi", "Search games or apps")) },
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp)
             )
         }
@@ -793,7 +793,7 @@ fun SearchScreen(
                     Modifier.fillMaxWidth().height(150.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Tidak ada hasil.", color = Deck.TextDim)
+                    Text(tx("Tidak ada hasil.", "No results found."), color = Deck.TextDim)
                 }
             }
         } else {
@@ -856,7 +856,7 @@ fun LibraryScreen(
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(
-                        "PERPUSTAKAAN",
+                        tx("PERPUSTAKAAN", "LIBRARY"),
                         color = Deck.Text,
                         fontSize = 17.sp,
                         fontWeight = FontWeight.Bold,
@@ -880,8 +880,8 @@ fun LibraryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 listOf(
-                    Triple(true, "GAME", games.size),
-                    Triple(false, tx("APLIKASI", "APPS"), apps.size)
+                    Triple(true, tx("GAME", "GAMES"), games.size),
+                    Triple(false, tx(tx("APLIKASI", "APPS"), "APPS"), apps.size)
                 ).forEach { (isGames, label, count) ->
                     val active = showGames == isGames
                     Row(
@@ -929,9 +929,9 @@ fun LibraryScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
-                        if (onlyFav) "Belum ada favorit di kategori ini."
-                        else if (showGames) "Belum ada game."
-                        else "Belum ada aplikasi.",
+                        if (onlyFav) tx("Belum ada favorit di kategori ini.", "No favorites in this category yet.")
+                        else if (showGames) tx("Belum ada game.", "No games yet.")
+                        else tx("Belum ada aplikasi.", "No apps yet."),
                         color = Deck.TextDim
                     )
                 }
@@ -1152,7 +1152,7 @@ fun SettingsScreen(
         Spacer(Modifier.height(12.dp))
         SettingRow(tx("Sumber metadata game", "Game metadata sources"), "Kelola provider bawaan dan endpoint database kustom", onManageMetadataSources)
         Spacer(Modifier.height(24.dp))
-        Text(tx("APLIKASI", "APPS"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
+        Text(tx(tx("APLIKASI", "APPS"), "APPS"), color = Deck.TextDim, fontSize = 13.sp, fontWeight = FontWeight.SemiBold, letterSpacing = 1.5.sp)
         Spacer(Modifier.height(12.dp))
         SettingRow(
             tx("Pulihkan aplikasi tersembunyi", "Restore hidden apps"),
