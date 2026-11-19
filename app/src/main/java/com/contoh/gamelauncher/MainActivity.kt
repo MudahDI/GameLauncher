@@ -151,7 +151,7 @@ private fun WallpaperBackground(store: Store) {
 // ---------- Root ----------
 
 @Composable
-fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeResetTick: Int = 0) {
+fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
     val ctx = LocalContext.current
     val focusManager = LocalFocusManager.current
     val configuration = LocalConfiguration.current
@@ -175,17 +175,6 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
     var detailPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var editingDescriptionPkg by rememberSaveable { mutableStateOf<String?>(null) }
     var metadataPkg by rememberSaveable { mutableStateOf<String?>(null) }
-    LaunchedEffect(homeResetTick) {
-        if (homeResetTick > 0) {
-            tab = 0
-            detailPkg = null
-            selectedPkg = null
-            metadataPkg = null
-            editingDescriptionPkg = null
-            homeFocusArea = "hero"
-            heroActionIndex = 0
-        }
-    }
     var showMetadataSources by rememberSaveable { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
     var descriptionDraft by rememberSaveable { mutableStateOf("") }
@@ -650,7 +639,6 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
 class MainActivity : ComponentActivity() {
     private var refreshTick by mutableIntStateOf(0)
     private var sessionRefresh by mutableIntStateOf(0)
-    private var homeResetTick by mutableIntStateOf(0)
     private var hasBeenStopped = false
     private val packageChanges = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -663,10 +651,7 @@ class MainActivity : ComponentActivity() {
         super.onResume()
         Store.finishPendingSession(this)
         sessionRefresh++
-        if (hasBeenStopped) {
-            homeResetTick++
-            hasBeenStopped = false
-        }
+        hasBeenStopped = false
     }
 
     override fun onStop() {
@@ -734,7 +719,7 @@ class MainActivity : ComponentActivity() {
                     value = withContext(Dispatchers.IO) { loadAllApps(ctx) }
                 }
                 val list = apps
-                LauncherApp(list.orEmpty(), sessionTick, store, homeResetTick)
+                LauncherApp(list.orEmpty(), sessionTick, store)
             }
         }
     }
