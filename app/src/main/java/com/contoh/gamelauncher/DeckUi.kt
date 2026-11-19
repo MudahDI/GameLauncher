@@ -207,16 +207,17 @@ fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Uni
         Triple(2, "search", tx("Cari", "Search"))
     )
     Column(
-        Modifier.width(68.dp).fillMaxHeight()
+        Modifier.windowInsetsPadding(WindowInsets.displayCutout)
+            .width(68.dp).fillMaxHeight()
             .background(Deck.Bg.copy(alpha = 0.98f))
-            .padding(horizontal = 6.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+            .padding(horizontal = 6.dp, vertical = 16.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         items.forEach { (index, symbol, label) ->
             val active = selected == index
             Column(
-                Modifier.fillMaxWidth().height(58.dp)
+                Modifier.fillMaxWidth().height(66.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .then(if (focusedIndex == index) Modifier.border(2.dp, Deck.Accent, RoundedCornerShape(12.dp)) else Modifier)
                     .clickable { onSelect(index) }
@@ -225,7 +226,7 @@ fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Uni
                 verticalArrangement = Arrangement.Center
             ) {
                 Box(
-                    Modifier.size(36.dp).clip(RoundedCornerShape(11.dp))
+                    Modifier.size(34.dp).clip(RoundedCornerShape(11.dp))
                         .background(if (active) Deck.Accent.copy(alpha = 0.20f) else Color.Transparent),
                     contentAlignment = Alignment.Center
                 ) {
@@ -235,9 +236,11 @@ fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Uni
                 Text(
                     label,
                     color = if (active) Deck.Text else Deck.TextDim,
-                    fontSize = 8.sp,
+                    fontSize = 10.sp,
+                    lineHeight = 12.sp,
                     fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
-                    maxLines = 1
+                    maxLines = 1,
+                    softWrap = false
                 )
             }
         }
