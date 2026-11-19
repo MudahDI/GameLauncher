@@ -244,6 +244,41 @@ fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Uni
                 )
             }
         }
+
+        Spacer(Modifier.weight(1f))
+        Box(
+            Modifier.fillMaxWidth()
+                .padding(horizontal = 8.dp)
+                .height(1.dp)
+                .background(Deck.TextDim.copy(alpha = 0.18f))
+        )
+        Column(
+            Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 2.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Box(
+                Modifier.size(34.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(Deck.Panel),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("M", color = Deck.Accent, fontSize = 19.sp, fontWeight = FontWeight.ExtraBold)
+            }
+            Text(
+                "MDI",
+                color = Deck.TextDim,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Text(
+                "v2.0",
+                color = Deck.TextDim.copy(alpha = 0.72f),
+                fontSize = 8.sp,
+                lineHeight = 10.sp
+            )
+        }
     }
 }
 
