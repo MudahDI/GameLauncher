@@ -300,21 +300,30 @@ fun GameCard(
 @Composable
 fun SectionTitle(text: String, compact: Boolean) {
     Row(
-        Modifier.padding(start = 16.dp, top = 16.dp, bottom = 2.dp),
+        Modifier.fillMaxWidth().padding(
+            start = 16.dp, end = 16.dp,
+            top = if (compact) 12.dp else 19.dp,
+            bottom = if (compact) 0.dp else 2.dp
+        ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            Modifier.width(4.dp).height(if (compact) 17.dp else 21.dp)
-                .clip(RoundedCornerShape(3.dp))
+            Modifier.size(if (compact) 6.dp else 7.dp)
+                .clip(RoundedCornerShape(50))
                 .background(Deck.Accent)
         )
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(9.dp))
         Text(
             text,
             color = Deck.Text,
-            fontSize = if (compact) 14.sp else 17.sp,
-            fontWeight = FontWeight.Medium,
-            letterSpacing = 0.1.sp
+            fontSize = if (compact) 12.sp else 13.sp,
+            fontWeight = FontWeight.Bold,
+            letterSpacing = 1.05.sp
+        )
+        Spacer(Modifier.width(12.dp))
+        Box(
+            Modifier.weight(1f).height(1.dp)
+                .background(Deck.PanelLight.copy(alpha = 0.75f))
         )
     }
 }
@@ -475,12 +484,12 @@ fun HeroPanel(
         return
     }
     val isFav = focused.pkg in store.favorites
-    val heroShape = RoundedCornerShape(18.dp)
+    val heroShape = RoundedCornerShape(20.dp)
 
     if (landscape) {
         Box(
             Modifier.fillMaxWidth()
-                .height(if (compact) 150.dp else 184.dp)
+                .height(if (compact) 142.dp else 170.dp)
                 .clip(heroShape)
                 .background(Deck.Panel)
         ) {
@@ -527,7 +536,7 @@ fun HeroPanel(
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(if (compact) 158.dp else 218.dp)
+                .height(if (compact) 150.dp else 194.dp)
                 .clip(heroShape)
                 .background(Deck.Panel)
         ) {
@@ -653,7 +662,7 @@ fun HomeScreen(
         Column(
             Modifier.fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = if (landscape) 18.dp else 12.dp)
+                .padding(horizontal = if (landscape) 22.dp else 16.dp, vertical = if (landscape) 14.dp else 10.dp)
         ) {
             HeroPanel(focused, store, compact, onPlay, onOptions, landscape = landscape, onDetails = onDetails, focusedActionIndex = focusedActionIndex)
             if (favs.isNotEmpty()) {
@@ -871,23 +880,30 @@ fun LibraryScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 listOf(
-                    Triple(true, "🎮", "Game (" + games.size + ")"),
-                    Triple(false, "▦", "Aplikasi (" + apps.size + ")")
-                ).forEach { (isGames, icon, label) ->
+                    Triple(true, "GAME", games.size),
+                    Triple(false, "APLIKASI", apps.size)
+                ).forEach { (isGames, label, count) ->
                     val active = showGames == isGames
                     Row(
-                        Modifier.clip(RoundedCornerShape(8.dp))
+                        Modifier.clip(RoundedCornerShape(10.dp))
+                            .background(if (active) Deck.Accent.copy(alpha = 0.16f) else Color.Transparent)
                             .gamepadClickable { showGames = isGames; onlyFav = false }
-                            .padding(horizontal = 4.dp, vertical = 8.dp),
+                            .padding(horizontal = 12.dp, vertical = 9.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
-                        Text(icon, fontSize = 15.sp)
                         Text(
                             label,
                             color = if (active) Deck.Accent else Deck.TextDim,
-                            fontSize = 12.sp,
+                            fontSize = 10.sp,
+                            letterSpacing = 0.65.sp,
                             fontWeight = if (active) FontWeight.Bold else FontWeight.Medium
+                        )
+                        Text(
+                            count.toString(),
+                            color = if (active) Deck.Text else Deck.TextDim,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.SemiBold
                         )
                     }
                 }
