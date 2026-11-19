@@ -100,7 +100,7 @@ class Store(ctx: Context) {
     var isLightTheme by mutableStateOf(sp.getBoolean("light_theme", false))
     var language by mutableStateOf(sp.getString("language", "id") ?: "id")
 
-    fun setLanguage(value: String) {
+    fun updateLanguage(value: String) {
         language = if (value == "en") "en" else "id"
         sp.edit().putString("language", language).apply()
     }
