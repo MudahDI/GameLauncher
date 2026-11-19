@@ -47,6 +47,7 @@ import java.util.Locale
 
 /** Palet warna bergaya antarmuka Steam Deck. */
 object Deck {
+    var Language by mutableStateOf("id")
     var IsLightTheme by mutableStateOf(false)
     val Bg get() = if (IsLightTheme) Color(0xFFD6DCE4) else Color(0xFF0E141B)
     val Panel get() = if (IsLightTheme) Color(0xFFE3E8EE) else Color(0xFF1B2838)
@@ -57,6 +58,11 @@ object Deck {
     val Text get() = if (IsLightTheme) Color(0xFF202A35) else Color(0xFFDCDEDF)
     val TextDim get() = if (IsLightTheme) Color(0xFF536170) else Color(0xFF8B929A)
 }
+
+
+/** Text strings used by the launcher UI. User-provided game names/descriptions are never translated. */
+fun tx(indonesian: String, english: String): String =
+    if (Deck.Language == "en") english else indonesian
 
 @Composable
 fun rememberClock(): State<String> = produceState(initialValue = "") {
@@ -131,7 +137,7 @@ fun HeaderBar(onHistory: () -> Unit, onRotate: () -> Unit, isLandscape: Boolean,
     ) {
         Text("MDI", color = Deck.Accent, fontSize = 17.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.8.sp)
         Spacer(Modifier.width(8.dp))
-        Text("Launcher", color = Deck.Text, fontSize = 15.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.1.sp)
+        Text(tx("Launcher", "Launcher"), color = Deck.Text, fontSize = 15.sp, fontWeight = FontWeight.Medium, letterSpacing = 0.1.sp)
         Spacer(Modifier.weight(1f))
         if (battery >= 0) {
             Text("$battery%", color = Deck.TextDim, fontSize = 12.sp)
@@ -196,9 +202,9 @@ private fun SideNavGlyph(kind: String, color: Color) {
 @Composable
 fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Unit) {
     val items = listOf(
-        Triple(0, "home", "Beranda"),
-        Triple(1, "games", "Koleksi"),
-        Triple(2, "search", "Cari")
+        Triple(0, "home", tx("Beranda", "Home")),
+        Triple(1, "games", tx("Koleksi", "Library")),
+        Triple(2, "search", tx("Cari", "Search"))
     )
     Column(
         Modifier.width(88.dp).fillMaxHeight()
@@ -228,7 +234,7 @@ fun SideNavigation(selected: Int, focusedIndex: Int = -1, onSelect: (Int) -> Uni
 
 @Composable
 fun BottomNavigation(selected: Int, onSelect: (Int) -> Unit) {
-    val tabs = listOf("BERANDA", "KOLEKSI", "CARI")
+    val tabs = listOf(tx("BERANDA", "HOME"), tx("KOLEKSI", "LIBRARY"), tx("CARI", "SEARCH"))
     Row(
         Modifier.fillMaxWidth()
             .height(48.dp)
