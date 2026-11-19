@@ -462,7 +462,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                                 store = store,
                                 onManageMetadataSources = { showMetadataSources = true },
                                 currentLanguage = store.language,
-                                onLanguageChange = { store.setLanguage(it) }
+                                onLanguageChange = { store.updateLanguage(it) }
                             )
                             else -> HistoryScreen(visible, store, play, options)
                         }
