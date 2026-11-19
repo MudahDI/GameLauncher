@@ -104,22 +104,22 @@ private fun OptionAction(
             .clip(RoundedCornerShape(12.dp))
             .background(Deck.Panel)
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 11.dp),
+            .padding(horizontal = 10.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
-            Modifier.size(36.dp).clip(RoundedCornerShape(10.dp))
+            Modifier.size(30.dp).clip(RoundedCornerShape(9.dp))
                 .background(if (danger) Color(0xFF4A252B) else Deck.Accent.copy(alpha = 0.18f)),
             contentAlignment = Alignment.Center
         ) {
             Text(symbol, color = tint, fontSize = 18.sp, fontWeight = FontWeight.SemiBold)
         }
-        Spacer(Modifier.width(12.dp))
+        Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text(title, color = tint, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = Deck.TextDim, fontSize = 11.sp, lineHeight = 14.sp)
+            Text(title, color = tint, fontSize = 12.sp, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+            Text(subtitle, color = Deck.TextDim, fontSize = 10.sp, lineHeight = 12.sp, maxLines = 2, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
         }
-        Text("›", color = Deck.TextDim, fontSize = 22.sp)
+        Text("›", color = Deck.TextDim, fontSize = 20.sp)
     }
 }
 
@@ -483,8 +483,8 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store) {
             },
             text = {
                 Column(
-                    Modifier.fillMaxWidth().heightIn(max = 440.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(7.dp)
+                    Modifier.fillMaxWidth().heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.48f).dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(5.dp)
                 ) {
                     OptionAction(if (fav) tx("Hapus dari favorit", "Remove from favorites") else tx("Tambahkan ke favorit", "Add to favorites"), tx("Atur game ini sebagai favorit", "Set this game as a favorite"), if (fav) "♥" else "♡") {
                         store.toggleFav(a.pkg); selectedPkg = null
