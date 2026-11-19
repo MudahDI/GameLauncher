@@ -469,13 +469,13 @@ fun HeroPanel(
                 Text("MDI LAUNCHER", color = Deck.Accent, fontSize = 11.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    tx("MENYIAPKAN BERANDA", "PREPARING HOME"),
+                    tx("SELAMAT DATANG", "WELCOME"),
                     color = Deck.Text,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    tx("Memuat koleksi game dan artwork…", "Loading your game library and artwork…"),
+                    tx("Pilih game untuk mulai bermain.", "Choose a game to get started."),
                     color = Deck.TextDim,
                     fontSize = 12.sp
                 )
