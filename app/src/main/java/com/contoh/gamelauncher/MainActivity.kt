@@ -596,7 +596,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
                     value = descriptionDraft,
                     onValueChange = { descriptionDraft = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text("Tulis deskripsi untuk $appName...") },
+                    placeholder = { Text(tx("Tulis deskripsi untuk $appName...", "Write a description for $appName...")) },
                     minLines = 4,
                     maxLines = 7
                 )
@@ -617,7 +617,7 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
     if (confirmRestart) {
         AlertDialog(
             onDismissRequest = { confirmRestart = false },
-            title = { Text("Restart MDI Launcher?") },
+            title = { Text(tx("Restart MDI Launcher?", "Restart MDI Launcher?")) },
             text = { Text(tx("Launcher akan dimulai ulang. Pengaturan, favorit, dan koleksi game tetap tersimpan.", "The launcher will restart. Your settings, favorites, and game library will be preserved.")) },
             confirmButton = {
                 TextButton(onClick = {
@@ -637,10 +637,10 @@ fun LauncherApp(allApps: List<AppItem>, sessionRefresh: Int, store: Store, homeR
     if (confirmReset) {
         AlertDialog(
             onDismissRequest = { confirmReset = false },
-            title = { Text("Kembalikan daftar otomatis?") },
+            title = { Text(tx("Kembalikan daftar otomatis?", "Restore automatic list?")) },
             text = { Text(tx("Kategori manual dan aplikasi tersembunyi akan dikembalikan ke deteksi otomatis. Favorit tidak berubah.", "Manual categories and hidden apps will return to automatic detection. Favorites will remain unchanged.")) },
             confirmButton = {
-                TextButton(onClick = { store.resetList(); confirmReset = false }) { Text("Kembalikan") }
+                TextButton(onClick = { store.resetList(); confirmReset = false }) { Text(tx("Kembalikan", "Restore")) }
             },
             dismissButton = { TextButton(onClick = { confirmReset = false }) { Text(tx("Batal", "Cancel")) } }
         )
